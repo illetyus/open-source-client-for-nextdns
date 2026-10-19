@@ -2,3 +2,4 @@ app/src/main/assets/licenses/** text eol=lf
 scripts/*.sh text eol=lf
 # Retained JUnit reports have byte-level hashes; keep provider bytes on Windows.
 docs/release/browserstack-espresso-reports/*.xml -text whitespace=cr-at-eol
+docs/release/bug-hunt-2026-10-19/** text eol=lf

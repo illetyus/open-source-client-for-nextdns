@@ -1,5 +1,24 @@
 # Hata defteri — yayın öncesi kod incelemesi
 
+## 19 Ekim 2026 — güncel genel hata avı
+
+Telefona verilen `4812323` sürümünde **8 yeni açık kod kusuru: 1 P1, 7 P2** kaydedildi. Üretim kodu ve APK bu denetimde değiştirilmedi. [Ayrıntılı rapor ve kapanış ölçütleri](HATA_AVI_TR_2026-10-19.md), [kalıcı CI/JUnit kaydı](release/bug-hunt-2026-10-19/results.json), [taslak PR #25](https://github.com/illetyus/open-source-client-for-nextdns/pull/25).
+
+| Kayıt | Öncelik | Bulgu | Durum |
+|---|---|---|---|
+| NDNS-012 | P1 | Gerçek NextDNS profil parmak izi yapılandırma kimliğiyle karşılaştırılıyor; doğru seçili bağlantı sağlıklı gösterilmiyor | Linux + Windows JVM ile yeniden üretildi; AÇIK |
+| NDNS-013 | P2 | Altı haneli profil kimliğiyle geçersiz IPv6 adresi üretiliyor | Kaynak + JDK karşı örneği; AÇIK |
+| NDNS-014 | P2 | İzin/engel listesi eklemesi başarısız olduğunda yazılan metin siliniyor | İki ekran testiyle yeniden üretildi; AÇIK |
+| NDNS-015 | P2 | Başarısız analiz alt panelleri görünümün taze başarı sayılmasını engellemiyor | Kontrollü 13 hata yanıtıyla yeniden üretildi; AÇIK |
+| NDNS-016 | P2 | Eski analiz filtresi yanıtı yeni filtre sonucunu eziyor | Geciktirilmiş yanıtla yeniden üretildi; AÇIK |
+| NDNS-017 | P2 | Boş uzak günlük yanıtı eski kayıtları ekrandan kaldırmıyor | Ardışık dolu/boş yanıtla yeniden üretildi; AÇIK |
+| NDNS-018 | P2 | Misafir seçimi bekleyen giriş isteğini geçersiz kılmıyor | Geciktirilmiş giriş yanıtıyla yeniden üretildi; AÇIK |
+| NDNS-019 | P2 | Alan adı regex'i geçerli Punycode'u reddediyor, geçersiz etiketleri kabul ediyor | Kaynak + JDK IDN/STD3 karşı örneği; AÇIK |
+
+Linux CI'da önceki **105 testin tamamı geçti**. Yeni 9 testte 7 başarısızlık kusurları yeniden üretti, 2 güvenlik/doğruluk kontrolü geçti: toplam **114 test, 107 PASS, 7 FAIL, 0 atlama**. CI kırmızıdır; PR bu haliyle birleştirilemez. Kaynak incelemesi ve kontrollü JVM testleri gerçek telefon kabulü olarak sunulmaz. Windows başlangıç koşusunun native yükleme sorunları Q-008 ortam kaydıdır; sekiz uygulama kusuruna dahil değildir.
+
+## 10 Ekim 2026 — önceki inceleme ve düzeltme geçmişi
+
 İnceleme tarihi: **10 Ekim 2026**. Kaynak: `4abf26a1a556cf42235fbf05c70f89cb5ad79e8c`. Bu dosya ve [makinece okunabilir kayıt](release/quality-ledger.json) aynı bulguları taşır.
 
 **10 kod kusuru düzeltildi ve JVM regresyonuyla doğrulandı; cihaz kabulü bekliyor.** İlk inceleme öncelikleri 3 P1, 7 P2 olarak korunur. [Düzeltme raporu](CODE_QUALITY_FIXES_TR_2026-10-10.md) ve [saklanan kanıt](release/code-quality-fix-evidence-2026-10-10.json) güncel durumu gösterir. Ayrıca 3 kalite/süreç gözlemi vardır. Bu incelemede P0 düzeyinde bir kusur için kanıt elde edilmemiştir; bu ifade kusursuzluk veya tam güvenlik garantisi değildir.

@@ -1,0 +1,7 @@
+// Local Windows JVM setup only. UI languages still use explicit LocalePreferences.
+allprojects {
+  tasks.withType(Test).configureEach {
+    systemProperty 'user.language', 'en'
+    systemProperty 'user.country', 'US'
+  }
+}

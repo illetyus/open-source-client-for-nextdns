@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.data.legal.LegalDocumentsTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:43.252Z" hostname="runnervm8k3b6" time="0.072">
+  <properties/>
+  <testcase name="allFiveTermsAndEnglishPrivacyPassContentVerification" classname="com.example.data.legal.LegalDocumentsTest" time="0.04"/>
+  <testcase name="changedMissingOrWrongRevisionAssetsFailClosed" classname="com.example.data.legal.LegalDocumentsTest" time="0.026"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.data.repository.ExportDocumentTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:44.862Z" hostname="runnervm8k3b6" time="0.022">
+  <properties/>
+  <testcase name="deniedProviderReturnsFailureWithoutWriting" classname="com.example.data.repository.ExportDocumentTest" time="0.01"/>
+  <testcase name="closeFailurePreventsSuccess" classname="com.example.data.repository.ExportDocumentTest" time="0.002"/>
+  <testcase name="successIncludesProviderCloseAndExpectedBytes" classname="com.example.data.repository.ExportDocumentTest" time="0.002"/>
+  <testcase name="cancellationPropagatesAndClosesProviderStream" classname="com.example.data.repository.ExportDocumentTest" time="0.006"/>
+  <testcase name="nullProviderStreamReturnsFailure" classname="com.example.data.repository.ExportDocumentTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

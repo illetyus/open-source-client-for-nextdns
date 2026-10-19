@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.ui.screens.AdaptiveNavigationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:53.929Z" hostname="runnervm8k3b6" time="0.003">
+  <properties/>
+  <testcase name="widthPolicy_usesExpandedAt840DpAndAbove" classname="com.example.ui.screens.AdaptiveNavigationTest" time="0.003"/>
+  <testcase name="widthPolicy_usesCompactBelow600Dp" classname="com.example.ui.screens.AdaptiveNavigationTest" time="0.0"/>
+  <testcase name="navigationGroups_coverEveryTabExactlyOnce" classname="com.example.ui.screens.AdaptiveNavigationTest" time="0.0"/>
+  <testcase name="widthPolicy_usesMediumFrom600To839Dp" classname="com.example.ui.screens.AdaptiveNavigationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

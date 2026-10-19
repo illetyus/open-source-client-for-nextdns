@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.data.api.NextDnsApiContractTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:34.495Z" hostname="runnervm8k3b6" time="0.528">
+  <properties/>
+  <testcase name="analyticsQueryTypes_supportsDocumentedWindowAndPaginationParams" classname="com.example.data.api.NextDnsApiContractTest" time="0.208"/>
+  <testcase name="securityMutation_sendsOnlyChangedField" classname="com.example.data.api.NextDnsApiContractTest" time="0.023"/>
+  <testcase name="retentionCodec_usesSecondsAtApiBoundary" classname="com.example.data.api.NextDnsApiContractTest" time="0.004"/>
+  <testcase name="credentialedClient_doesNotFollowRedirects" classname="com.example.data.api.NextDnsApiContractTest" time="0.013"/>
+  <testcase name="mutationHttp200WithErrors_isRejectedByContract" classname="com.example.data.api.NextDnsApiContractTest" time="0.016"/>
+  <testcase name="profilesRequest_supportsCursorPagination" classname="com.example.data.api.NextDnsApiContractTest" time="0.024"/>
+  <testcase name="logDownload_requestsPublicUrlWithoutFollowingCredentialedRedirect" classname="com.example.data.api.NextDnsApiContractTest" time="0.015"/>
+  <testcase name="profileCreate_acceptsIdOnlyResponse" classname="com.example.data.api.NextDnsApiContractTest" time="0.016"/>
+  <testcase name="configurationGets_parseNextDnsDataEnvelope" classname="com.example.data.api.NextDnsApiContractTest" time="0.148"/>
+  <testcase name="settingsLogsMutation_doesNotOverwriteSiblingDropField" classname="com.example.data.api.NextDnsApiContractTest" time="0.019"/>
+  <testcase name="logsResponse_parsesPaginationAndStreamMetadata" classname="com.example.data.api.NextDnsApiContractTest" time="0.025"/>
+  <testcase name="http200WithErrors_isNotSemanticSuccess" classname="com.example.data.api.NextDnsApiContractTest" time="0.013"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

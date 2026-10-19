@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.data.legal.LegalAcceptanceStoreTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:35.032Z" hostname="runnervm8k3b6" time="6.165">
+  <properties/>
+  <testcase name="acceptancePersistsAcrossStoreRecreation" classname="com.example.data.legal.LegalAcceptanceStoreTest" time="2.936"/>
+  <testcase name="revisionWithoutAcceptanceTimeDoesNotUnlockGate" classname="com.example.data.legal.LegalAcceptanceStoreTest" time="0.033"/>
+  <testcase name="acceptanceRecordsOnlyRevisionAndDeviceLocalTime" classname="com.example.data.legal.LegalAcceptanceStoreTest" time="0.039"/>
+  <testcase name="freshInstall_blocksUntilExplicitAcceptance" classname="com.example.data.legal.LegalAcceptanceStoreTest" time="0.034"/>
+  <testcase name="outdatedRevisionDoesNotUnlockGate" classname="com.example.data.legal.LegalAcceptanceStoreTest" time="0.036"/>
+  <testcase name="invalidClockDoesNotWriteAcceptance" classname="com.example.data.legal.LegalAcceptanceStoreTest" time="0.037"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

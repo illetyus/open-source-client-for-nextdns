@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.data.api.CancellableCallTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:34.236Z" hostname="runnervm8k3b6" time="0.253">
+  <properties/>
+  <testcase name="malformedDiagnosticJsonAlsoClosesBody" classname="com.example.data.api.CancellableCallTest" time="0.038"/>
+  <testcase name="cancellationBeforeHeadersClosesLateDeliveredResponse" classname="com.example.data.api.CancellableCallTest" time="0.048"/>
+  <testcase name="ipLinkSuccessClosesUnconsumedBody" classname="com.example.data.api.CancellableCallTest" time="0.026"/>
+  <testcase name="exceptionInsideConsumerStillClosesResponse" classname="com.example.data.api.CancellableCallTest" time="0.028"/>
+  <testcase name="cancellationDuringBlockingBodyReadCancelsCallAndClosesBody" classname="com.example.data.api.CancellableCallTest" time="0.029"/>
+  <testcase name="diagnosticHttpFailureIgnoresSuccessLookingJson" classname="com.example.data.api.CancellableCallTest" time="0.029"/>
+  <testcase name="allCatalogHttpFailurePathsCloseTheirUnconsumedBodies" classname="com.example.data.api.CancellableCallTest" time="0.045"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
