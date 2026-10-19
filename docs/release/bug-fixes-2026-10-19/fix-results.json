@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-19",
+  "status": "LOCAL_FIXES_VERIFIED_CI_DEVICE_PENDING",
+  "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+  "fixCommit": "f2e9ebe",
+  "pullRequest": {
+    "number": 25,
+    "url": "https://github.com/illetyus/open-source-client-for-nextdns/pull/25",
+    "ciStatus": "PENDING"
+  },
+  "fixedFindings": [
+    "NDNS-012",
+    "NDNS-013",
+    "NDNS-014",
+    "NDNS-015",
+    "NDNS-016",
+    "NDNS-017",
+    "NDNS-018",
+    "NDNS-019"
+  ],
+  "jvm": {
+    "result": "PASS",
+    "tests": 135,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "requiredDefectCases": 66,
+    "defectsCovered": 19,
+    "targetedAuditCases": 30,
+    "targetedAuditXmlSha256": {
+      "docs/release/bug-fixes-2026-10-19/green-junit/TEST-com.example.audit.InputAndIdentityTest.xml": "b75752aa6cf63410987f23a5664942350088a7247a104589bf72bfc6a989bbc9",
+      "docs/release/bug-fixes-2026-10-19/green-junit/TEST-com.example.audit.RepositoryAuditTest.xml": "ec266305285c34197c12ee4e130d78f4dcf51a263684114f64535472196ceea9",
+      "docs/release/bug-fixes-2026-10-19/green-junit/TEST-com.example.audit.UiAuditTest.xml": "146621bce3ec9e8942d0b61e7b01b06f79b9fd9fc486d3fb7598ec8dcfd6d728"
+    },
+    "targetedCasesByClass": {
+      "com.example.audit.InputAndIdentityTest": [
+        "internationalDomainsAndWildcardRulesNormalizeToAscii",
+        "invalidLabelsUrlsIpsAndOversizedRulesAreRejected",
+        "setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback",
+        "diagnosticIdentityUsesFingerprintWhileErrorsAndMissingIdentityRemainUnverified"
+      ],
+      "com.example.audit.RepositoryAuditTest": [
+        "invalidLogSnapshotPreservesHistoryAndNewerRefreshWins",
+        "inFlightLogRefreshCannotRestoreHistoryAfterSuccessfulClear",
+        "everyFailedAnalyticsPanelPreservesTheLastCompleteSnapshotAndTimestamp",
+        "olderAnalyticsFilterResponseMustNotOverwriteNewSelection",
+        "choosingGuestMustSupersedeAnInFlightLogin",
+        "failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess",
+        "unicodeAndWildcardRulesUseCanonicalIdsForWriteAndVerification",
+        "malformedOrSemanticAnalyticsFailureDoesNotLookSuccessful",
+        "cancellingOldAnalyticsCannotClearNewRequestLoading",
+        "malformedDomainRulesCannotBypassTheForms",
+        "obsoleteAnalyticsFailureCannotReplaceNewSelectionSuccess",
+        "emptyAuthoritativeLogRefreshMustRemoveDeletedRemoteHistory"
+      ],
+      "com.example.audit.UiAuditTest": [
+        "lateAllowlistSuccessMustPreserveNewText",
+        "detectedNextDnsWithoutSelectedProfileMustNotSayNotConfigured",
+        "identicalRealisticFingerprintMustShowConnectedForSelectedProfile",
+        "failedAllowlistSubmissionMustPreserveTypedDomain",
+        "successfulAllowlistSubmissionClearsOnlyTheConfirmedText",
+        "malformedLabelsMustNotReachTheRepository",
+        "successfulDenylistSubmissionClearsOnlyTheConfirmedText",
+        "unrelatedFingerprintMustNotShowHealthySelectedProfile",
+        "failedDenylistSubmissionMustPreserveTypedDomain",
+        "validPunycodeMustReachTheRepository",
+        "copiedIpv6MustMatchBothDisplayedServiceAddresses",
+        "lateDenylistSuccessMustPreserveNewText",
+        "missingFingerprintMustNotVerifyTheSelectedProfile",
+        "endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation"
+      ]
+    }
+  },
+  "build": {
+    "lintDebug": "PASS",
+    "assembleDebug": "PASS",
+    "assembleReleaseUnsigned": "PASS",
+    "bundleRelease": "PASS",
+    "assembleDebugAndroidTest": "PASS",
+    "releaseDexAudit": "PASS"
+  },
+  "localizationAndLegalAssets": {
+    "fiveLocaleVerifier": "PASS",
+    "legalAssetIntegrity": "PASS",
+    "legalStatus": "DRAFT",
+    "publicationDraftSchemaVerifier": "PASS",
+    "publicationApproval": "NOT_GRANTED"
+  },
+  "dependencySecurity": {
+    "releaseRuntimeResolution": "PASS",
+    "namedAdsBillingAnalyticsSdkGuard": "PASS",
+    "resolvedModules": 138,
+    "artifactHashes": 98,
+    "unresolvedDependencies": 0,
+    "pomLicenseGaps": 1,
+    "signedBinaryVerification": "PENDING",
+    "snykAndCiSecurityChecks": "PENDING_PR_CI"
+  },
+  "browserstack": {
+    "credentialPreflight": "PASS",
+    "credentialMaterial": "STORED_OUTSIDE_REPOSITORY",
+    "packageEvidence": "PENDING_PR_CI_ARTIFACT",
+    "execution": "NOT_RUN",
+    "deviceRetest": "NOT_RUN"
+  },
+  "releaseDecision": "NOT_APPROVED",
+  "notes": [
+    "The initial red reproduction reports remain immutable and document the defects before the fix.",
+    "A missing POM license declaration is recorded as an inventory gap; it is not inferred to be an application dependency failure.",
+    "Physical device, BrowserStack, signed binary, and CI security evidence are not claimed as passed."
+  ]
+}

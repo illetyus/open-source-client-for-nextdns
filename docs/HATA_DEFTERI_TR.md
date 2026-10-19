@@ -2,20 +2,20 @@
 
 ## 19 Ekim 2026 — güncel genel hata avı
 
-Telefona verilen `4812323` sürümünde **8 yeni açık kod kusuru: 1 P1, 7 P2** kaydedildi. Üretim kodu ve APK bu denetimde değiştirilmedi. [Ayrıntılı rapor ve kapanış ölçütleri](HATA_AVI_TR_2026-10-19.md), [kalıcı CI/JUnit kaydı](release/bug-hunt-2026-10-19/results.json), [taslak PR #25](https://github.com/illetyus/open-source-client-for-nextdns/pull/25).
+İncelenen `4812323` sürümünde **8 yeni kod kusuru (1 P1, 7 P2)** bulundu ve `f2e9ebe` ile düzeltildi. Windows yerel doğrulaması geçti; PR CI ve hedefli cihaz tekrarları bekliyor. [İlk inceleme ve kapanış ölçütleri](HATA_AVI_TR_2026-10-19.md), [değişmez kırmızı yeniden üretim kaydı](release/bug-hunt-2026-10-19/results.json), [yeşil düzeltme kanıtı](release/bug-fixes-2026-10-19/fix-results.json), [PR #25](https://github.com/illetyus/NextDNS-App/pull/25).
 
 | Kayıt | Öncelik | Bulgu | Durum |
 |---|---|---|---|
-| NDNS-012 | P1 | Gerçek NextDNS profil parmak izi yapılandırma kimliğiyle karşılaştırılıyor; doğru seçili bağlantı sağlıklı gösterilmiyor | Linux + Windows JVM ile yeniden üretildi; AÇIK |
-| NDNS-013 | P2 | Altı haneli profil kimliğiyle geçersiz IPv6 adresi üretiliyor | Kaynak + JDK karşı örneği; AÇIK |
-| NDNS-014 | P2 | İzin/engel listesi eklemesi başarısız olduğunda yazılan metin siliniyor | İki ekran testiyle yeniden üretildi; AÇIK |
-| NDNS-015 | P2 | Başarısız analiz alt panelleri görünümün taze başarı sayılmasını engellemiyor | Kontrollü 13 hata yanıtıyla yeniden üretildi; AÇIK |
-| NDNS-016 | P2 | Eski analiz filtresi yanıtı yeni filtre sonucunu eziyor | Geciktirilmiş yanıtla yeniden üretildi; AÇIK |
-| NDNS-017 | P2 | Boş uzak günlük yanıtı eski kayıtları ekrandan kaldırmıyor | Ardışık dolu/boş yanıtla yeniden üretildi; AÇIK |
-| NDNS-018 | P2 | Misafir seçimi bekleyen giriş isteğini geçersiz kılmıyor | Geciktirilmiş giriş yanıtıyla yeniden üretildi; AÇIK |
-| NDNS-019 | P2 | Alan adı regex'i geçerli Punycode'u reddediyor, geçersiz etiketleri kabul ediyor | Kaynak + JDK IDN/STD3 karşı örneği; AÇIK |
+| NDNS-012 | P1 | Gerçek NextDNS profil parmak izi yapılandırma kimliğiyle karşılaştırılıyor; doğru seçili bağlantı sağlıklı gösterilmiyor | Düzeltildi; 135 JVM testi içinde regresyon PASS; CI/cihaz bekliyor |
+| NDNS-013 | P2 | Altı haneli profil kimliğiyle geçersiz IPv6 adresi üretiliyor | Düzeltildi; kurulum/uç nokta regresyonları PASS; CI/cihaz bekliyor |
+| NDNS-014 | P2 | İzin/engel listesi eklemesi başarısız olduğunda yazılan metin siliniyor | Düzeltildi; başarısız/başarılı gönderim regresyonları PASS; CI/cihaz bekliyor |
+| NDNS-015 | P2 | Başarısız analiz alt panelleri görünümün taze başarı sayılmasını engellemiyor | Düzeltildi; bütünlük ve kısmi hata regresyonları PASS; CI/cihaz bekliyor |
+| NDNS-016 | P2 | Eski analiz filtresi yanıtı yeni filtre sonucunu eziyor | Düzeltildi; eski yanıt/loading yarış regresyonları PASS; CI/cihaz bekliyor |
+| NDNS-017 | P2 | Boş uzak günlük yanıtı eski kayıtları ekrandan kaldırmıyor | Düzeltildi; boş snapshot/temizleme yarış regresyonları PASS; CI/cihaz bekliyor |
+| NDNS-018 | P2 | Misafir seçimi bekleyen giriş isteğini geçersiz kılmıyor | Düzeltildi; gecikmiş giriş regresyonu PASS; CI/cihaz bekliyor |
+| NDNS-019 | P2 | Alan adı regex'i geçerli Punycode'u reddediyor, geçersiz etiketleri kabul ediyor | Düzeltildi; IDN/STD3, joker ve ret regresyonları PASS; CI/cihaz bekliyor |
 
-Linux CI'da önceki **105 testin tamamı geçti**. Yeni 9 testte 7 başarısızlık kusurları yeniden üretti, 2 güvenlik/doğruluk kontrolü geçti: toplam **114 test, 107 PASS, 7 FAIL, 0 atlama**. CI kırmızıdır; PR bu haliyle birleştirilemez. Kaynak incelemesi ve kontrollü JVM testleri gerçek telefon kabulü olarak sunulmaz. Windows başlangıç koşusunun native yükleme sorunları Q-008 ortam kaydıdır; sekiz uygulama kusuruna dahil değildir.
+İlk kırmızı koşu yalnız kusurları yeniden üretmek için eklenen testlere aitti ve bu tarihsel kayıt değiştirilmedi. Düzeltme commit’inde **135 JVM testi, 66 zorunlu regresyon, 12 ekran görüntüsü ve lint/build görevleri yerel olarak geçti**. Bağımlılık grafiği çözüldü; lisans envanterinde 1 POM lisans alanı eksikliği kaydedildi. PR CI, Snyk/CI güvenlik kontrolleri ve BrowserStack cihaz tekrarları henüz sonuçlanmadı. Windows başlangıç koşusunun native yükleme sorunları Q-008 ortam kaydıdır; sekiz uygulama kusuruna dahil değildir.
 
 ## 10 Ekim 2026 — önceki inceleme ve düzeltme geçmişi
 
@@ -213,7 +213,7 @@ Belge alanının sonlu, en az 160 dp yüksekliği ve dış sayfanın kaydırılm
 
 | Kayıt | Öncelik | Gözlem | Durum |
 |---|---|---|---|
-| Q-001 | P2 | Repository oturum/mutasyon yollarının hedefli regresyon kanıtı eksik | 37 HEDEFLİ REGRESYON PASS; cihaz bekliyor |
+| Q-001 | P2 | Repository oturum/mutasyon yollarının hedefli regresyon kanıtı eksik | 66 zorunlu regresyon ve 135 JVM testi PASS; CI/cihaz bekliyor |
 | Q-002 | P3 | Repository çok sayıda sorumluluğu ve statik API bağımlılığını topluyor | AÇIK |
 | Q-003 | P2 | PR/CI süreci uygulanıyor fakat main sunucu tarafında korunmuyor | AÇIK |
 | Q-004 | P2 | BrowserStack yerel MockWebServer ayarı eksik | ÖNCEKİ CİHAZ TEKRARINDA DÜZELTİLDİ |
@@ -227,9 +227,9 @@ Belge alanının sonlu, en az 160 dp yüksekliği ve dış sayfanın kaydırılm
 
 **Q-007:** Sonraki koşuda izin verilmiş yöntemden kalan durum Android 13/16 izin geri alma testini sonlandırdı. `bd2f3806cf5ae208aab67654eed72fe97820bf9f` ile BrowserStack gönderimine `clearPackageData=true` eklendi. Aynı yüklenmiş APK çiftinin tekrarında iki izin yolu bağımsız geçti; assertion atlanmadı. Önceki başarısız koşular ve başarılı son koşu [düzeltme raporunda](BROWSERSTACK_LEGAL_NOTIFICATION_FIX_RESULTS_TR_2026-10-10.md) korunur: toplam 62 PASS, 0 FAIL, 2 OS koşullu atlama; 40 güvenlik kontrolü bu toplam içindedir.
 
-**Güncel regresyon sayacı:** Son aday CI `38082499286` üzerinde 105 JVM testi, 38 zorunlu hedefli regresyon ve 12 ekran görüntüsü başarılıdır. Aşağıdaki Q-001 sayıları önceki düzeltme diliminin tarihsel kanıtıdır.
+**19 Ekim düzeltme sayacı:** Windows yerel koşusunda 135 JVM testi, 66 zorunlu hedefli regresyon ve 12 ekran görüntüsü geçti. `38082499286` sayıları önceki düzeltme diliminin tarihsel CI kanıtıdır.
 
-**Q-001 güncelleme:** 37 gerekli regresyon gerçek XML üzerinden doğrulandı; 104 JVM testi ve 10 native güvenlik testi başarılı. Eksik/atlanmış vaka CI’ı durdurur. [Güncel sayaçlar](CODE_QUALITY_FIXES_TR_2026-10-10.md). **İlk inceleme:** JVM toplam LINE %20.73, BRANCH %10.28; NextDnsRepository sınıfı LINE %7.06. Coroutine/Compose üretilmiş kodu oranları etkiler; API 35 native güvenlik testleri bu JVM raporuna dahil değildir. Kritik bug yolları için mevcut testler başarı kanıtı vermez. Rastgele bir genel yüzde hedefi yerine yukarıdaki kapanış senaryoları gereklidir.
+**Q-001 önceki dilim kanıtı:** 37 gerekli regresyon gerçek XML üzerinden doğrulandı; 104 JVM testi ve 10 native güvenlik testi başarılı. 19 Ekim güncel sayaçları yukarıdaki tabloda ve [düzeltme kanıtında](release/bug-fixes-2026-10-19/fix-results.json) bulunur. **İlk inceleme:** JVM toplam LINE %20.73, BRANCH %10.28; NextDnsRepository sınıfı LINE %7.06. Coroutine/Compose üretilmiş kodu oranları etkiler; API 35 native güvenlik testleri bu JVM raporuna dahil değildir. Kritik bug yolları için mevcut testler başarı kanıtı vermez. Rastgele bir genel yüzde hedefi yerine yukarıdaki kapanış senaryoları gereklidir.
 
 **Q-002 güncelleme:** Enjekte edilebilir ağ/API sınırları ve küçük kaynak/yaşam döngüsü/sunum yardımcıları eklendi; geniş repository sorumlulukları bakım gözlemi olarak açık kalır. **İlk inceleme:** 2456 satırlık repository ağ, cache, profil, SSE, analytics ve sunum formatlamasını birlikte yönetir. Test edilebilir API/clock/session bağımlılıkları ve küçük saf mapper sınırları bakım işidir; önceki fazları baştan geliştirme gerekçesi değildir.
 

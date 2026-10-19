@@ -3,7 +3,7 @@
   "reviewDate": "2026-10-10",
   "reviewedCommit": "4abf26a1a556cf42235fbf05c70f89cb5ad79e8c",
   "sourceHashFormat": "sha256-utf8-lf",
-  "status": "NEW_AUDIT_DEFECTS_REPRODUCED_FIX_PENDING",
+  "status": "LOCAL_FIXES_VERIFIED_CI_PENDING",
   "decision": "FIX_NEW_FINDINGS_WITH_RETAINED_REGRESSIONS_BEFORE_RELEASE",
   "severityCounts": {
     "P1": 3,
@@ -820,8 +820,8 @@
       "id": "NDNS-012",
       "severity": "P1",
       "type": "CODE_DEFECT",
-      "status": "CONTROLLED_JVM_REPRODUCED",
-      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "status": "FIXED_JVM_VERIFIED_DEVICE_PENDING",
+      "verification": "WINDOWS_FULL_JVM_SUITE_AND_66_REQUIRED_REGRESSIONS",
       "runtimeReproduced": true,
       "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
       "title": "Bağlantı göstergesi gerçek profil parmak izini yapılandırma kimliğiyle karşılaştırıyor",
@@ -861,18 +861,20 @@
         "B19"
       ],
       "reproductionTests": [
-        "identicalRealisticFingerprintMustShowConnectedForSelectedProfile"
+        "identicalRealisticFingerprintMustShowConnectedForSelectedProfile",
+        "missingFingerprintMustNotVerifyTheSelectedProfile",
+        "diagnosticIdentityUsesFingerprintWhileErrorsAndMissingIdentityRemainUnverified"
       ],
-      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",
-      "fixCommit": null
+      "fixCommit": "f2e9ebe"
     },
     {
       "id": "NDNS-013",
       "severity": "P2",
       "type": "CODE_DEFECT",
-      "status": "SOURCE_AND_STANDALONE_COUNTEREXAMPLE_CONFIRMED",
-      "verification": "SOURCE_TEMPLATE_AND_JDK_VALIDATION",
+      "status": "FIXED_JVM_VERIFIED_DEVICE_PENDING",
+      "verification": "WINDOWS_FULL_JVM_SUITE_AND_66_REQUIRED_REGRESSIONS",
       "runtimeReproduced": false,
       "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
       "title": "Kurulum ekranı altı haneli profil için geçersiz IPv6 adresi üretiyor",
@@ -903,17 +905,21 @@
         "B11",
         "B19"
       ],
-      "reproductionTests": [],
-      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "reproductionTests": [
+        "endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation",
+        "copiedIpv6MustMatchBothDisplayedServiceAddresses",
+        "setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback"
+      ],
+      "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",
-      "fixCommit": null
+      "fixCommit": "f2e9ebe"
     },
     {
       "id": "NDNS-014",
       "severity": "P2",
       "type": "CODE_DEFECT",
-      "status": "CONTROLLED_JVM_REPRODUCED",
-      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "status": "FIXED_JVM_VERIFIED_DEVICE_PENDING",
+      "verification": "WINDOWS_FULL_JVM_SUITE_AND_66_REQUIRED_REGRESSIONS",
       "runtimeReproduced": true,
       "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
       "title": "Başarısız izin/engel listesi eklemesi kullanıcının yazdığı alan adını siliyor",
@@ -945,18 +951,22 @@
       ],
       "reproductionTests": [
         "failedAllowlistSubmissionMustPreserveTypedDomain",
-        "failedDenylistSubmissionMustPreserveTypedDomain"
+        "failedDenylistSubmissionMustPreserveTypedDomain",
+        "successfulAllowlistSubmissionClearsOnlyTheConfirmedText",
+        "successfulDenylistSubmissionClearsOnlyTheConfirmedText",
+        "lateAllowlistSuccessMustPreserveNewText",
+        "lateDenylistSuccessMustPreserveNewText"
       ],
-      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",
-      "fixCommit": null
+      "fixCommit": "f2e9ebe"
     },
     {
       "id": "NDNS-015",
       "severity": "P2",
       "type": "CODE_DEFECT",
-      "status": "CONTROLLED_JVM_REPRODUCED",
-      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "status": "FIXED_JVM_VERIFIED_DEVICE_PENDING",
+      "verification": "WINDOWS_FULL_JVM_SUITE_AND_66_REQUIRED_REGRESSIONS",
       "runtimeReproduced": true,
       "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
       "title": "Kısmi analiz hataları bütün görünümün taze başarı olarak sunulmasına neden oluyor",
@@ -979,18 +989,20 @@
         "B19"
       ],
       "reproductionTests": [
-        "failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess"
+        "failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess",
+        "everyFailedAnalyticsPanelPreservesTheLastCompleteSnapshotAndTimestamp",
+        "malformedOrSemanticAnalyticsFailureDoesNotLookSuccessful"
       ],
-      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",
-      "fixCommit": null
+      "fixCommit": "f2e9ebe"
     },
     {
       "id": "NDNS-016",
       "severity": "P2",
       "type": "CODE_DEFECT",
-      "status": "CONTROLLED_JVM_REPRODUCED",
-      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "status": "FIXED_JVM_VERIFIED_DEVICE_PENDING",
+      "verification": "WINDOWS_FULL_JVM_SUITE_AND_66_REQUIRED_REGRESSIONS",
       "runtimeReproduced": true,
       "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
       "title": "Geç tamamlanan analiz isteği yeni filtre seçiminin verisini eziyor",
@@ -1029,18 +1041,20 @@
         "B19"
       ],
       "reproductionTests": [
-        "olderAnalyticsFilterResponseMustNotOverwriteNewSelection"
+        "olderAnalyticsFilterResponseMustNotOverwriteNewSelection",
+        "obsoleteAnalyticsFailureCannotReplaceNewSelectionSuccess",
+        "cancellingOldAnalyticsCannotClearNewRequestLoading"
       ],
-      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",
-      "fixCommit": null
+      "fixCommit": "f2e9ebe"
     },
     {
       "id": "NDNS-017",
       "severity": "P2",
       "type": "CODE_DEFECT",
-      "status": "CONTROLLED_JVM_REPRODUCED",
-      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "status": "FIXED_JVM_VERIFIED_DEVICE_PENDING",
+      "verification": "WINDOWS_FULL_JVM_SUITE_AND_66_REQUIRED_REGRESSIONS",
       "runtimeReproduced": true,
       "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
       "title": "Boş sunucu günlük yanıtı eski kayıtları ekrandan kaldırmıyor",
@@ -1064,18 +1078,20 @@
         "B19"
       ],
       "reproductionTests": [
-        "emptyAuthoritativeLogRefreshMustRemoveDeletedRemoteHistory"
+        "emptyAuthoritativeLogRefreshMustRemoveDeletedRemoteHistory",
+        "invalidLogSnapshotPreservesHistoryAndNewerRefreshWins",
+        "inFlightLogRefreshCannotRestoreHistoryAfterSuccessfulClear"
       ],
-      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",
-      "fixCommit": null
+      "fixCommit": "f2e9ebe"
     },
     {
       "id": "NDNS-018",
       "severity": "P2",
       "type": "CODE_DEFECT",
-      "status": "CONTROLLED_JVM_REPRODUCED",
-      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "status": "FIXED_JVM_VERIFIED_DEVICE_PENDING",
+      "verification": "WINDOWS_FULL_JVM_SUITE_AND_66_REQUIRED_REGRESSIONS",
       "runtimeReproduced": true,
       "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
       "title": "Misafir seçimi sürmekte olan giriş isteğini geçersiz kılmıyor",
@@ -1108,16 +1124,16 @@
       "reproductionTests": [
         "choosingGuestMustSupersedeAnInFlightLogin"
       ],
-      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",
-      "fixCommit": null
+      "fixCommit": "f2e9ebe"
     },
     {
       "id": "NDNS-019",
       "severity": "P2",
       "type": "CODE_DEFECT",
-      "status": "SOURCE_AND_STANDALONE_COUNTEREXAMPLE_CONFIRMED",
-      "verification": "SOURCE_TEMPLATE_AND_JDK_VALIDATION",
+      "status": "FIXED_JVM_VERIFIED_DEVICE_PENDING",
+      "verification": "WINDOWS_FULL_JVM_SUITE_AND_66_REQUIRED_REGRESSIONS",
       "runtimeReproduced": false,
       "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
       "title": "Alan adı doğrulayıcısı geçerli Punycode adlarını reddedip geçersiz etiketleri kabul ediyor",
@@ -1147,10 +1163,17 @@
         "B03",
         "B17"
       ],
-      "reproductionTests": [],
-      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "reproductionTests": [
+        "malformedDomainRulesCannotBypassTheForms",
+        "unicodeAndWildcardRulesUseCanonicalIdsForWriteAndVerification",
+        "validPunycodeMustReachTheRepository",
+        "malformedLabelsMustNotReachTheRepository",
+        "internationalDomainsAndWildcardRulesNormalizeToAscii",
+        "invalidLabelsUrlsIpsAndOversizedRulesAreRejected"
+      ],
+      "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",
-      "fixCommit": null
+      "fixCommit": "f2e9ebe"
     }
   ],
   "qualityObservations": [
@@ -1158,10 +1181,10 @@
       "id": "Q-001",
       "severity": "P2",
       "type": "TEST_COVERAGE_GAP",
-      "status": "TARGETED_REGRESSIONS_VERIFIED_DEVICE_PENDING",
+      "status": "66_TARGETED_REGRESSIONS_AND_135_JVM_TESTS_VERIFIED_CI_DEVICE_PENDING",
       "title": "Repository oturum/mutasyon yollarının hedefli regresyon kanıtı eksik",
       "detail": "JVM toplam LINE %20.73, BRANCH %10.28; NextDnsRepository sınıfı LINE %7.06. Coroutine/Compose üretilmiş kodu oranları etkiler; API 35 native güvenlik testleri bu JVM raporuna dahil değildir. Kritik bug yolları için mevcut testler başarı kanıtı vermez. Rastgele bir genel yüzde hedefi yerine yukarıdaki kapanış senaryoları gereklidir.",
-      "followUp": "37 hedefli regresyon ve 104 toplam JVM testi geçti; CI doğrulayıcı eksik/atlanmış/başarısız vakayı reddeder. Cihaz kabulü ve bütün uygulamanın test kapsamı ayrı kalır."
+      "followUp": "66 required regressions across 19 defect records and 135 JVM tests passed locally on Windows; PR CI, device acceptance, and whole-application test coverage remain separate."
     },
     {
       "id": "Q-002",
@@ -1242,13 +1265,13 @@
       "applicationDefect": false
     }
   ],
-  "meaning": "Earlier audit and failed runs are retained. NDNS-011 and Q-005 are closed only by their targeted signed-release device regressions. NDNS-001..010 still await their own device closure criteria; no complete B01-B22 case or publication approval is inferred. The 2026-10-19 audit adds eight open findings; the shipped APK and main application code were not changed by this audit.",
+  "meaning": "NDNS-012..019 source fixes and Windows JVM regressions are verified at f2e9ebe; PR CI and targeted device acceptance remain pending. NDNS-001..010 still await their own device closure criteria. NDNS-011 and Q-005..007 retain their prior targeted device evidence. No complete B01-B22 acceptance or publication approval is inferred.",
   "closureRule": "A targeted finding requires retained regressions and new signed-candidate device evidence satisfying its closureCriteria. Complete B01-B22 acceptance and publication approvals remain tracked separately.",
   "openCodeSeverityCounts": {
-    "P1": 1,
-    "P2": 7
+    "P1": 0,
+    "P2": 0
   },
-  "fixedAwaitingDevice": 10,
+  "fixedAwaitingDevice": 18,
   "fixEvidence": "code-quality-fix-evidence-2026-10-10.json",
   "deviceReviewEvidence": "docs/release/browserstack-initial-results-2026-10-10.json",
   "espressoReviewEvidence": "docs/release/browserstack-espresso-results-2026-10-10.json",
@@ -1258,6 +1281,11 @@
     "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
     "report": "docs/HATA_AVI_TR_2026-10-19.md",
     "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
-    "newFindings": 8
+    "newFindings": 8,
+    "fixCommit": "f2e9ebe",
+    "fixResults": "docs/release/bug-fixes-2026-10-19/fix-results.json",
+    "localVerification": "PASS",
+    "pullRequestCi": "PENDING",
+    "deviceRetestStatus": "NOT_RUN"
   }
 }
