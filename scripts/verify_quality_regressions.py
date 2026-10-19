@@ -1,4 +1,4 @@
-"""Require executed regression cases for NDNS-001..011; emit JVM fixture evidence."""
+"""Require executed regression cases for NDNS-001..019; emit JVM fixture evidence."""
 from pathlib import Path
 import hashlib
 import json
@@ -11,6 +11,9 @@ NETWORK = "com.example.data.api.CancellableCallTest"
 DOCUMENT = "com.example.data.repository.ExportDocumentTest"
 UI = "com.example.ui.screens.DiagnosticAndDeviceMenuTest"
 POLLING = "com.example.ui.screens.DiagnosticPollingTest"
+AUDIT_REPOSITORY = "com.example.audit.RepositoryAuditTest"
+AUDIT_UI = "com.example.audit.UiAuditTest"
+IDENTITY = "com.example.audit.InputAndIdentityTest"
 
 REQUIRED = {
     "NDNS-001": [(REPOSITORY, name) for name in (
@@ -48,6 +51,36 @@ REQUIRED = {
         "cancellationPropagatesAndClosesProviderStream", "successIncludesProviderCloseAndExpectedBytes")],
     "NDNS-011": [("com.example.data.legal.LegalWelcomeViewportTest",
         "shortLandscapeAtLargeFontKeepsDocumentsAndConsentReachableInFiveLanguages")],
+    "NDNS-012": [(AUDIT_UI, "identicalRealisticFingerprintMustShowConnectedForSelectedProfile"),
+        (AUDIT_UI, "missingFingerprintMustNotVerifyTheSelectedProfile"),
+        (IDENTITY, "diagnosticIdentityUsesFingerprintWhileErrorsAndMissingIdentityRemainUnverified")],
+    "NDNS-013": [(AUDIT_UI, "endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation"),
+        (AUDIT_UI, "copiedIpv6MustMatchBothDisplayedServiceAddresses"),
+        (IDENTITY, "setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback")],
+    "NDNS-014": [(AUDIT_UI, name) for name in (
+        "failedAllowlistSubmissionMustPreserveTypedDomain", "failedDenylistSubmissionMustPreserveTypedDomain",
+        "successfulAllowlistSubmissionClearsOnlyTheConfirmedText", "successfulDenylistSubmissionClearsOnlyTheConfirmedText",
+        "lateAllowlistSuccessMustPreserveNewText", "lateDenylistSuccessMustPreserveNewText")],
+    "NDNS-015": [(AUDIT_REPOSITORY, name) for name in (
+        "failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess",
+        "everyFailedAnalyticsPanelPreservesTheLastCompleteSnapshotAndTimestamp",
+        "malformedOrSemanticAnalyticsFailureDoesNotLookSuccessful")],
+    "NDNS-016": [(AUDIT_REPOSITORY, name) for name in (
+        "olderAnalyticsFilterResponseMustNotOverwriteNewSelection",
+        "obsoleteAnalyticsFailureCannotReplaceNewSelectionSuccess",
+        "cancellingOldAnalyticsCannotClearNewRequestLoading")],
+    "NDNS-017": [(AUDIT_REPOSITORY, name) for name in (
+        "emptyAuthoritativeLogRefreshMustRemoveDeletedRemoteHistory",
+        "invalidLogSnapshotPreservesHistoryAndNewerRefreshWins",
+        "inFlightLogRefreshCannotRestoreHistoryAfterSuccessfulClear")],
+    "NDNS-018": [(AUDIT_REPOSITORY, "choosingGuestMustSupersedeAnInFlightLogin")],
+    "NDNS-019": [(AUDIT_REPOSITORY, name) for name in (
+        "malformedDomainRulesCannotBypassTheForms",
+        "unicodeAndWildcardRulesUseCanonicalIdsForWriteAndVerification")]+
+        [(AUDIT_UI, name) for name in ("validPunycodeMustReachTheRepository", "malformedLabelsMustNotReachTheRepository")]+
+        [(IDENTITY, name) for name in (
+            "internationalDomainsAndWildcardRulesNormalizeToAscii",
+            "invalidLabelsUrlsIpsAndOversizedRulesAreRejected")],
 }
 
 

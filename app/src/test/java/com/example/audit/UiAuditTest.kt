@@ -71,7 +71,7 @@ class UiAuditTest : AuditFixture() {
     rule.onNode(hasSetTextAction()).performTextInput("a..com")
     rule.onNodeWithText(AppStrings.get(R.string.ui_422579fc64)).performClick()
     rule.onNodeWithText(AppStrings.get(R.string.ui_585a0d389f)).assertIsDisplayed()
-    assert(requests.none { it.startsWith("POST ") })
+    org.junit.Assert.assertTrue(requests.none { it.startsWith("POST ") })
   }
 
   @Test fun endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation() {
@@ -93,4 +93,53 @@ class UiAuditTest : AuditFixture() {
     rule.waitUntil(10_000) { model.uiMessage.value?.isError == true }
     rule.onNode(hasSetTextAction()).assertTextContains("keep.synthetic.example")
   }
+  @Test fun missingFingerprintMustNotVerifyTheSelectedProfile() {
+    english()
+    val profile = NextDnsProfile("aaaaaa", "Synthetic A")
+    val measurement = DiagnosticTestResult(status = "ok", profileId = "aaaaaa", lastTestedTime = 1_000)
+    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}, {}) } }
+    rule.onNodeWithText(AppStrings.get(R.string.ui_934b24bdc9)).assertDoesNotExist()
+    rule.onNodeWithText(AppStrings.get(R.string.diagnostic_unverified_title)).assertIsDisplayed()
+  }
+
+  @Test fun copiedIpv6MustMatchBothDisplayedServiceAddresses() {
+    english()
+    val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
+    val expected = "2a07:a8c0::ab:cdef\n2a07:a8c1::ab:cdef"
+    rule.setContent { AppTheme { EndpointsSection("abcdef", context,
+      setup = SetupDto(ipv6 = expected.split('\n'))) } }
+    rule.onNodeWithText(expected).performClick()
+    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+    org.junit.Assert.assertEquals(expected, clipboard.primaryClip!!.getItemAt(0).text.toString())
+  }
+
+  @Test fun successfulAllowlistSubmissionClearsOnlyTheConfirmedText() { checkSuccessfulInput(true, false) }
+  @Test fun successfulDenylistSubmissionClearsOnlyTheConfirmedText() { checkSuccessfulInput(false, false) }
+  @Test fun lateAllowlistSuccessMustPreserveNewText() { checkSuccessfulInput(true, true) }
+  @Test fun lateDenylistSuccessMustPreserveNewText() { checkSuccessfulInput(false, true) }
+
+  private fun checkSuccessfulInput(allow: Boolean, editDuringRequest: Boolean) {
+    english()
+    val entered = java.util.concurrent.CountDownLatch(1)
+    val release = java.util.concurrent.CountDownLatch(1).also { gates += it }
+    response = { request ->
+      if (request.method == "POST") {
+        entered.countDown()
+        check(release.await(15, java.util.concurrent.TimeUnit.SECONDS))
+        json("{}")
+      } else json("""{"data":[{"id":"confirmed.example","active":true}]}""")
+    }
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { if (allow) AllowlistScreen(model) else DenylistScreen(model) } }
+    rule.onNode(hasSetTextAction()).performTextInput("confirmed.example")
+    rule.onNodeWithText(AppStrings.get(R.string.ui_422579fc64)).performClick()
+    org.junit.Assert.assertTrue(entered.await(10, java.util.concurrent.TimeUnit.SECONDS))
+    if (editDuringRequest) rule.onNode(hasSetTextAction()).performTextReplacement("new.example")
+    release.countDown()
+    rule.waitUntil(10_000) { model.uiMessage.value?.isError == false }
+    rule.onNode(hasSetTextAction()).assertTextContains(if (editDuringRequest) "new.example" else "")
+    if (!editDuringRequest) org.junit.Assert.assertEquals("", rule.onNode(hasSetTextAction())
+      .fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.EditableText].text)
+  }
+
 }

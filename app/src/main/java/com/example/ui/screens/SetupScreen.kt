@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import com.example.data.model.DiagnosticConnectionState
 import com.example.data.model.diagnosticConnectionState
+import com.example.data.model.setupIpv6Addresses
 import com.example.data.model.DiagnosticTestResult
 import com.example.data.model.NextDnsProfile
 import com.example.ui.components.*
@@ -108,7 +109,8 @@ fun SetupScreen(
     item {
       EndpointsSection(
         profileId = profileId,
-        context = context
+        context = context,
+        setup = setup
       )
     }
 
@@ -150,7 +152,7 @@ internal fun ConnectionStatusBanner(
   onOpenDnsSettings: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val state = diagnosticConnectionState(activeProfile?.id, testResult, isDiagnosticRunning)
+  val state = diagnosticConnectionState(activeProfile, testResult, isDiagnosticRunning)
   val isTesting = state == DiagnosticConnectionState.TESTING
   val isUsingNextDns = state == DiagnosticConnectionState.MATCHED_PROFILE
   val isOffline = state == DiagnosticConnectionState.ERROR
@@ -364,8 +366,9 @@ internal fun EndpointsSection(
         copyToClipboard(context, "https://dns.nextdns.io/$profileId", AppStrings.get(R.string.copy_doh))
       }
       HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-      EndpointTableRow("IPv6", "2a07:a8c0::$profileId\n2a07:a8c1::$profileId") {
-        copyToClipboard(context, "2a07:a8c0::$profileId", "IPv6 Adresi")
+      val ipv6 = setupIpv6Addresses(setup)
+      EndpointTableRow("IPv6", ipv6.joinToString("\n").ifEmpty { "—" }, canCopy = ipv6.isNotEmpty()) {
+        copyToClipboard(context, ipv6.joinToString("\n"), "IPv6")
       }
     }
   }
@@ -599,6 +602,7 @@ private fun SetupGuideSection(
 private fun EndpointTableRow(
   label: String,
   value: String,
+  canCopy: Boolean = true,
   onCopy: () -> Unit
 ) {
   var isCopied by remember { mutableStateOf(false) }
@@ -614,9 +618,11 @@ private fun EndpointTableRow(
     modifier = Modifier
       .fillMaxWidth()
       .heightIn(min = 48.dp)
-      .bounceClick(scaleDown = 0.99f) {
-        onCopy()
-        isCopied = true
+      .bounceClick(scaleDown = 0.99f, enabled = canCopy) {
+        if (canCopy) {
+          onCopy()
+          isCopied = true
+        }
       }
       .padding(horizontal = 14.dp, vertical = 12.dp),
     verticalAlignment = Alignment.CenterVertically,
@@ -635,7 +641,7 @@ private fun EndpointTableRow(
       modifier = Modifier.weight(1f)
     ) {
       Text(
-        text = value,
+        text = value.ifEmpty { "—" },
         color = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
         fontFamily = FontFamily.Monospace,
         fontSize = 12.sp,
@@ -729,9 +735,11 @@ private fun CopyableValueBox(
       modifier = Modifier
         .fillMaxWidth()
         .heightIn(min = 48.dp)
-        .bounceClick(scaleDown = 0.99f) {
-          copyToClipboard(context, value, copyLabel)
-          isCopied = true
+        .bounceClick(scaleDown = 0.99f, enabled = value.isNotBlank()) {
+          if (value.isNotBlank()) {
+            copyToClipboard(context, value, copyLabel)
+            isCopied = true
+          }
         }
     ) {
       Row(
@@ -742,7 +750,7 @@ private fun CopyableValueBox(
         horizontalArrangement = Arrangement.SpaceBetween
       ) {
         Text(
-          text = value,
+          text = value.ifEmpty { "—" },
           color = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
           fontFamily = if (isCode) FontFamily.Monospace else FontFamily.Default,
           fontSize = 12.5.sp,
@@ -1215,7 +1223,7 @@ private fun RouterSetupGuide(profileId: String, setup: com.example.data.api.Setu
 
       Text(AppStrings.get(R.string.ui_6cda839fb5), fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurface)
 
-      val ipv6First = setup?.ipv6?.getOrNull(0) ?: "2a07:a8c0::$profileId"
+      val ipv6First = setupIpv6Addresses(setup).getOrNull(0).orEmpty()
       CopyableValueBox(
         label = AppStrings.get(R.string.ui_4eb25410e1),
         value = ipv6First,
@@ -1223,7 +1231,7 @@ private fun RouterSetupGuide(profileId: String, setup: com.example.data.api.Setu
         copyLabel = AppStrings.get(R.string.ui_e086835b9a)
       )
 
-      val ipv6Second = setup?.ipv6?.getOrNull(1) ?: "2a07:a8c1::$profileId"
+      val ipv6Second = setupIpv6Addresses(setup).getOrNull(1).orEmpty()
       CopyableValueBox(
         label = AppStrings.get(R.string.ui_2dbf7664c8),
         value = ipv6Second,

@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import com.example.R
+import com.example.data.model.normalizeDomainRule
 import com.example.i18n.AppStrings
 
 import androidx.compose.foundation.background
@@ -96,15 +97,16 @@ fun AllowlistScreen(
           NextDnsButton(
             text = AppStrings.get(R.string.ui_422579fc64),
             onClick = {
-              val input = domainInput.trim()
-              val isValid = input.matches(Regex("^(?:\\*\\.)?[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"))
-              if (isValid) {
-                viewModel.addToAllowlist(input)
-                domainInput = ""
+              val submittedText = domainInput
+              val input = normalizeDomainRule(submittedText)
+              if (input != null) {
+                viewModel.addToAllowlist(input) {
+                  if (domainInput == submittedText) domainInput = ""
+                }
                 isError = false
               } else {
                 isError = true
-                if (!input.contains(".")) {
+                if (!submittedText.contains(".")) {
                   errorMessage = AppStrings.get(R.string.ui_162ff93d0f)
                 } else {
                   errorMessage = AppStrings.get(R.string.ui_585a0d389f)

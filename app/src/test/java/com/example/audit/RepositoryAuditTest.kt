@@ -1,6 +1,7 @@
 package com.example.audit
 
 import android.content.Context
+import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.WorkManager
@@ -93,6 +94,29 @@ class RepositoryAuditTest : AuditFixture() {
     assertTrue("Authoritative empty response must not retain remotely deleted log history", repository.logs.value.isEmpty())
   }
 
+  @Test fun inFlightLogRefreshCannotRestoreHistoryAfterSuccessfulClear() = runBlocking {
+    response = { json("""{"data":[{"timestamp":1735689600000,"domain":"old.example","status":"default"}]}""") }
+    assertTrue(repository.refreshLogsFromApi())
+    assertEquals("old.example", repository.logs.value.single().domain)
+
+    val entered = CountDownLatch(1)
+    val release = CountDownLatch(1).also { gates += it }
+    response = { req ->
+      if (req.method == "DELETE") json("{}") else {
+        entered.countDown()
+        check(release.await(15, TimeUnit.SECONDS))
+        json("""{"data":[{"timestamp":1735689600000,"domain":"old.example","status":"default"}]}""")
+      }
+    }
+    val staleRefresh = async(Dispatchers.IO) { repository.refreshLogsFromApi() }
+    assertTrue(entered.await(10, TimeUnit.SECONDS))
+    assertTrue(repository.clearLogs().isSuccess)
+    assertTrue(repository.logs.value.isEmpty())
+    release.countDown()
+    assertFalse("A response started before clear must be superseded", staleRefresh.await())
+    assertTrue(repository.logs.value.isEmpty())
+  }
+
   @Test fun failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess() = runBlocking {
     response = { req -> if (req.requestUrl!!.encodedPath.endsWith("/status"))
       json("""{"data":[{"status":"default","queries":100}]}""")
@@ -147,5 +171,134 @@ class RepositoryAuditTest : AuditFixture() {
     release.countDown()
     withTimeout(15_000) { job.join() }
     assertTrue("Late authentication must not replace the user's newer guest choice", model.isGuestMode.value)
+    assertEquals(com.example.data.repository.ApiConnectionStatus.Disconnected, repository.apiStatus.value)
+    assertEquals("", repository.apiKey.value)
+    assertTrue(repository.profiles.value.isEmpty())
+    assertEquals("synthetic-audit-key", preferences.apiKey)
   }
+  @Test fun malformedDomainRulesCannotBypassTheForms() = runBlocking {
+    for (domain in listOf("a..com", "a-.com", "-a.com", "https://example.com", "a.com/path",
+      "*.a..com", "192.168.1.1", "a".repeat(64) + ".com", "a.com\nX-Api-Key: injected")) {
+      assertTrue(domain, repository.addToAllowlist(domain).isFailure)
+      assertTrue(domain, repository.addToDenylist(domain).isFailure)
+    }
+    assertTrue("Invalid rules must not send any API request", requests.isEmpty())
+  }
+
+  @Test fun unicodeAndWildcardRulesUseCanonicalIdsForWriteAndVerification() = runBlocking {
+    var postedId = ""
+    response = { req ->
+      if (req.method == "POST") {
+        postedId = org.json.JSONObject(req.body.readUtf8()).getString("id")
+        json("{}")
+      } else json("""{"data":[{"id":"$postedId","active":true}]}""")
+    }
+    assertTrue(repository.addToAllowlist(" BÜCHER.DE. ").isSuccess)
+    assertEquals("xn--bcher-kva.de", postedId)
+    assertEquals("xn--bcher-kva.de", repository.allowlist.value.single().domain)
+    assertTrue(repository.addToDenylist("*.EXAMPLE.COM").isSuccess)
+    assertEquals("*.example.com", postedId)
+    assertEquals("*.example.com", repository.denylist.value.single().domain)
+  }
+
+  @Test fun everyFailedAnalyticsPanelPreservesTheLastCompleteSnapshotAndTimestamp() = runBlocking {
+    response = { req -> if (req.requestUrl!!.encodedPath.endsWith("/status"))
+      json("""{"data":[{"status":"default","queries":123}]}""") else json("""{"data":[]}""") }
+    assertTrue(repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
+    val previous = repository.analytics.value
+    val successTime = repository.analyticsLastSuccessAt.value
+    for (failedIndex in 0 until 14) {
+      var call = 0
+      response = { if (call++ == failedIndex) json("{}", 500) else json("""{"data":[]}""") }
+      assertFalse("Failed panel $failedIndex", repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
+      assertEquals(previous, repository.analytics.value)
+      assertEquals(successTime, repository.analyticsLastSuccessAt.value)
+      assertNotNull(repository.analyticsErrorMessage.value)
+    }
+    response = { json("""{"data":[]}""") }
+    assertTrue(repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
+    assertEquals(0L, repository.analytics.value.totalQueries)
+    assertNull(repository.analyticsErrorMessage.value)
+  }
+
+  @Test fun malformedOrSemanticAnalyticsFailureDoesNotLookSuccessful() = runBlocking {
+    for (body in listOf("{}", """{"errors":[{"code":"invalid"}]}""", "not-json")) {
+      response = { json(body) }
+      assertFalse(repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
+      assertNull(repository.analyticsLastSuccessAt.value)
+      assertNotNull(repository.analyticsErrorMessage.value)
+    }
+  }
+
+  @Test fun obsoleteAnalyticsFailureCannotReplaceNewSelectionSuccess() = runBlocking {
+    val entered = CountDownLatch(1)
+    val release = CountDownLatch(1).also { gates += it }
+    response = { req ->
+      if (req.requestUrl!!.queryParameter("from") == "-24h") {
+        entered.countDown(); check(release.await(20, TimeUnit.SECONDS)); json("{}", 500)
+      } else json("""{"data":[]}""")
+    }
+    val old = async(Dispatchers.IO) { repository.fetchAnalytics(preferences.apiKey, "aaaaaa", from = "-24h") }
+    assertTrue(entered.await(10, TimeUnit.SECONDS))
+    assertTrue(repository.fetchAnalytics(preferences.apiKey, "aaaaaa", from = "-7d"))
+    release.countDown()
+    old.await()
+    assertNull(repository.analyticsErrorMessage.value)
+    assertNotNull(repository.analyticsLastSuccessAt.value)
+  }
+
+  @Test fun invalidLogSnapshotPreservesHistoryAndNewerRefreshWins() = runBlocking {
+    response = { json("""{"data":[{"timestamp":1735689600000,"domain":"keep.example","status":"default"}]}""") }
+    assertTrue(repository.refreshLogsFromApi())
+    for (body in listOf("{}", """{"errors":[{"code":"invalid"}]}""")) {
+      response = { json(body) }
+      assertFalse(repository.refreshLogsFromApi())
+      assertEquals("keep.example", repository.logs.value.single().domain)
+    }
+    val entered = CountDownLatch(1)
+    val release = CountDownLatch(1).also { gates += it }
+    var call = 0
+    response = {
+      if (call++ == 0) {
+        entered.countDown(); check(release.await(20, TimeUnit.SECONDS))
+        json("""{"data":[{"timestamp":1735689600000,"domain":"obsolete.example","status":"default"}]}""")
+      } else json("""{"data":[]}""")
+    }
+    val old = async(Dispatchers.IO) { repository.refreshLogsFromApi() }
+    assertTrue(entered.await(10, TimeUnit.SECONDS))
+    assertTrue(repository.refreshLogsFromApi())
+    release.countDown(); old.await()
+    assertTrue(repository.logs.value.isEmpty())
+  }
+
+  @Test fun cancellingOldAnalyticsCannotClearNewRequestLoading() = runBlocking {
+    val entered = CountDownLatch(1)
+    val release = CountDownLatch(1).also { gates += it }
+    val secondEntered = CountDownLatch(1)
+    val secondRelease = CountDownLatch(1).also { gates += it }
+    response = { req ->
+      if (req.requestUrl!!.encodedPath.endsWith("/status")) {
+        if (req.requestUrl!!.queryParameter("from") == "-24h") {
+          entered.countDown(); check(release.await(20, TimeUnit.SECONDS))
+        } else {
+          secondEntered.countDown(); check(secondRelease.await(20, TimeUnit.SECONDS))
+        }
+      }
+      json("""{"data":[]}""")
+    }
+    val model = NextDnsViewModel(repository)
+    val existingJobs = model.viewModelScope.coroutineContext.job.children.toSet()
+    model.refreshAnalytics(null, "-24h")
+    assertTrue(entered.await(10, TimeUnit.SECONDS))
+    val oldJob = model.viewModelScope.coroutineContext.job.children.single { it !in existingJobs }
+    model.refreshAnalytics(null, "-7d")
+    assertTrue(secondEntered.await(10, TimeUnit.SECONDS))
+    release.countDown()
+    withTimeout(10_000) { oldJob.join() }
+    assertTrue("Only the newest request owns the loading indicator", model.isAnalyticsLoading.value)
+    secondRelease.countDown()
+    withTimeout(5_000) { while (model.isAnalyticsLoading.value) delay(10) }
+    assertFalse(model.isAnalyticsLoading.value)
+  }
+
 }
