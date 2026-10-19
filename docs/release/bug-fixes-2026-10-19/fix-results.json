@@ -7,7 +7,9 @@
   "pullRequest": {
     "number": 25,
     "url": "https://github.com/illetyus/open-source-client-for-nextdns/pull/25",
-    "ciStatus": "PENDING"
+    "ciStatus": "PASS",
+    "ciRunId": "39287249075",
+    "ciUrl": "https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39287249075"
   },
   "fixedFindings": [
     "NDNS-012",
@@ -95,19 +97,24 @@
     "unresolvedDependencies": 0,
     "pomLicenseGaps": 1,
     "signedBinaryVerification": "PENDING",
-    "snykAndCiSecurityChecks": "PENDING_PR_CI"
+    "snykAndCiSecurityChecks": "PASS",
+    "signedReleaseEmulatorSecurity": "PASS",
+    "packageEvidenceCommit": "7dbdf5c39f01ea9fbdacfeeb57a8aaaa352db554"
   },
   "browserstack": {
     "credentialPreflight": "PASS",
     "credentialMaterial": "STORED_OUTSIDE_REPOSITORY",
-    "packageEvidence": "PENDING_PR_CI_ARTIFACT",
-    "execution": "NOT_RUN",
-    "deviceRetest": "NOT_RUN"
+    "packageEvidence": "CI hashes/signatures verified",
+    "execution": "PASSED_WITH_CONDITIONAL_SKIPS",
+    "buildId": "91b080c97113c42aa03c2bdae990247889cd9f54",
+    "results": "docs/release/bug-fixes-2026-10-19/browserstack-results.json",
+    "directDefectRetests": "NOT_RUN"
   },
   "releaseDecision": "NOT_APPROVED",
   "notes": [
     "The initial red reproduction reports remain immutable and document the defects before the fix.",
-    "A missing POM license declaration is recorded as an inventory gap; it is not inferred to be an application dependency failure.",
-    "Physical device, BrowserStack, signed binary, and CI security evidence are not claimed as passed."
+    "A missing POM license declaration is recorded as an inventory gap; CI completed the bundled NOTICE and dependency gates successfully.",
+    "The four-device BrowserStack smoke run passed with 22 passes, 0 failures, and 42 documented conditional skips; it does not close the eight defect-specific B-case retests.",
+    "Legal assets remain DRAFT and publication approval is not granted."
   ]
 }

@@ -3,7 +3,7 @@
   "reviewDate": "2026-10-10",
   "reviewedCommit": "4abf26a1a556cf42235fbf05c70f89cb5ad79e8c",
   "sourceHashFormat": "sha256-utf8-lf",
-  "status": "LOCAL_FIXES_VERIFIED_CI_PENDING",
+  "status": "CI_AND_GENERAL_DEVICE_SMOKE_VERIFIED_TARGETED_DEVICE_PENDING",
   "decision": "FIX_NEW_FINDINGS_WITH_RETAINED_REGRESSIONS_BEFORE_RELEASE",
   "severityCounts": {
     "P1": 3,
@@ -1181,10 +1181,10 @@
       "id": "Q-001",
       "severity": "P2",
       "type": "TEST_COVERAGE_GAP",
-      "status": "66_TARGETED_REGRESSIONS_AND_135_JVM_TESTS_VERIFIED_CI_DEVICE_PENDING",
+      "status": "66_REGRESSIONS_135_JVM_CI_PASS_BROAD_BROWSERSTACK_SMOKE_PASS_TARGETED_DEVICE_PENDING",
       "title": "Repository oturum/mutasyon yollarının hedefli regresyon kanıtı eksik",
       "detail": "JVM toplam LINE %20.73, BRANCH %10.28; NextDnsRepository sınıfı LINE %7.06. Coroutine/Compose üretilmiş kodu oranları etkiler; API 35 native güvenlik testleri bu JVM raporuna dahil değildir. Kritik bug yolları için mevcut testler başarı kanıtı vermez. Rastgele bir genel yüzde hedefi yerine yukarıdaki kapanış senaryoları gereklidir.",
-      "followUp": "66 required regressions across 19 defect records and 135 JVM tests passed locally on Windows; PR CI, device acceptance, and whole-application test coverage remain separate."
+      "followUp": "PR CI 39287249075 passed all 135 JVM tests and 66 required defect cases. The existing four-device BrowserStack smoke suite passed with 22 passes, 0 failures, and 42 documented conditional skips. Defect-specific B-case device retests and whole-application test coverage remain separate."
     },
     {
       "id": "Q-002",
@@ -1265,7 +1265,7 @@
       "applicationDefect": false
     }
   ],
-  "meaning": "NDNS-012..019 source fixes and Windows JVM regressions are verified at f2e9ebe; PR CI and targeted device acceptance remain pending. NDNS-001..010 still await their own device closure criteria. NDNS-011 and Q-005..007 retain their prior targeted device evidence. No complete B01-B22 acceptance or publication approval is inferred.",
+  "meaning": "NDNS-012..019 source fixes and 66 targeted JVM/Compose regressions passed in PR CI 39287249075. The existing BrowserStack instrumentation smoke suite passed on four devices with documented conditional skips; it does not exercise the eight defect-specific B cases, which remain device-pending. NDNS-001..010 retain their own device closure criteria. No complete B01-B22 acceptance or publication approval is inferred.",
   "closureRule": "A targeted finding requires retained regressions and new signed-candidate device evidence satisfying its closureCriteria. Complete B01-B22 acceptance and publication approvals remain tracked separately.",
   "openCodeSeverityCounts": {
     "P1": 0,
@@ -1285,7 +1285,12 @@
     "fixCommit": "f2e9ebe",
     "fixResults": "docs/release/bug-fixes-2026-10-19/fix-results.json",
     "localVerification": "PASS",
-    "pullRequestCi": "PENDING",
-    "deviceRetestStatus": "NOT_RUN"
-  }
+    "pullRequestCi": "PASS",
+    "deviceRetestStatus": "NOT_RUN",
+    "ciRunId": "39287249075",
+    "broadBrowserStackSmoke": "PASS_WITH_CONDITIONAL_SKIPS",
+    "browserstackBuildId": "91b080c97113c42aa03c2bdae990247889cd9f54",
+    "targetedDeviceRetests": "NOT_RUN"
+  },
+  "browserstackFixEvidence": "docs/release/bug-fixes-2026-10-19/browserstack-results.json"
 }
