@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<testsuites>
+  <testsuite name="com.example.ExampleInstrumentedTest" tests="1" failures="0" skipped="0" timedout="0" errors="0" time="0.007" timestamp="2026-10-19 16:53:03 +0000">
+    <properties>
+      <property session_id="029fb7aedc72616d41c49fcf12f8feda1629e7af"/>
+      <property devicename="Google Pixel 7"/>
+      <property os="Android"/>
+      <property version="13"/>
+    </properties>
+    <testcase name="useAppContext" classname="com.example.ExampleInstrumentedTest" result="passed" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af9a77928d" time="0.007" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af9a77928d/video#t=5,8"/>
+  </testsuite>
+  <testsuite name="com.example.NativeApiFixtureTest" tests="1" failures="0" skipped="0" timedout="0" errors="0" time="0.56" timestamp="2026-10-19 16:53:17 +0000">
+    <properties>
+      <property session_id="029fb7aedc72616d41c49fcf12f8feda1629e7af"/>
+      <property devicename="Google Pixel 7"/>
+      <property os="Android"/>
+      <property version="13"/>
+    </properties>
+    <testcase name="tlsMutationKeepsPayloadMinimalAndRejectsSemanticErrors" classname="com.example.NativeApiFixtureTest" result="passed" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af8232503a" time="0.56" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af8232503a/video#t=19,23"/>
+  </testsuite>
+  <testsuite name="com.example.NativeLegalViewportTest" tests="1" failures="0" skipped="0" timedout="0" errors="0" time="7.353" timestamp="2026-10-19 16:53:32 +0000">
+    <properties>
+      <property session_id="029fb7aedc72616d41c49fcf12f8feda1629e7af"/>
+      <property devicename="Google Pixel 7"/>
+      <property os="Android"/>
+      <property version="13"/>
+    </properties>
+    <testcase name="fiveLanguagesAtLargeFontRemainReadableAcrossPortraitAndLandscape" classname="com.example.NativeLegalViewportTest" result="passed" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af3c7d584e" time="7.353" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af3c7d584e/video#t=34,44"/>
+  </testsuite>
+  <testsuite name="com.example.NativeLoginNavigationTest" tests="1" failures="0" skipped="0" timedout="0" errors="0" time="2.625" timestamp="2026-10-19 16:53:53 +0000">
+    <properties>
+      <property session_id="029fb7aedc72616d41c49fcf12f8feda1629e7af"/>
+      <property devicename="Google Pixel 7"/>
+      <property os="Android"/>
+      <property version="13"/>
+    </properties>
+    <testcase name="freshInstallRequiresExplicitTermsBeforeGuestNavigation" classname="com.example.NativeLoginNavigationTest" result="passed" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7afb49474cd" time="2.625" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7afb49474cd/video#t=55,60"/>
+  </testsuite>
+  <testsuite name="com.example.NativeNotificationPermissionTest" tests="2" failures="0" skipped="0" timedout="0" errors="0" time="14.337" timestamp="2026-10-19 16:54:09 +0000">
+    <properties>
+      <property session_id="029fb7aedc72616d41c49fcf12f8feda1629e7af"/>
+      <property devicename="Google Pixel 7"/>
+      <property os="Android"/>
+      <property version="13"/>
+    </properties>
+    <testcase name="grantedPermissionPostsPrivateNotificationsWithGenericPublicVersions" classname="com.example.NativeNotificationPermissionTest" result="passed" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7afa820dc50" time="0.066" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7afa820dc50/video#t=71,74"/>
+    <testcase name="android13PermissionDenialPreventsPrivateNotifications" classname="com.example.NativeNotificationPermissionTest" result="passed" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af0682bff7" time="0.337" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af0682bff7/video#t=85,88"/>
+  </testsuite>
+  <testsuite name="com.example.ReleaseSecurityRuntimeTest" tests="10" failures="0" skipped="10" timedout="0" errors="0" time="123.019" timestamp="2026-10-19 16:54:37 +0000">
+    <properties>
+      <property session_id="029fb7aedc72616d41c49fcf12f8feda1629e7af"/>
+      <property devicename="Google Pixel 7"/>
+      <property os="Android"/>
+      <property version="13"/>
+    </properties>
+    <testcase name="publicExportContainsNoCredentialAndCannotDowngradeToHttp" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7aff7956b08" time="0.014" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7aff7956b08/video#t=99,102"/>
+    <testcase name="backupAndTransferRulesExcludeCredentials" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af3a05188a" time="0.012" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af3a05188a/video#t=113,116"/>
+    <testcase name="releaseIsNotDebuggableAndNetworkLoggingIsDisabled" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af41e884a5" time="0.015" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af41e884a5/video#t=127,129"/>
+    <testcase name="bundledLicensesAreReadableWithoutAcceptingTerms" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7afe81ab0f2" time="0.015" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7afe81ab0f2/video#t=141,144"/>
+    <testcase name="cleartextTransportIsRejectedBeforeSendingCredentials" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af62ff04e4" time="0.014" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af62ff04e4/video#t=154,157"/>
+    <testcase name="legacyKeyMigratesAndAccountClearRemovesItsData" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af9649cb22" time="0.018" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af9649cb22/video#t=168,171"/>
+    <testcase name="allFiveLegalDocumentsStillHaveValidDraftHashes" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af3403b7f2" time="0.011" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af3403b7f2/video#t=181,184"/>
+    <testcase name="credentialedTlsRedirectNeverReachesAnotherHost" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7af9f20dc70" time="0.012" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7af9f20dc70/video#t=195,198"/>
+    <testcase name="defaultTrustRejectsUntrustedServerCertificate" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7aff144c41d" time="0.013" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7aff144c41d/video#t=209,212"/>
+    <testcase name="keystoreEncryptionPersistsNoPlaintextAndRejectsTampering" classname="com.example.ReleaseSecurityRuntimeTest" result="skipped" test_id="029fb7aedc72616d41c49fcf12f8feda1629e7afbbf990a4" time="0.019" video_url="https://api.browserstack.com/app-automate/espresso/builds/91b080c97113c42aa03c2bdae990247889cd9f54/sessions/tests/029fb7aedc72616d41c49fcf12f8feda1629e7afbbf990a4/video#t=222,225"/>
+  </testsuite>
+</testsuites>

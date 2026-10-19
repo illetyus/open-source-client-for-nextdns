@@ -1,0 +1,75 @@
+{
+  "status": "PASSED_WITH_CONDITIONAL_SKIPS",
+  "buildId": "91b080c97113c42aa03c2bdae990247889cd9f54",
+  "sourceCiRun": "39287249075",
+  "ciPackageCommit": "7dbdf5c39f01ea9fbdacfeeb57a8aaaa352db554",
+  "appSha256": "186c4563ee5f9be68f82393ace8a01a3b8f1e1648dd0da577b777f400504327e",
+  "testSuiteSha256": "b70af3d06e3ebb778e8dbee4025fe8b06a61e4d454c7441db8bb15c1961f92cc",
+  "signatureVerified": true,
+  "devices": [
+    {
+      "device": "Samsung Galaxy S20",
+      "androidVersion": "10.0",
+      "sessionId": "f29a79cac18d9c2df30239858f720cbb15beeca7",
+      "status": "passed",
+      "tests": 16,
+      "passed": 5,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 11,
+      "junitFile": "docs/release/bug-fixes-2026-10-19/browserstack-junit/Samsung-Galaxy-S20-android-10.0.xml",
+      "junitSha256": "1c43dd84371ffc39b8ed2b646f0eb1495f92bdfc32950815cc790ca85b2e2465"
+    },
+    {
+      "device": "Samsung Galaxy Tab S8",
+      "androidVersion": "12.0",
+      "sessionId": "2dc1f436b19b4a3f78e2880fdf359d651a44f7df",
+      "status": "passed",
+      "tests": 16,
+      "passed": 5,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 11,
+      "junitFile": "docs/release/bug-fixes-2026-10-19/browserstack-junit/Samsung-Galaxy-Tab-S8-android-12.0.xml",
+      "junitSha256": "7172aebb8d1a76aeb50907871ed2b558ff90c70cc92bddb75df86ed1d21ba0c5"
+    },
+    {
+      "device": "Google Pixel 7",
+      "androidVersion": "13.0",
+      "sessionId": "029fb7aedc72616d41c49fcf12f8feda1629e7af",
+      "status": "passed",
+      "tests": 16,
+      "passed": 6,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 10,
+      "junitFile": "docs/release/bug-fixes-2026-10-19/browserstack-junit/Google-Pixel-7-android-13.0.xml",
+      "junitSha256": "b4b8df879fe1e56fa971e03fd6a28f00ca8051bb09b2e0a8b02695d6b8455b49"
+    },
+    {
+      "device": "Samsung Galaxy S26",
+      "androidVersion": "16.0",
+      "sessionId": "fa94ae5ddbbec8d4b8f83fba147999f07f8d7e97",
+      "status": "passed",
+      "tests": 16,
+      "passed": 6,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 10,
+      "junitFile": "docs/release/bug-fixes-2026-10-19/browserstack-junit/Samsung-Galaxy-S26-android-16.0.xml",
+      "junitSha256": "7c81ecfada17b85c7077b0798d1628e87c59f8dc904fac70a1dffa3d03fea70d"
+    }
+  ],
+  "totals": {
+    "tests": 64,
+    "passed": 22,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 42
+  },
+  "skipAccounting": {
+    "releaseSecurityRuntimeTests": 40,
+    "notificationPermissionApiBelow33": 2
+  },
+  "scope": "Existing Android instrumentation smoke/integration suite: login-to-guest navigation, legal viewport, API TLS fixture, notification permission behavior, and app context. ReleaseSecurityRuntimeTest is release-only and therefore conditionally skipped for the debug APK on all four devices; the API<33 notification-denial case is skipped on Android 10/12. These device tests do not exercise NDNS-012..019 directly; their 66 targeted assertions passed in JVM/Compose CI, and defect-specific device retests remain NOT_RUN."
+}

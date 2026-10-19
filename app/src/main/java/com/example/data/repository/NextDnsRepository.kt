@@ -41,6 +41,7 @@ private class ProfilesFetchException(
 ) : Exception(message)
 
 private class SessionSnapshot(val generation: Long, val apiKey: String, val profileId: String)
+private class AnalyticsRequest(val session: SessionSnapshot, val device: String?, val from: String?)
 private class SessionContext(val snapshot: SessionSnapshot, var owner: Job? = null) :
   AbstractCoroutineContextElement(Key) {
   companion object Key : CoroutineContext.Key<SessionContext>
@@ -126,8 +127,8 @@ class NextDnsRepository(
   private val _allKnownDevices = MutableStateFlow<List<String>>(emptyList())
   val allKnownDevices = _allKnownDevices.asStateFlow()
 
-  private var currentAnalyticsDevice: String? = null
-  private var currentAnalyticsTime: String? = null
+  private var analyticsRequest: AnalyticsRequest? = null
+  private var logsRefreshRequest: Long? = null
 
   fun updateKnownDevices(newDevices: List<String>) {
     val valid = newDevices.filter { it.isNotBlank() && it != "Bilinmeyen" && it != "Cihaz" && it != "Bilinmeyen Cihaz" }
@@ -159,8 +160,8 @@ class NextDnsRepository(
     stopLogsStream()
     logsStreamSeedId = null
     nextLogsCursor = null
-    currentAnalyticsDevice = null
-    currentAnalyticsTime = null
+    analyticsRequest = null
+    logsRefreshRequest = null
     _analytics.value = AnalyticsSummary()
     _analyticsLastSuccessAt.value = null
     _analyticsErrorMessage.value = null
@@ -1202,6 +1203,28 @@ class NextDnsRepository(
   // Profile Management
   // =========================================================================
 
+  /** Guest choice supersedes account work without deleting the user's saved credentials. */
+  fun suspendForGuest() {
+    NotificationWorkScheduler.cancel(NextDnsApp.instance)
+    repoScope.coroutineContext.cancelChildren()
+    synchronized(sessionLock) {
+      advanceSession()
+      resetProfileScopedRuntimeState()
+      _apiKey.value = ""
+      _activeProfileId.value = ""
+      _profiles.value = emptyList()
+      _allowlist.value = emptyList()
+      _denylist.value = emptyList()
+      _logs.value = emptyList()
+      _accountInfo.value = NextDnsAccountInfo()
+      _securitySettings.value = SecuritySettings()
+      _privacySettings.value = PrivacySettings()
+      _parentalControlSettings.value = ParentalControlSettings()
+      _configSettings.value = ConfigSettings()
+      _apiStatus.value = ApiConnectionStatus.Disconnected
+    }
+  }
+
   suspend fun logout(): Result<Unit> {
     // Shut down account-scoped work before clearing its credentials.
     NotificationWorkScheduler.cancel(NextDnsApp.instance)
@@ -1561,16 +1584,19 @@ class NextDnsRepository(
   // Denylist & Allowlist
   // =========================================================================
 
-  suspend fun addToDenylist(domain: String): Result<Unit> =
-    mutateSection(
+  suspend fun addToDenylist(domain: String): Result<Unit> {
+    val canonical = normalizeDomainRule(domain)
+      ?: return Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_585a0d389f)))
+    return mutateSection(
       section = SyncSection.DENYLIST,
       operationName = "addToDenylist",
-      verify = { _denylist.value.any { it.domain == domain && it.active } }
+      verify = { _denylist.value.any { normalizeDomainRule(it.domain) == canonical && it.active } }
     ) { key, pid ->
       apiService.addDenylist(
-        key, pid, AllowDenyItemRequest(id = domain, active = true)
+        key, pid, AllowDenyItemRequest(id = canonical, active = true)
       )
     }
+  }
 
   suspend fun removeFromDenylist(domain: String): Result<Unit> =
     mutateSection(
@@ -1597,16 +1623,19 @@ class NextDnsRepository(
     }
   }
 
-  suspend fun addToAllowlist(domain: String): Result<Unit> =
-    mutateSection(
+  suspend fun addToAllowlist(domain: String): Result<Unit> {
+    val canonical = normalizeDomainRule(domain)
+      ?: return Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_585a0d389f)))
+    return mutateSection(
       section = SyncSection.ALLOWLIST,
       operationName = "addToAllowlist",
-      verify = { _allowlist.value.any { it.domain == domain && it.active } }
+      verify = { _allowlist.value.any { normalizeDomainRule(it.domain) == canonical && it.active } }
     ) { key, pid ->
       apiService.addAllowlist(
-        key, pid, AllowDenyItemRequest(id = domain, active = true)
+        key, pid, AllowDenyItemRequest(id = canonical, active = true)
       )
     }
+  }
 
   suspend fun removeFromAllowlist(domain: String): Result<Unit> =
     mutateSection(
@@ -1848,7 +1877,11 @@ class NextDnsRepository(
       )
     }
 
-    commitCurrentSession { _logs.value = emptyList() }
+    commitCurrentSession {
+      // Prevent a log snapshot started before this successful clear from restoring old history.
+      logsRefreshRequest = null
+      _logs.value = emptyList()
+    }
     return@withSessionContext Result.success(Unit)
   }
 
@@ -1857,25 +1890,28 @@ class NextDnsRepository(
     val pid = _activeProfileId.value
     if (key.isBlank() || pid.isBlank()) return@withSessionContext false
 
+    val token = requestSequence.incrementAndGet()
+    val before = commitCurrentSession {
+      logsRefreshRequest = token
+      _logs.value.map { it.id }.toSet() to logsStreamSeedId
+    }
     val logsResp = safeApiCall("refreshLogsFromApi") {
       apiService.getLogs(key, pid, limit = limit, raw = 1)
     } ?: return@withSessionContext false
 
     val body = logsResp.body() ?: return@withSessionContext false
-    if (!logsResp.isSuccessful || body.hasApiErrors()) return@withSessionContext false
+    if (!logsResp.isSuccessful || body.hasApiErrors() || body.data == null) return@withSessionContext false
 
     commitCurrentSession {
-      logsStreamSeedId = body.meta?.stream?.id ?: logsStreamSeedId
+      if (logsRefreshRequest != token) return@commitCurrentSession false
+      // A stream may have advanced while this authoritative snapshot was in flight.
+      if (logsStreamSeedId == before.second) logsStreamSeedId = body.meta?.stream?.id
       nextLogsCursor = body.meta?.pagination?.cursor
-
-      val fetchedLogs = parseLogsResponse(body.data.orEmpty())
-      if (fetchedLogs.isNotEmpty()) {
-        val existing = _logs.value
-        val merged = (fetchedLogs + existing).distinctBy {
-          "${it.timestamp}_${it.domain}_${it.deviceName}_${it.blocked}"
-        }.take(500)
-        _logs.value = merged
-      }
+      val intervening = _logs.value.filter { it.id !in before.first }
+      val fetchedLogs = parseLogsResponse(body.data)
+      _logs.value = (intervening + fetchedLogs).distinctBy {
+        "${it.timestamp}_${it.domain}_${it.deviceName}_${it.blocked}"
+      }.take(500)
       true
     }
   }
@@ -1894,12 +1930,10 @@ class NextDnsRepository(
     analyticsPollingJob = repoScope.launch {
       var nextDelayMs = SyncPolicy.ANALYTICS_POLL_MS
       while (isActive) {
-        val success = fetchAnalytics(
-          _apiKey.value,
-          _activeProfileId.value,
-          currentAnalyticsDevice,
-          currentAnalyticsTime
-        )
+        val request = synchronized(sessionLock) {
+          beginAnalyticsRequest(_apiKey.value, _activeProfileId.value, analyticsRequest?.device, analyticsRequest?.from)
+        }
+        val success = fetchAnalytics(request)
         nextDelayMs = SyncPolicy.nextDelay(
           success = success,
           currentDelayMs = nextDelayMs,
@@ -2076,7 +2110,7 @@ class NextDnsRepository(
   // Analytics Parsing Helper Functions
   // =========================================================================
 
-  private fun <T> Response<NextDnsApiResponse<T>>?.isUsableApiResponse(): Boolean =
+  private fun Response<out NextDnsApiResponse<*>>?.isUsableApiResponse(): Boolean =
     this?.isSuccessful == true && this?.body().isSemanticallySuccessful()
 
   private fun parseStatusMetrics(
@@ -2249,13 +2283,21 @@ class NextDnsRepository(
   // Main Analytics Fetching Function
   // =========================================================================
 
-  suspend fun fetchAnalytics(key: String, profileId: String, device: String? = null, from: String? = null): Boolean = withSessionContext(expectedKey = key, expectedProfile = profileId) {
-    if (key.isBlank() || profileId.isBlank()) return@withSessionContext false
+  private fun beginAnalyticsRequest(key: String, profileId: String, device: String?, from: String?): AnalyticsRequest = synchronized(sessionLock) {
+    val session = captureSession()
+    if (session.apiKey != key || session.profileId != profileId) throw CancellationException("Analytics session changed")
+    AnalyticsRequest(session, device, from).also { analyticsRequest = it }
+  }
 
-    commitCurrentSession {
-      currentAnalyticsDevice = device
-      currentAnalyticsTime = from
-    }
+  suspend fun fetchAnalytics(key: String, profileId: String, device: String? = null, from: String? = null): Boolean =
+    fetchAnalytics(beginAnalyticsRequest(key, profileId, device, from))
+
+  private suspend fun fetchAnalytics(request: AnalyticsRequest): Boolean = withSessionContext(snapshot = request.session) {
+    val key = request.session.apiKey
+    val profileId = request.session.profileId
+    val device = request.device
+    val from = request.from
+    if (key.isBlank() || profileId.isBlank()) return@withSessionContext false
 
     val devParam = if (device == "Tüm cihazlar" || device.isNullOrBlank()) {
       null
@@ -2360,7 +2402,11 @@ class NextDnsRepository(
     }
 
     commitCurrentSession {
-      if (!statusResp.isUsableApiResponse()) {
+      if (analyticsRequest !== request) return@commitCurrentSession false
+      val responses = listOf(statusResp, devicesResp, allowedDomainsResp, blockedDomainsResp,
+        rootDomainsResp, reasonsResp, companiesResp, destinationsResp, dnssecResp,
+        encryptionResp, protocolsResp, queryTypesResp, ipVersionsResp, ipsResp)
+      if (responses.any { !it.isUsableApiResponse() || it?.body()?.data == null }) {
         _analyticsErrorMessage.value = AppStrings.get(R.string.ui_d4c19c0ba4)
         return@commitCurrentSession false
       }

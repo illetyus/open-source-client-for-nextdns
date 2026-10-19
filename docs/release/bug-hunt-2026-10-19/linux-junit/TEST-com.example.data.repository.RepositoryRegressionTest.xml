@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.data.repository.RepositoryRegressionTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:45.077Z" hostname="runnervm8k3b6" time="2.395">
+  <properties/>
+  <testcase name="cancellingRefreshClearsItsBusyState" classname="com.example.data.repository.RepositoryRegressionTest" time="0.081"/>
+  <testcase name="lateCreatedProfileCannotRestorePreferencesAfterLogout" classname="com.example.data.repository.RepositoryRegressionTest" time="0.08"/>
+  <testcase name="stoppingRepositorySseCancelsTheActualNetworkCall" classname="com.example.data.repository.RepositoryRegressionTest" time="1.099"/>
+  <testcase name="acceptedDeleteDoesNotSucceedWhenServerStillContainsTarget" classname="com.example.data.repository.RepositoryRegressionTest" time="0.082"/>
+  <testcase name="successfulMutationReadsAndCachesTheSameProfile" classname="com.example.data.repository.RepositoryRegressionTest" time="0.094"/>
+  <testcase name="profileRoundTripStillRejectsOldLogs" classname="com.example.data.repository.RepositoryRegressionTest" time="0.036"/>
+  <testcase name="deletingSelectedProfileVerifiesRemovalBeforeSelectingReplacement" classname="com.example.data.repository.RepositoryRegressionTest" time="0.078"/>
+  <testcase name="validExportUsesNoApiKeyAndOutputWriteFailureReturnsFailure" classname="com.example.data.repository.RepositoryRegressionTest" time="0.084"/>
+  <testcase name="differentSectionRefreshesKeepBothFlagsAndResults" classname="com.example.data.repository.RepositoryRegressionTest" time="0.046"/>
+  <testcase name="lateLogsCannotPopulateAnotherProfile" classname="com.example.data.repository.RepositoryRegressionTest" time="0.031"/>
+  <testcase name="successfulHttpReadDoesNotVerifyAnUnappliedMutation" classname="com.example.data.repository.RepositoryRegressionTest" time="0.076"/>
+  <testcase name="normalCreatedProfileIsVerifiedPersistedAndSelected" classname="com.example.data.repository.RepositoryRegressionTest" time="0.09"/>
+  <testcase name="providerFailureIsReportedByViewModelWithoutSuccess" classname="com.example.data.repository.RepositoryRegressionTest" time="0.03"/>
+  <testcase name="obsoleteSettingsCannotWriteAnotherProfilesCache" classname="com.example.data.repository.RepositoryRegressionTest" time="0.037"/>
+  <testcase name="malformedExportLinkReturnsFailureInsteadOfThrowing" classname="com.example.data.repository.RepositoryRegressionTest" time="0.035"/>
+  <testcase name="diagnosticTimeoutDoesNotReplaceLastSuccessWithFreshSuccess" classname="com.example.data.repository.RepositoryRegressionTest" time="0.056"/>
+  <testcase name="deletingLastProfileVerifiesEmptyListAndClearsSelection" classname="com.example.data.repository.RepositoryRegressionTest" time="0.078"/>
+  <testcase name="cancelledDiagnosticClearsBothRepositoryAndViewModelBusyFlags" classname="com.example.data.repository.RepositoryRegressionTest" time="0.034"/>
+  <testcase name="web3TrueFalseAndMissingFieldPreserveAuthoritativeState" classname="com.example.data.repository.RepositoryRegressionTest" time="0.127"/>
+  <testcase name="oldRefreshCancellationCannotClearNewRefreshFlag" classname="com.example.data.repository.RepositoryRegressionTest" time="0.036"/>
+  <testcase name="cancellingFullSyncClearsBusyStateWithoutStartingAnalytics" classname="com.example.data.repository.RepositoryRegressionTest" time="0.033"/>
+  <testcase name="mutationForACannotBeVerifiedUsingB" classname="com.example.data.repository.RepositoryRegressionTest" time="0.035"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

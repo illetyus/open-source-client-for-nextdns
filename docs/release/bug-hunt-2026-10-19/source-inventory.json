@@ -1,0 +1,585 @@
+[
+  {
+    "path": "app/src/main/java/com/example/MainActivity.kt",
+    "sha256": "a758495bb2df8f10617903146dd1322dfac6d2b857a46d7c41e684d41469ab25",
+    "lines": 93,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 4,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/NextDnsApp.kt",
+    "sha256": "3233d24ab7f7153d60aec80a8ee8698a41f99e7a8c9ff90144c893d9a7d9b76d",
+    "lines": 36,
+    "riskPatternCounts": {
+      "coroutines": 2,
+      "exceptionBoundaries": 1,
+      "stateAndCaches": 2,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/api/CancellableCall.kt",
+    "sha256": "1efa9dd8761142c18189c6a9bc4ec24b5d3d337da0b0bf24009187ab8ea2cddc",
+    "lines": 44,
+    "riskPatternCounts": {
+      "coroutines": 1,
+      "exceptionBoundaries": 1,
+      "stateAndCaches": 0,
+      "networkAndUris": 4
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/api/NextDnsApiService.kt",
+    "sha256": "47afa798b3f78cc7445160da2bd7f6f2245351a51da316afe5521c278aa36423",
+    "lines": 1141,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 14,
+      "stateAndCaches": 0,
+      "networkAndUris": 74
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/api/NextDnsContract.kt",
+    "sha256": "7f86dbd6c3c3dfb271fb70c5535f534ac52385eb73b7e7c76b0c2f0b7c5e43b0",
+    "lines": 26,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/legal/LegalAcceptanceStore.kt",
+    "sha256": "49f890048997cc0a07827d7ae1558e530066635f3c5b640ceb3b4cbebd3f9365",
+    "lines": 40,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 5,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/legal/LegalDocuments.kt",
+    "sha256": "2ebfff305365ed6409cf8bce7a4fcad620904ca3d799b86519bdd85542863fdb",
+    "lines": 40,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 1,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/local/NextDnsPreferences.kt",
+    "sha256": "36b1c29ecd8c3ce49c739d502e9648bd25d70fceb22a68a82eb7bd8b7cf14053",
+    "lines": 277,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 17,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/model/DiagnosticConnectionState.kt",
+    "sha256": "0497fce16dc01ebe9bad6794ac5bad7349ac9d548c8273a4ae87d8a18130c932",
+    "lines": 19,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/model/NextDnsModels.kt",
+    "sha256": "b22f56236054b925ed97c9c56130952afab7f1981ac760fa92f2f8242e4caade",
+    "lines": 254,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/notifications/ConfigSnapshotHasher.kt",
+    "sha256": "01bb899cfff89607d545173296f4c035211f16fa9c9601078327a402f2998482",
+    "lines": 102,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/notifications/NextDnsNotificationWorker.kt",
+    "sha256": "2beeff2e89ebc827767a91510d0227bc7b4290f7b7d04a022f4f0fed6c9a4db2",
+    "lines": 303,
+    "riskPatternCounts": {
+      "coroutines": 1,
+      "exceptionBoundaries": 5,
+      "stateAndCaches": 16,
+      "networkAndUris": 3
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/notifications/NotificationCenter.kt",
+    "sha256": "6e5d23c168a0597f4a3f3e5fa9f7c0fbd191bcd69a9820b641c7271e4e46aa0b",
+    "lines": 180,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 1,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/notifications/NotificationPolicy.kt",
+    "sha256": "aebd41b10b5191b7d3b68b0291a928c3ec31761056d26d385696054f2e0eef68",
+    "lines": 56,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/notifications/NotificationPreferences.kt",
+    "sha256": "31a0a03cf6efcea5845d2fe07a2248354598e6f6fe70122fdeec5b9fce460403",
+    "lines": 154,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 6,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/notifications/NotificationWorkScheduler.kt",
+    "sha256": "3c71599b6937a81d3c9e4d2aa403f787068cc52852c496ca43a485e1269d3b73",
+    "lines": 151,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 5,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/preferences/ThemePreferences.kt",
+    "sha256": "c4031295e9d1258f2a797734ecf1fd2341d6c135360063433a50c7c914146281",
+    "lines": 29,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 1,
+      "stateAndCaches": 5,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/repository/ExportDocument.kt",
+    "sha256": "42aab6be8c4491cf8ba2fea3c65fdd2a24ce617b91c43f5a81d2f23faf2b3cdb",
+    "lines": 22,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 2,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/repository/MutationModels.kt",
+    "sha256": "1eef939624ccf08071a0de37978414440faea4735040d1392e777001dbe535d1",
+    "lines": 33,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/repository/NextDnsRepository.kt",
+    "sha256": "32f08d618ecdffc82246564142aa9a3d9f8ddfc1d0c4d96b3e8fdda06200c69b",
+    "lines": 2604,
+    "riskPatternCounts": {
+      "coroutines": 5,
+      "exceptionBoundaries": 17,
+      "stateAndCaches": 57,
+      "networkAndUris": 26
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/repository/SectionMutationCoordinator.kt",
+    "sha256": "a69408ca3e46d2935e3754927a280691ce3930d0777311137b6d67577efcc55f",
+    "lines": 15,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/repository/SyncPolicy.kt",
+    "sha256": "2718cba6e55732a7409852b2e36ffaa4f0f8f383cac8df1116923b23cfe598d7",
+    "lines": 21,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/repository/SyncState.kt",
+    "sha256": "8c5b9be46d311f0b589b579765dae41c276a4e6ff70970c8340b3819af376b75",
+    "lines": 20,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/data/security/ApiKeyProtector.kt",
+    "sha256": "acac9c3a1e10607905ad8bef9f0d28f2dd60a580fb1e79e27dd7f892e56b962a",
+    "lines": 92,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/i18n/AppStrings.kt",
+    "sha256": "a3a7613bd1f693971dda9155e9aa1e4270e718a9d28c5a5f1f5b1642ace542a2",
+    "lines": 27,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/i18n/LocalePreferences.kt",
+    "sha256": "c088cad07363918c118988857d40842379f44864366513cc9cd38fcda3fe0204",
+    "lines": 68,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 1,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/i18n/UiLabels.kt",
+    "sha256": "66b21870c033e3bc130d4dfaea493214257a2ae87c38c70dda52f80612921eef",
+    "lines": 31,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/components/CommonComponents.kt",
+    "sha256": "2b53b20a63d4b60d96af874703a1220770c4541644c4a474cf39f60a64451cc5",
+    "lines": 896,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 2,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/components/LanguagePicker.kt",
+    "sha256": "2ec880938694c2519a636d73e47bd2550880fe4f98fe95be7a12e1b752a12bed",
+    "lines": 55,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 2,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/components/LegalDocumentLinks.kt",
+    "sha256": "f288e5027f8e8c5880b483a002d5001920732aed3b6f4727ffb5a0e3ad87f32b",
+    "lines": 59,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 2,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/components/SourceLicenseLink.kt",
+    "sha256": "425094902237a9c06dafa6afaaa029b9b0e87e698f9e4a2a7ffe3a0dbc1647ed",
+    "lines": 49,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 1,
+      "stateAndCaches": 3,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/AccountScreen.kt",
+    "sha256": "62f8af1c06734cae2d4ffdc4ee5f57533bef9a2df892f4cd2a2501281542d222",
+    "lines": 593,
+    "riskPatternCounts": {
+      "coroutines": 3,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 5,
+      "networkAndUris": 2
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/AdaptiveNavigation.kt",
+    "sha256": "3a5b685c275858a963b212ff07a0d4df87742c8725872279e3c7ee2077899fa2",
+    "lines": 52,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/AllowlistScreen.kt",
+    "sha256": "bcd063e05bbb4c0285d6595020cfb96f5d263614251eb49216e09c51c79a2ac6",
+    "lines": 183,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 3,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/AnalyticsScreen.kt",
+    "sha256": "ae630ed2b7d444c56aa77f64d55e0955e8f5522a4b662048db1b64390ea03067",
+    "lines": 853,
+    "riskPatternCounts": {
+      "coroutines": 2,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 6,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/DenylistScreen.kt",
+    "sha256": "6e6784b2e7eba0496ff926e340a97176e9b646bc36d0dab2c52b3bde80f7466c",
+    "lines": 183,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 3,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/DiagnosticPolling.kt",
+    "sha256": "872e146fd0bd3b4f4bc12042c211881a5e937c9df8670fd5e5c56ae78c72f402",
+    "lines": 20,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/FaviconImage.kt",
+    "sha256": "1e1e3a5b98cbd71155aaafc48f10f3f3c0396d7c745e83277512bebcf6c9d526",
+    "lines": 21,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/HomeScreen.kt",
+    "sha256": "bbb2763eef38fbe8adc0fb2974e85231eb97f9f0e734731fba3199f0c25eeee0",
+    "lines": 787,
+    "riskPatternCounts": {
+      "coroutines": 3,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 5,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/LegalWelcomeScreen.kt",
+    "sha256": "a36852776f2d8fef7061301ce961ee25528aa62ee5d159c100ccb5086cb02479",
+    "lines": 131,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 5,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/LoginScreen.kt",
+    "sha256": "aa9fcb0d8d674ab89ac339e28a199c26e99a4f592b5a40dbeed09b587315f47f",
+    "lines": 293,
+    "riskPatternCounts": {
+      "coroutines": 2,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 3,
+      "networkAndUris": 2
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/LogsScreen.kt",
+    "sha256": "4d7b059935f2fa9cfdcd15b60c4915b9d882cc9adeeab09ace0792ef6726b52c",
+    "lines": 660,
+    "riskPatternCounts": {
+      "coroutines": 4,
+      "exceptionBoundaries": 3,
+      "stateAndCaches": 8,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/ParentalScreen.kt",
+    "sha256": "645138066d0b8c107ccb8923da3b623432116bf374e27286ee095bb3ca881e65",
+    "lines": 518,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 4,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/PrivacyScreen.kt",
+    "sha256": "d1f19f1a5992815d5a47105a7f7332baaa29f4135f2dc6e9dedff0a43d5ae8b7",
+    "lines": 692,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 2,
+      "stateAndCaches": 4,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/SecurityScreen.kt",
+    "sha256": "ea199305c1aa9b9956c8012694632943ce4521ffd9943032bc40b99071d22673",
+    "lines": 306,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 3,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/SettingsScreen.kt",
+    "sha256": "675f318bfba2582c1dcb9defc803bbf25d8d5fd57a210ad22d2c91b7e0e1da70",
+    "lines": 862,
+    "riskPatternCounts": {
+      "coroutines": 8,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 6,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/SetupScreen.kt",
+    "sha256": "3baf9360c0336c22d75c0cc0ccfb97265b6e5f87fbb45a3d019c11ea9cf2a10d",
+    "lines": 1251,
+    "riskPatternCounts": {
+      "coroutines": 3,
+      "exceptionBoundaries": 4,
+      "stateAndCaches": 4,
+      "networkAndUris": 2
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/screens/WorldMapChart.kt",
+    "sha256": "34feaf439c939bfccd8a4b33cd2e23ed92123f4ce77fc77388a7ad698c55f3a6",
+    "lines": 75,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/theme/Color.kt",
+    "sha256": "5a18745f0618a245f2795214c8613fa66432f18f0b3350aee77d6a0d5590ea38",
+    "lines": 41,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/theme/Shape.kt",
+    "sha256": "f32996e66aab8af8cc8950ac7e2ee3a5613b2a429ca5f76ad55e2ba85b45b7ae",
+    "lines": 13,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/theme/Theme.kt",
+    "sha256": "81eccc97be511464df5b6c12a59a4c34f52949b31bb6659a452221599f1eb409",
+    "lines": 89,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/theme/Type.kt",
+    "sha256": "c1b7e231640f90feb28a76ce0c38addcd75b936dca2c359ec723bd547db66168",
+    "lines": 26,
+    "riskPatternCounts": {
+      "coroutines": 0,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 0,
+      "networkAndUris": 0
+    }
+  },
+  {
+    "path": "app/src/main/java/com/example/ui/viewmodel/NextDnsViewModel.kt",
+    "sha256": "7c8dc58c5d9882fd530c6fa7cb34f4cfa4e682a8ae6c15403abf9947a9bf9e72",
+    "lines": 757,
+    "riskPatternCounts": {
+      "coroutines": 45,
+      "exceptionBoundaries": 0,
+      "stateAndCaches": 7,
+      "networkAndUris": 0
+    }
+  }
+]

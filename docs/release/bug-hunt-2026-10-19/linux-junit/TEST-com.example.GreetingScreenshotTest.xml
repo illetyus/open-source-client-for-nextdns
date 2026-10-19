@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.GreetingScreenshotTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:16.425Z" hostname="runnervm8k3b6" time="7.204">
+  <properties/>
+  <testcase name="homeTitleFitsCompactDisplayWithLargeText" classname="com.example.GreetingScreenshotTest" time="6.573"/>
+  <testcase name="greeting_screenshot" classname="com.example.GreetingScreenshotTest" time="0.559"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Oct 19, 2026 2:45:21 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:21 PM okhttp3.internal.platform.Platform log
+INFO: <-- 302 https://test.nextdns.io/ (264ms, 0-byte body)
+Oct 19, 2026 2:45:22 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:22 PM okhttp3.internal.platform.Platform log
+INFO: <-- 200 https://test.nextdns.io/ (6ms, 194-byte body)
+Oct 19, 2026 2:45:23 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:23 PM okhttp3.internal.platform.Platform log
+INFO: <-- 302 https://test.nextdns.io/ (6ms, 0-byte body)
+Oct 19, 2026 2:45:23 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:23 PM okhttp3.internal.platform.Platform log
+INFO: <-- 200 https://test.nextdns.io/ (5ms, 194-byte body)
+]]></system-err>
+</testsuite>

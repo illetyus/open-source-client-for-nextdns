@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.data.legal.LegalWelcomeInteractionTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:43.331Z" hostname="runnervm8k3b6" time="0.426">
+  <properties/>
+  <testcase name="failedAcceptanceRemainsOnTheLegalScreen" classname="com.example.data.legal.LegalWelcomeInteractionTest" time="0.261"/>
+  <testcase name="readingPrivacyDoesNotAcceptTermsOrEnableContinue" classname="com.example.data.legal.LegalWelcomeInteractionTest" time="0.163"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

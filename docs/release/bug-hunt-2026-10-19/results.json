@@ -1,0 +1,734 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-19",
+  "status": "DEFECTS_REPRODUCED_NO_APPLICATION_FIX",
+  "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+  "probeCommit": "26e1e8e76df1821d4d0e7ff1c3ea7f5bd4715f0b",
+  "prUrl": "https://github.com/illetyus/open-source-client-for-nextdns/pull/25",
+  "ci": {
+    "run": "39271056088",
+    "url": "https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39271056088",
+    "result": "failure",
+    "tests": 114,
+    "passed": 107,
+    "failed": 7,
+    "errors": 0,
+    "skipped": 0,
+    "baseline": {
+      "tests": 105,
+      "passed": 105,
+      "failed": 0
+    },
+    "newProbes": {
+      "tests": 9,
+      "passed": 2,
+      "failed": 7
+    },
+    "secondaryArtifactFailure": "Release artifacts were not assembled after failing unit tests; this is separate from the seven reproduced assertions.",
+    "steps": [
+      {
+        "name": "Set up job",
+        "conclusion": "success"
+      },
+      {
+        "name": "Checkout Repository",
+        "conclusion": "success"
+      },
+      {
+        "name": "Set up JDK 17",
+        "conclusion": "success"
+      },
+      {
+        "name": "Setup Gradle",
+        "conclusion": "success"
+      },
+      {
+        "name": "Verify Gradle Wrapper",
+        "conclusion": "success"
+      },
+      {
+        "name": "Android Lint",
+        "conclusion": "success"
+      },
+      {
+        "name": "Draft store metadata and device evidence schema",
+        "conclusion": "success"
+      },
+      {
+        "name": "Five-language resources and UI label gate",
+        "conclusion": "success"
+      },
+      {
+        "name": "Legal draft integrity and acceptance revision",
+        "conclusion": "success"
+      },
+      {
+        "name": "Unit, Contract, Compose and Screenshot Tests",
+        "conclusion": "failure"
+      },
+      {
+        "name": "Verify actual test, screenshot and coverage evidence",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Assemble Debug",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Upload UI branding screenshots",
+        "conclusion": "success"
+      },
+      {
+        "name": "Assemble Release (unsigned on CI)",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Release Dependency and Privacy SDK Gate",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Verify bundled full license and NOTICE distribution",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Record actual package, manifest and signature evidence",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Reject test DEX types and validate against real test APK",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Upload coverage to Codecov",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Setup Snyk CLI",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Snyk High-Severity Dependency Gate",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Snyk Monitor Main",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Signed release payload security on Android emulator",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Upload resolved release and device-test artifacts",
+        "conclusion": "failure"
+      },
+      {
+        "name": "Post Setup Gradle",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post Set up JDK 17",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post Checkout Repository",
+        "conclusion": "success"
+      },
+      {
+        "name": "Complete job",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "probeCases": [
+    {
+      "class": "com.example.audit.RepositoryAuditTest",
+      "name": "olderAnalyticsFilterResponseMustNotOverwriteNewSelection",
+      "status": "FAIL",
+      "failure": "java.lang.AssertionError: Newest selected range must retain its own data expected:<200> but was:<100>"
+    },
+    {
+      "class": "com.example.audit.RepositoryAuditTest",
+      "name": "choosingGuestMustSupersedeAnInFlightLogin",
+      "status": "FAIL",
+      "failure": "java.lang.AssertionError: Late authentication must not replace the user's newer guest choice"
+    },
+    {
+      "class": "com.example.audit.RepositoryAuditTest",
+      "name": "failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess",
+      "status": "FAIL",
+      "failure": "java.lang.AssertionError: One successful status panel cannot conceal failures in the other 13 panels"
+    },
+    {
+      "class": "com.example.audit.RepositoryAuditTest",
+      "name": "emptyAuthoritativeLogRefreshMustRemoveDeletedRemoteHistory",
+      "status": "FAIL",
+      "failure": "java.lang.AssertionError: Authoritative empty response must not retain remotely deleted log history"
+    },
+    {
+      "class": "com.example.audit.UiAuditTest",
+      "name": "detectedNextDnsWithoutSelectedProfileMustNotSayNotConfigured",
+      "status": "PASS",
+      "failure": null
+    },
+    {
+      "class": "com.example.audit.UiAuditTest",
+      "name": "identicalRealisticFingerprintMustShowConnectedForSelectedProfile",
+      "status": "FAIL",
+      "failure": "java.lang.AssertionError: Assert failed: The component is not displayed!"
+    },
+    {
+      "class": "com.example.audit.UiAuditTest",
+      "name": "failedAllowlistSubmissionMustPreserveTypedDomain",
+      "status": "FAIL",
+      "failure": "java.lang.AssertionError: Failed to assert the following: (Text + EditableText contains 'keep.synthetic.example' (ignoreCase: false))\nSemantics of the node:\nNode #59 at (l=34.0, t=120.0, r=300.0, b=204.0)px\nEditableText = ''\nTextSelectionRange = 'TextRange(0, 0)'\nIsEditable = 'true'\nImeAction = 'Default'\nFocused = 'true'\nText = '[Enter a domain (e.g. *.example.com)]'\nActions = [GetTextLayoutResult, SetText, InsertTextAtCursor, SetSelection, PerformImeAction, OnClick, OnLongClick, PasteText, RequestFocus, MagnifierPositionInRoot, SetTextSubstitution, ShowTextSubstitution, ClearTextSubstitution]\nMergeDescendants = 'true'\nHas 3 siblings\nSelector used: (SetText is defined)\n"
+    },
+    {
+      "class": "com.example.audit.UiAuditTest",
+      "name": "unrelatedFingerprintMustNotShowHealthySelectedProfile",
+      "status": "PASS",
+      "failure": null
+    },
+    {
+      "class": "com.example.audit.UiAuditTest",
+      "name": "failedDenylistSubmissionMustPreserveTypedDomain",
+      "status": "FAIL",
+      "failure": "java.lang.AssertionError: Failed to assert the following: (Text + EditableText contains 'keep.synthetic.example' (ignoreCase: false))\nSemantics of the node:\nNode #110 at (l=34.0, t=120.0, r=300.0, b=204.0)px\nEditableText = ''\nTextSelectionRange = 'TextRange(0, 0)'\nIsEditable = 'true'\nImeAction = 'Default'\nFocused = 'true'\nText = '[Enter a domain (e.g. *.tiktokv.com)]'\nActions = [GetTextLayoutResult, SetText, InsertTextAtCursor, SetSelection, PerformImeAction, OnClick, OnLongClick, PasteText, RequestFocus, MagnifierPositionInRoot, SetTextSubstitution, ShowTextSubstitution, ClearTextSubstitution]\nMergeDescendants = 'true'\nHas 3 siblings\nSelector used: (SetText is defined)\n"
+    }
+  ],
+  "retainedJunit": [
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.audit.RepositoryAuditTest.xml",
+      "sha256": "dd96e37b5ffc657702bbc2f138f48b61f9d23147845f6d1436b5243e11b6b66c",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.audit.UiAuditTest.xml",
+      "sha256": "65b18456ae4a50c473c792621f177ae5edbc921d2698f89e0b69abdac481a097",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.api.CancellableCallTest.xml",
+      "sha256": "922f16300075fd22400b2795657d9984a536dbd4370af923a85de33537ea0183",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.api.NextDnsApiContractTest.xml",
+      "sha256": "f51b607921da50adac0e13f12951a122f9e144f48b0629e25d7e02ec0de52be5",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.legal.LegalAcceptanceStoreTest.xml",
+      "sha256": "5cc2849ce1ac5d5df717ce9d71f1b115bdf7edf586161e91e1f6f47512154c36",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.legal.LegalDocumentLinksTest.xml",
+      "sha256": "411f99d59b423f4d0b415ddadd36b73375fad33aa1e1d5cc2a42e7cda070c286",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.legal.LegalDocumentsTest.xml",
+      "sha256": "62d04219eac23a1beccd11bdd71bb30e291d6f91ffce00a2ef3f701929a6cbbb",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.legal.LegalWelcomeInteractionTest.xml",
+      "sha256": "fa9fd624b2e7a295b6a4f2b71f59ff0fed6fe40f71b45201b729002b4a55692d",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.legal.LegalWelcomeViewportTest.xml",
+      "sha256": "4b8fa2138202e6f37d27b6db39b28b8e78b2d88a55b50ba59a18041457338361",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.local.NextDnsPreferencesClearTest.xml",
+      "sha256": "24b9b045d3fc053275fcfa92e14636f991163746111a4ec2cb7b840e9089e223",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.local.NextDnsPreferencesSecurityTest.xml",
+      "sha256": "2b1588672c0d665ebc7a1f90d2ce363dfe688987845f988914c4200793c29180",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.notifications.ConfigSnapshotHasherTest.xml",
+      "sha256": "a6b59e6725155f69e0483317f3d8f3380eb7e494df35b409c9c61de87c85b3f0",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.notifications.NotificationPolicyTest.xml",
+      "sha256": "82292331419e475662c2a504602d85d6778e7a041a64e3fa27d0d46f2795750a",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.notifications.NotificationPreferencesClearTest.xml",
+      "sha256": "6c425af674a84782b8d51ae3c148b04f5dc81eb8471b5c67ad8c00f1fa0bf155",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.repository.ExportDocumentTest.xml",
+      "sha256": "183c432ec8d656a75cd3cd8b200160ee4aa806e701ffed79e931e1a2ae64a7f1",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.repository.LegalRepositoryGateTest.xml",
+      "sha256": "66ffc496ebb917e839cf215b32bda9a01b24da16e4507eb0a340358baaa31553",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.repository.RepositoryRegressionTest.xml",
+      "sha256": "9dba94ebe0d4868ed51e5963eac59b268614b581d263d5ebb226a3d0ce4c2ca7",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.repository.SectionMutationCoordinatorTest.xml",
+      "sha256": "fab0f9f359fc9120279b71b9b185ef0f3802360efaa44afaea5d5c8a9feffbf6",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.data.repository.SyncPolicyTest.xml",
+      "sha256": "ff300141d5f67cac1b85e81b98f7f7a5ef3535478b93c241583b177a23824513",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.ExampleRobolectricTest.xml",
+      "sha256": "44df9a600198efd89cf5546cc8d88cfcd7dec08ec71bd7e137484e96d8a87b36",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.ExampleUnitTest.xml",
+      "sha256": "e747943323b43904f68cf4f9be81f19cba1f753c78d0cd8e6fd83814094274e5",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.GreetingScreenshotTest.xml",
+      "sha256": "64d76a43d07ebce184e32c92895d8e4a811c99bbe9c5f2b2ff0b8e3f01bea7f4",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.i18n.LocalePreferencesTest.xml",
+      "sha256": "a3f264f7621cf50c32abfbf653dd59d20a68f623344d41c5e78802d5d9d448f6",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.i18n.LocaleRenderingTest.xml",
+      "sha256": "98a4012b460791178999168d42a16fb65792b3340d7d29eea268930d81147959",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.LauncherAssetsTest.xml",
+      "sha256": "30e7c13dc6b37510aacac4445ef64d3a518a4d7caa36b2bf9c89ad5cd945b7c3",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.ui.components.CommonComponentsInteractionTest.xml",
+      "sha256": "23e23712a343558d4ba07714863fd9141ce93ca5221135e47e514f0ef30f8152",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.ui.screens.AdaptiveNavigationTest.xml",
+      "sha256": "32757c72f7e31cd53c4689f148486f00f3a868307bb4b9bad96fb1a95857317a",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.ui.screens.DiagnosticAndDeviceMenuTest.xml",
+      "sha256": "5dd9bdee37d43f8d1d059ba8df4cb9846998cb85b28da1f4d3912382f3719634",
+      "normalization": "LF"
+    },
+    {
+      "path": "docs/release/bug-hunt-2026-10-19/linux-junit/TEST-com.example.ui.screens.DiagnosticPollingTest.xml",
+      "sha256": "d2a7c596ee42a96541f63272d2d0b9b9021d9b5e738624406ce49d1c0242d8f6",
+      "normalization": "LF"
+    }
+  ],
+  "findings": [
+    {
+      "id": "NDNS-012",
+      "severity": "P1",
+      "type": "CODE_DEFECT",
+      "status": "CONTROLLED_JVM_REPRODUCED",
+      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "runtimeReproduced": true,
+      "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+      "title": "Bağlantı göstergesi gerçek profil parmak izini yapılandırma kimliğiyle karşılaştırıyor",
+      "locations": [
+        {
+          "path": "app/src/main/java/com/example/data/model/DiagnosticConnectionState.kt",
+          "lineStart": 7,
+          "lineEnd": 19,
+          "sha256": "0497fce16dc01ebe9bad6794ac5bad7349ac9d548c8273a4ae87d8a18130c932",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/data/model/DiagnosticConnectionState.kt#L7"
+        },
+        {
+          "path": "app/src/main/java/com/example/ui/screens/SetupScreen.kt",
+          "lineStart": 145,
+          "lineEnd": 158,
+          "sha256": "3baf9360c0336c22d75c0cc0ccfb97265b6e5f87fbb45a3d019c11ea9cf2a10d",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/screens/SetupScreen.kt#L145"
+        },
+        {
+          "path": "app/src/main/java/com/example/data/repository/NextDnsRepository.kt",
+          "lineStart": 565,
+          "lineEnd": 570,
+          "sha256": "32f08d618ecdffc82246564142aa9a3d9f8ddfc1d0c4d96b3e8fdda06200c69b",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L565"
+        }
+      ],
+      "trigger": "Seçili profil: id=aaaaaa, fingerprint=fp0123456789abcdef. Tanılama: status=ok ve profile=fp0123456789abcdef.",
+      "observedSourceBehavior": "Tanılama profile alanı doğrudan DiagnosticTestResult.profileId içine alınır; ekran yalnız activeProfile.id değerini karşılaştırır. Eşleşen gerçekçi parmak iziyle sağlıklı seçili profil gösterilmez. Önceki testte profile alanına aaaaaa yazıldığı için kusur kaçmıştır.",
+      "recommendedCorrection": "Hizmet kullanımını ve seçili profil doğrulamasını ayrı modelle; doğrulanmış profil fingerprint bilgisini doğru biçimde eşleştir. Yalnız status=ok olduğu için her profili sağlıklı sayma.",
+      "closureCriteria": "Aynı fingerprint sağlıklı; farklı fingerprint uyuşmazlık; eksik fingerprint belirsiz; hata ve eski ölçüm yeni başarı değildir. Beş dil ve gerçek cihazda tekrar gerekir.",
+      "browserstackCases": [
+        "B02",
+        "B11",
+        "B19"
+      ],
+      "reproductionTests": [
+        "identicalRealisticFingerprintMustShowConnectedForSelectedProfile"
+      ],
+      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "deviceRetestStatus": "NOT_RUN",
+      "fixCommit": null
+    },
+    {
+      "id": "NDNS-013",
+      "severity": "P2",
+      "type": "CODE_DEFECT",
+      "status": "SOURCE_AND_STANDALONE_COUNTEREXAMPLE_CONFIRMED",
+      "verification": "SOURCE_TEMPLATE_AND_JDK_VALIDATION",
+      "runtimeReproduced": false,
+      "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+      "title": "Kurulum ekranı altı haneli profil için geçersiz IPv6 adresi üretiyor",
+      "locations": [
+        {
+          "path": "app/src/main/java/com/example/ui/screens/SetupScreen.kt",
+          "lineStart": 356,
+          "lineEnd": 367,
+          "sha256": "3baf9360c0336c22d75c0cc0ccfb97265b6e5f87fbb45a3d019c11ea9cf2a10d",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/screens/SetupScreen.kt#L356"
+        },
+        {
+          "path": "app/src/main/java/com/example/ui/screens/SetupScreen.kt",
+          "lineStart": 1217,
+          "lineEnd": 1229,
+          "sha256": "3baf9360c0336c22d75c0cc0ccfb97265b6e5f87fbb45a3d019c11ea9cf2a10d",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/screens/SetupScreen.kt#L1217"
+        }
+      ],
+      "trigger": "Profil kimliği abcdef veya aaaaaa iken Kurulum > Uç noktalar > IPv6 alanını aç/kopyala.",
+      "observedSourceBehavior": "2a07:a8c0::abcdef biçiminde altı hex haneli tek IPv6 grubu üretilir. JDK ayrıştırıcısı bunu reddeder; 2a07:a8c0::ab:cdef kontrolü geçer. Router fallback aynı kalıbı tekrarlar; uç noktalar özeti API IPv6 alanını kullanmaz.",
+      "recommendedCorrection": "Öncelikle doğrulanmış setup.ipv6 değerlerini kullan; yedek üretim gerekiyorsa standart IPv6 grup sınırlarına uyan, sınanan tek bir dönüştürücü kullan.",
+      "closureCriteria": "Altı haneli profil kimliklerinin ürettiği/kopyaladığı her adres geçerli olmalı ve hizmetin setup IPv6 değerleriyle eşleşmelidir.",
+      "browserstackCases": [
+        "B02",
+        "B11",
+        "B19"
+      ],
+      "reproductionTests": [],
+      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "deviceRetestStatus": "NOT_RUN",
+      "fixCommit": null
+    },
+    {
+      "id": "NDNS-014",
+      "severity": "P2",
+      "type": "CODE_DEFECT",
+      "status": "CONTROLLED_JVM_REPRODUCED",
+      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "runtimeReproduced": true,
+      "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+      "title": "Başarısız izin/engel listesi eklemesi kullanıcının yazdığı alan adını siliyor",
+      "locations": [
+        {
+          "path": "app/src/main/java/com/example/ui/screens/AllowlistScreen.kt",
+          "lineStart": 100,
+          "lineEnd": 111,
+          "sha256": "bcd063e05bbb4c0285d6595020cfb96f5d263614251eb49216e09c51c79a2ac6",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/screens/AllowlistScreen.kt#L100"
+        },
+        {
+          "path": "app/src/main/java/com/example/ui/screens/DenylistScreen.kt",
+          "lineStart": 99,
+          "lineEnd": 110,
+          "sha256": "6e6784b2e7eba0496ff926e340a97176e9b646bc36d0dab2c52b3bde80f7466c",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/screens/DenylistScreen.kt#L99"
+        }
+      ],
+      "trigger": "İzin veya engel listesine keep.synthetic.example yaz; Ekle; sunucu 500 döndürsün.",
+      "observedSourceBehavior": "Ekran fire-and-forget ViewModel çağrısından hemen sonra domainInput değerini boşaltır. İstek reddedilip liste değişmediğinde hata gösterilse de yeniden denenecek metin kaybolur. İki ekran testi bunu doğrular.",
+      "recommendedCorrection": "Gönderimin tamamlanma sonucunu ekrana taşı; yalnız başarı doğrulandıktan sonra ilgili girdiyi temizle. Hata ve iptalde girdiyi koru; istek sırasında yeni yazılan metni eski yanıtla silme.",
+      "closureCriteria": "Offline, 400/401/429/500, doğrulama hatası ve iptalde metin kalır; yalnız doğru girdinin başarılı sunucu onayı metni temizler.",
+      "browserstackCases": [
+        "B03",
+        "B05"
+      ],
+      "reproductionTests": [
+        "failedAllowlistSubmissionMustPreserveTypedDomain",
+        "failedDenylistSubmissionMustPreserveTypedDomain"
+      ],
+      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "deviceRetestStatus": "NOT_RUN",
+      "fixCommit": null
+    },
+    {
+      "id": "NDNS-015",
+      "severity": "P2",
+      "type": "CODE_DEFECT",
+      "status": "CONTROLLED_JVM_REPRODUCED",
+      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "runtimeReproduced": true,
+      "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+      "title": "Kısmi analiz hataları bütün görünümün taze başarı olarak sunulmasına neden oluyor",
+      "locations": [
+        {
+          "path": "app/src/main/java/com/example/data/repository/NextDnsRepository.kt",
+          "lineStart": 2362,
+          "lineEnd": 2413,
+          "sha256": "32f08d618ecdffc82246564142aa9a3d9f8ddfc1d0c4d96b3e8fdda06200c69b",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L2362"
+        }
+      ],
+      "trigger": "analytics/status 200 ve diğer 13 analiz isteği 500 döndürsün.",
+      "observedSourceBehavior": "Yalnız statusResp zorunlu kabul edilir. Diğer paneller eski/boş değerlerle birleştirilir; analyticsLastSuccessAt güncellenir, analyticsErrorMessage silinir ve fetchAnalytics true döner.",
+      "recommendedCorrection": "Panel bazında eksik/eski/hatalı durumu açıkça izle veya bütün snapshot başarı ölçütünü doğrula. Başarısız panelleri yeni ve tamamlanmış sonuç olarak etiketleme.",
+      "closureCriteria": "Her alt uç nokta tek başına ve toplu hata verdiğinde görünümün kısmi/eski durumu anlaşılır olmalı; yeniden deneme ve başarı zamanı doğru kalmalıdır.",
+      "browserstackCases": [
+        "B05",
+        "B19"
+      ],
+      "reproductionTests": [
+        "failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess"
+      ],
+      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "deviceRetestStatus": "NOT_RUN",
+      "fixCommit": null
+    },
+    {
+      "id": "NDNS-016",
+      "severity": "P2",
+      "type": "CODE_DEFECT",
+      "status": "CONTROLLED_JVM_REPRODUCED",
+      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "runtimeReproduced": true,
+      "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+      "title": "Geç tamamlanan analiz isteği yeni filtre seçiminin verisini eziyor",
+      "locations": [
+        {
+          "path": "app/src/main/java/com/example/ui/viewmodel/NextDnsViewModel.kt",
+          "lineStart": 579,
+          "lineEnd": 586,
+          "sha256": "7c8dc58c5d9882fd530c6fa7cb34f4cfa4e682a8ae6c15403abf9947a9bf9e72",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/viewmodel/NextDnsViewModel.kt#L579"
+        },
+        {
+          "path": "app/src/main/java/com/example/data/repository/NextDnsRepository.kt",
+          "lineStart": 2252,
+          "lineEnd": 2257,
+          "sha256": "32f08d618ecdffc82246564142aa9a3d9f8ddfc1d0c4d96b3e8fdda06200c69b",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L2252"
+        },
+        {
+          "path": "app/src/main/java/com/example/data/repository/NextDnsRepository.kt",
+          "lineStart": 2362,
+          "lineEnd": 2413,
+          "sha256": "32f08d618ecdffc82246564142aa9a3d9f8ddfc1d0c4d96b3e8fdda06200c69b",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L2362"
+        }
+      ],
+      "trigger": "Aynı profilde önce -24h isteğini geciktir; sonra -7d/200 sorgu isteğini tamamlat; en son -24h/100 sorgu yanıtını bırak.",
+      "observedSourceBehavior": "Oturum/profil aynı kaldığı için iki yanıt da commit edilir. En yeni filtre seçildikten sonra sonuç 200 yerine 100 olur; analiz için istek nesli veya eski isteği iptal/eleme kontrolü yoktur.",
+      "recommendedCorrection": "Profil, cihaz ve tarih aralığına bağlı analiz istek kimliği kullan; yalnız en güncel isteğin sonucunu uygula. Loading durumunu da aynı isteğe bağla.",
+      "closureCriteria": "Geciktirilmiş eski cihaz/tarih yanıtları son seçimin sonuçlarını, hata bilgisini veya loading durumunu değiştirememelidir.",
+      "browserstackCases": [
+        "B08",
+        "B19"
+      ],
+      "reproductionTests": [
+        "olderAnalyticsFilterResponseMustNotOverwriteNewSelection"
+      ],
+      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "deviceRetestStatus": "NOT_RUN",
+      "fixCommit": null
+    },
+    {
+      "id": "NDNS-017",
+      "severity": "P2",
+      "type": "CODE_DEFECT",
+      "status": "CONTROLLED_JVM_REPRODUCED",
+      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "runtimeReproduced": true,
+      "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+      "title": "Boş sunucu günlük yanıtı eski kayıtları ekrandan kaldırmıyor",
+      "locations": [
+        {
+          "path": "app/src/main/java/com/example/data/repository/NextDnsRepository.kt",
+          "lineStart": 1855,
+          "lineEnd": 1879,
+          "sha256": "32f08d618ecdffc82246564142aa9a3d9f8ddfc1d0c4d96b3e8fdda06200c69b",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L1855"
+        }
+      ],
+      "trigger": "İlk günlük yenilemesi bir kayıt döndürsün; uzak kayıtlar temizlendikten sonraki yenileme data=[] döndürsün.",
+      "observedSourceBehavior": "refreshLogsFromApi yalnız fetchedLogs boş değilse logs durumunu günceller. Boş yetkili yanıt başarı sayılır fakat artık sunucuda bulunmayan geçmiş ekranda kalır.",
+      "recommendedCorrection": "Yeni yetkili snapshot ile stream artımlı birleştirmeyi ayır; boş snapshot durumunu açıkça uygula ve gerekli stream/cursor durumunu uzlaştır.",
+      "closureCriteria": "Uzak silme/saklama süresi sonrası boş yenileme eski kayıtları kaldırır; stream tekrarları ve yeni gerçek kayıtlar doğru işlenir.",
+      "browserstackCases": [
+        "B05",
+        "B13",
+        "B19"
+      ],
+      "reproductionTests": [
+        "emptyAuthoritativeLogRefreshMustRemoveDeletedRemoteHistory"
+      ],
+      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "deviceRetestStatus": "NOT_RUN",
+      "fixCommit": null
+    },
+    {
+      "id": "NDNS-018",
+      "severity": "P2",
+      "type": "CODE_DEFECT",
+      "status": "CONTROLLED_JVM_REPRODUCED",
+      "verification": "LINUX_CI_AND_WINDOWS_JVM",
+      "runtimeReproduced": true,
+      "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+      "title": "Misafir seçimi sürmekte olan giriş isteğini geçersiz kılmıyor",
+      "locations": [
+        {
+          "path": "app/src/main/java/com/example/ui/viewmodel/NextDnsViewModel.kt",
+          "lineStart": 298,
+          "lineEnd": 315,
+          "sha256": "7c8dc58c5d9882fd530c6fa7cb34f4cfa4e682a8ae6c15403abf9947a9bf9e72",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/viewmodel/NextDnsViewModel.kt#L298"
+        },
+        {
+          "path": "app/src/main/java/com/example/ui/screens/LoginScreen.kt",
+          "lineStart": 243,
+          "lineEnd": 257,
+          "sha256": "aa9fcb0d8d674ab89ac339e28a199c26e99a4f592b5a40dbeed09b587315f47f",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/screens/LoginScreen.kt#L243"
+        }
+      ],
+      "trigger": "API anahtarıyla girişi başlat; profil yanıtı beklerken Misafir/Demo düğmesine bas; sonra başarılı profil yanıtını tamamlat.",
+      "observedSourceBehavior": "continueAsGuest yalnız isGuestMode=true yapar. authenticationJob sürer; geç gelen başarılı giriş isGuestMode=false yaparak daha yeni misafir tercihini ezer. Giriş sürerken misafir düğmesi aktiftir.",
+      "recommendedCorrection": "Misafir geçişinde eski kimlik doğrulama girişimini iptal/geçersiz kıl; geç gelen sonucun kimlik durumunu değiştirmesine izin verme.",
+      "closureCriteria": "Başarılı, hatalı ve gecikmiş eski giriş yanıtları misafir tercihini bozmamalı; gerçek hesap durumuna sessiz geçiş olmamalıdır.",
+      "browserstackCases": [
+        "B01",
+        "B08"
+      ],
+      "reproductionTests": [
+        "choosingGuestMustSupersedeAnInFlightLogin"
+      ],
+      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "deviceRetestStatus": "NOT_RUN",
+      "fixCommit": null
+    },
+    {
+      "id": "NDNS-019",
+      "severity": "P2",
+      "type": "CODE_DEFECT",
+      "status": "SOURCE_AND_STANDALONE_COUNTEREXAMPLE_CONFIRMED",
+      "verification": "SOURCE_TEMPLATE_AND_JDK_VALIDATION",
+      "runtimeReproduced": false,
+      "reviewedCommit": "4812323e588b216617994235011d630d3cd670b5",
+      "title": "Alan adı doğrulayıcısı geçerli Punycode adlarını reddedip geçersiz etiketleri kabul ediyor",
+      "locations": [
+        {
+          "path": "app/src/main/java/com/example/ui/screens/AllowlistScreen.kt",
+          "lineStart": 100,
+          "lineEnd": 121,
+          "sha256": "bcd063e05bbb4c0285d6595020cfb96f5d263614251eb49216e09c51c79a2ac6",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/screens/AllowlistScreen.kt#L100"
+        },
+        {
+          "path": "app/src/main/java/com/example/ui/screens/DenylistScreen.kt",
+          "lineStart": 99,
+          "lineEnd": 120,
+          "sha256": "6e6784b2e7eba0496ff926e340a97176e9b646bc36d0dab2c52b3bde80f7466c",
+          "hashFormat": "sha256 of git blob bytes at reviewedCommit",
+          "url": "https://github.com/illetyus/open-source-client-for-nextdns/blob/4812323e588b216617994235011d630d3cd670b5/app/src/main/java/com/example/ui/screens/DenylistScreen.kt#L99"
+        }
+      ],
+      "trigger": "İzin/engel listesinde xn--e1afmkfd.xn--p1ai, a..com, a-.com ve -a.com girdilerini dene.",
+      "observedSourceBehavior": "İki ekran aynı regex kullanır: üst seviye alan adını yalnız ASCII harfleriyle sınırlar; etiket sınırlarını denetlemez. JDK IDN/STD3 kontrolü geçerli Punycode örneğini kabul ederken UI regex reddeder; üç geçersiz örnekte tersi olur.",
+      "recommendedCorrection": "Tek bir alan adı doğrulama/IDNA normalleştirme sınırı kullan; joker, etiket uzunluğu ve tire kurallarını açıkça sınayıp API hatalarını da koru.",
+      "closureCriteria": "ASCII, geçerli Punycode/IDNA ve desteklenen jokerler kabul edilmeli; boş/uzun/başında-sonunda tire olan etiketler doğru hata vermelidir.",
+      "browserstackCases": [
+        "B03",
+        "B17"
+      ],
+      "reproductionTests": [],
+      "evidence": "docs/release/bug-hunt-2026-10-19/results.json",
+      "deviceRetestStatus": "NOT_RUN",
+      "fixCommit": null
+    }
+  ],
+  "staticCounterexamples": [
+    "IPV6\t2a07:a8c0::abcdef\tfalse",
+    "IPV6\t2a07:a8c1::aaaaaa\tfalse",
+    "IPV6\t2a07:a8c0::ab:cdef\ttrue",
+    "DOMAIN\texample.com\ttrue\ttrue",
+    "DOMAIN\txn--e1afmkfd.xn--p1ai\tfalse\ttrue",
+    "DOMAIN\ta..com\ttrue\tfalse",
+    "DOMAIN\ta-.com\ttrue\tfalse",
+    "DOMAIN\t-a.com\ttrue\tfalse"
+  ],
+  "diagnosticServiceShape": {
+    "source": "https://test.nextdns.io/",
+    "status": "ok",
+    "protocol": "DOH",
+    "profileLength": 18,
+    "profileHasFpPrefix": true,
+    "privacy": "Only field shape retained; actual profile fingerprint and IPs were not printed or saved. This is the Windows network, not a phone traffic measurement."
+  },
+  "windows": {
+    "baseline": {
+      "tests": 105,
+      "passed": 39,
+      "failed": 66,
+      "errors": 0,
+      "skipped": 0,
+      "all66Failures": "Conscrypt native loader UnsatisfiedLinkError; Turkish JVM locale produced the wrong windows library suffix."
+    },
+    "initialBootstrapFailure": "Java AF_UNIX loopback connection failed under a long sandbox TEMP path.",
+    "processOnlyMitigation": "Short TEMP/TMP and English JVM locale for test processes; no persistent OS or app-language setting change.",
+    "newProbes": {
+      "tests": 9,
+      "passed": 2,
+      "failed": 7,
+      "sameOutcomesAsLinux": true
+    }
+  },
+  "coverage": {
+    "mainKotlinFilesInventoriedAndPatternScanned": 53,
+    "mainKotlinLines": 15343,
+    "focusedReview": "DNS identity/setup, API/DTOs and trust boundaries, sessions/profile/mutations, analytics/logs/export, UI forms/navigation/localization, legal gates, preferences/keystore, notification scheduling/worker and manifest.",
+    "limits": [
+      "Static source review and controlled JVM fixtures do not prove that every runtime defect is found.",
+      "No connected Android device, new BrowserStack run, or real account mutation was performed.",
+      "Existing Phase 9 full-device/legal/publication gates stay open."
+    ]
+  },
+  "applicationSourceChanged": false,
+  "newApkProduced": false,
+  "legalStatus": "DRAFT",
+  "publicReleaseApproved": false
+}

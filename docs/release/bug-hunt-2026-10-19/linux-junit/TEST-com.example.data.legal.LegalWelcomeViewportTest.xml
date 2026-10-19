@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.data.legal.LegalWelcomeViewportTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:43.761Z" hostname="runnervm8k3b6" time="0.727">
+  <properties/>
+  <testcase name="shortLandscapeAtLargeFontKeepsDocumentsAndConsentReachableInFiveLanguages" classname="com.example.data.legal.LegalWelcomeViewportTest" time="0.725"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

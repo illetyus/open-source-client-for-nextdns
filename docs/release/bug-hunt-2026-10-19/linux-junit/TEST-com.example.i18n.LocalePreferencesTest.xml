@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.i18n.LocalePreferencesTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:47.483Z" hostname="runnervm8k3b6" time="0.166">
+  <properties/>
+  <testcase name="platformAndInAppChoicesStaySynchronized" classname="com.example.i18n.LocalePreferencesTest" time="0.025"/>
+  <testcase name="changingLanguagePreservesTermsRevision" classname="com.example.i18n.LocalePreferencesTest" time="0.026"/>
+  <testcase name="allFiveChoicesResolveResourcesWithoutChangingApiValues" classname="com.example.i18n.LocalePreferencesTest" time="0.091"/>
+  <testcase name="invalidSavedChoiceFallsBackToSystem" classname="com.example.i18n.LocalePreferencesTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

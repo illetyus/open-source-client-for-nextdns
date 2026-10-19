@@ -1,0 +1,8 @@
+IPV6	2a07:a8c0::abcdef	false
+IPV6	2a07:a8c1::aaaaaa	false
+IPV6	2a07:a8c0::ab:cdef	true
+DOMAIN	example.com	true	true
+DOMAIN	xn--e1afmkfd.xn--p1ai	false	true
+DOMAIN	a..com	true	false
+DOMAIN	a-.com	true	false
+DOMAIN	-a.com	true	false

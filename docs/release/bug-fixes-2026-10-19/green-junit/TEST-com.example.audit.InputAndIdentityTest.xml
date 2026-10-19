@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.audit.InputAndIdentityTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T16:00:49.410Z" hostname="PHELESMEPHISTO" time="1.537">
+  <properties/>
+  <testcase name="internationalDomainsAndWildcardRulesNormalizeToAscii" classname="com.example.audit.InputAndIdentityTest" time="1.526"/>
+  <testcase name="invalidLabelsUrlsIpsAndOversizedRulesAreRejected" classname="com.example.audit.InputAndIdentityTest" time="0.002"/>
+  <testcase name="setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback" classname="com.example.audit.InputAndIdentityTest" time="0.003"/>
+  <testcase name="diagnosticIdentityUsesFingerprintWhileErrorsAndMissingIdentityRemainUnverified" classname="com.example.audit.InputAndIdentityTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

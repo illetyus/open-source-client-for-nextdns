@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.data.local.NextDnsPreferencesSecurityTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:44.533Z" hostname="runnervm8k3b6" time="0.15">
+  <properties/>
+  <testcase name="legacySensitiveCaches_arePurgedOnInitialization" classname="com.example.data.local.NextDnsPreferencesSecurityTest" time="0.035"/>
+  <testcase name="settingApiKey_neverStoresPlaintextCredential" classname="com.example.data.local.NextDnsPreferencesSecurityTest" time="0.029"/>
+  <testcase name="migrationEncryptionFailure_removesLegacyPlaintext" classname="com.example.data.local.NextDnsPreferencesSecurityTest" time="0.029"/>
+  <testcase name="clearingApiKey_removesLegacyAndEncryptedValues" classname="com.example.data.local.NextDnsPreferencesSecurityTest" time="0.028"/>
+  <testcase name="legacyPlaintextApiKey_isMigratedAndRemovedOnRead" classname="com.example.data.local.NextDnsPreferencesSecurityTest" time="0.027"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

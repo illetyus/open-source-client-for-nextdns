@@ -5,7 +5,7 @@ enum class DiagnosticConnectionState {
 }
 
 fun diagnosticConnectionState(
-  selectedProfileId: String?,
+  selectedProfile: NextDnsProfile?,
   result: DiagnosticTestResult,
   running: Boolean = false
 ): DiagnosticConnectionState = when {
@@ -13,7 +13,7 @@ fun diagnosticConnectionState(
   result.errorMessage != null || result.status.equals("error", true) -> DiagnosticConnectionState.ERROR
   result.lastTestedTime <= 0L -> DiagnosticConnectionState.UNCONFIGURED
   result.status.lowercase().trim() !in setOf("ok", "using-nextdns") -> DiagnosticConnectionState.UNCONFIGURED
-  selectedProfileId.isNullOrBlank() -> DiagnosticConnectionState.NO_SELECTED_PROFILE
-  !result.profileId.trim().equals(selectedProfileId.trim(), true) -> DiagnosticConnectionState.UNVERIFIED_PROFILE
+  selectedProfile == null || selectedProfile.id.isBlank() -> DiagnosticConnectionState.NO_SELECTED_PROFILE
+  selectedProfile.fingerprint.isBlank() || !result.profileId.trim().equals(selectedProfile.fingerprint.trim(), true) -> DiagnosticConnectionState.UNVERIFIED_PROFILE
   else -> DiagnosticConnectionState.MATCHED_PROFILE
 }

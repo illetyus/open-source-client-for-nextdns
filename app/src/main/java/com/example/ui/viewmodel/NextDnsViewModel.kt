@@ -164,6 +164,8 @@ class NextDnsViewModel(
   private var visibleSectionSyncJob: Job? = null
   private var foregroundProfileSyncJob: Job? = null
   private var authenticationJob: Job? = null
+  private var analyticsRefreshJob: Job? = null
+  private var analyticsRefreshGeneration = 0L
 
   private val _uiMessage = MutableStateFlow<UiMessage?>(null)
   val uiMessage = _uiMessage.asStateFlow()
@@ -297,6 +299,11 @@ class NextDnsViewModel(
 
   fun continueAsGuest() {
     if (!repository.termsAccepted()) return
+    authenticationJob?.cancel()
+    authenticationJob = null
+    stopVisibleTabSync()
+    stopForegroundProfileSync()
+    repository.suspendForGuest()
     _isGuestMode.value = true
     showMessage(AppStrings.get(R.string.demo_started))
   }
@@ -507,12 +514,11 @@ class NextDnsViewModel(
   }
 
   // Denylist
-  fun addToDenylist(domain: String) {
+  fun addToDenylist(domain: String, onSuccess: () -> Unit = {}) {
     viewModelScope.launch {
-      reportMutationResult(
-        repository.addToDenylist(domain),
-        successMessage = AppStrings.get(R.string.denylist_added, domain)
-      )
+      val result = repository.addToDenylist(domain)
+      reportMutationResult(result, successMessage = AppStrings.get(R.string.denylist_added, domain))
+      if (result.isSuccess) onSuccess()
     }
   }
 
@@ -532,12 +538,11 @@ class NextDnsViewModel(
   }
 
   // Allowlist
-  fun addToAllowlist(domain: String) {
+  fun addToAllowlist(domain: String, onSuccess: () -> Unit = {}) {
     viewModelScope.launch {
-      reportMutationResult(
-        repository.addToAllowlist(domain),
-        successMessage = AppStrings.get(R.string.allowlist_added, domain)
-      )
+      val result = repository.addToAllowlist(domain)
+      reportMutationResult(result, successMessage = AppStrings.get(R.string.allowlist_added, domain))
+      if (result.isSuccess) onSuccess()
     }
   }
 
@@ -577,12 +582,14 @@ class NextDnsViewModel(
   }
 
   fun refreshAnalytics(device: String?, time: String?) {
-    viewModelScope.launch {
-      _isAnalyticsLoading.value = true
+    val generation = ++analyticsRefreshGeneration
+    analyticsRefreshJob?.cancel()
+    _isAnalyticsLoading.value = true
+    analyticsRefreshJob = viewModelScope.launch {
       try {
         repository.fetchAnalytics(repository.apiKey.value, activeProfileId.value, device, time)
       } finally {
-        _isAnalyticsLoading.value = false
+        if (generation == analyticsRefreshGeneration) _isAnalyticsLoading.value = false
       }
     }
   }
@@ -614,7 +621,7 @@ class NextDnsViewModel(
       val activePid = repository.activeProfileId.value
       val result = repository.runDiagnosticTest(activePid.takeIf { it.isNotBlank() })
       if (showToast) {
-        val state = diagnosticConnectionState(activePid, result)
+        val state = diagnosticConnectionState(repository.profiles.value.find { it.id == activePid }, result)
         val matched = state == DiagnosticConnectionState.MATCHED_PROFILE
         val message = when (state) {
           DiagnosticConnectionState.MATCHED_PROFILE -> {

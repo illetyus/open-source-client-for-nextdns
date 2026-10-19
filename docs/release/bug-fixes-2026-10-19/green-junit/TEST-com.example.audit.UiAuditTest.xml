@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.audit.UiAuditTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-19T16:03:27.050Z" hostname="PHELESMEPHISTO" time="60.875">
+  <properties/>
+  <testcase name="lateAllowlistSuccessMustPreserveNewText" classname="com.example.audit.UiAuditTest" time="56.13"/>
+  <testcase name="detectedNextDnsWithoutSelectedProfileMustNotSayNotConfigured" classname="com.example.audit.UiAuditTest" time="0.251"/>
+  <testcase name="identicalRealisticFingerprintMustShowConnectedForSelectedProfile" classname="com.example.audit.UiAuditTest" time="0.13"/>
+  <testcase name="failedAllowlistSubmissionMustPreserveTypedDomain" classname="com.example.audit.UiAuditTest" time="0.287"/>
+  <testcase name="successfulAllowlistSubmissionClearsOnlyTheConfirmedText" classname="com.example.audit.UiAuditTest" time="0.404"/>
+  <testcase name="malformedLabelsMustNotReachTheRepository" classname="com.example.audit.UiAuditTest" time="0.436"/>
+  <testcase name="successfulDenylistSubmissionClearsOnlyTheConfirmedText" classname="com.example.audit.UiAuditTest" time="0.487"/>
+  <testcase name="unrelatedFingerprintMustNotShowHealthySelectedProfile" classname="com.example.audit.UiAuditTest" time="0.151"/>
+  <testcase name="failedDenylistSubmissionMustPreserveTypedDomain" classname="com.example.audit.UiAuditTest" time="0.363"/>
+  <testcase name="validPunycodeMustReachTheRepository" classname="com.example.audit.UiAuditTest" time="0.486"/>
+  <testcase name="copiedIpv6MustMatchBothDisplayedServiceAddresses" classname="com.example.audit.UiAuditTest" time="0.982"/>
+  <testcase name="lateDenylistSuccessMustPreserveNewText" classname="com.example.audit.UiAuditTest" time="0.277"/>
+  <testcase name="missingFingerprintMustNotVerifyTheSelectedProfile" classname="com.example.audit.UiAuditTest" time="0.134"/>
+  <testcase name="endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation" classname="com.example.audit.UiAuditTest" time="0.156"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

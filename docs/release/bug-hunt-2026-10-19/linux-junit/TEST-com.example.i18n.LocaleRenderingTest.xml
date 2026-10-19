@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.i18n.LocaleRenderingTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:45:47.653Z" hostname="runnervm8k3b6" time="4.793">
+  <properties/>
+  <testcase name="connectionStatusTextWrapsBetweenWordsInEveryLanguage" classname="com.example.i18n.LocaleRenderingTest" time="3.46"/>
+  <testcase name="homeRendersInEveryLanguageAtLargeFontScale" classname="com.example.i18n.LocaleRenderingTest" time="1.295"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: <-- 302 https://test.nextdns.io/ (99ms, 0-byte body)
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: <-- 200 https://test.nextdns.io/ (5ms, 194-byte body)
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: <-- 302 https://test.nextdns.io/ (8ms, 0-byte body)
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: <-- 200 https://test.nextdns.io/ (7ms, 194-byte body)
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: <-- 302 https://test.nextdns.io/ (5ms, 0-byte body)
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:51 PM okhttp3.internal.platform.Platform log
+INFO: <-- 200 https://test.nextdns.io/ (7ms, 194-byte body)
+Oct 19, 2026 2:45:52 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:52 PM okhttp3.internal.platform.Platform log
+INFO: <-- 302 https://test.nextdns.io/ (5ms, 0-byte body)
+Oct 19, 2026 2:45:52 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:52 PM okhttp3.internal.platform.Platform log
+INFO: <-- 200 https://test.nextdns.io/ (5ms, 194-byte body)
+Oct 19, 2026 2:45:52 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:52 PM okhttp3.internal.platform.Platform log
+INFO: <-- 302 https://test.nextdns.io/ (5ms, 0-byte body)
+Oct 19, 2026 2:45:52 PM okhttp3.internal.platform.Platform log
+INFO: --> GET https://test.nextdns.io/
+Oct 19, 2026 2:45:52 PM okhttp3.internal.platform.Platform log
+INFO: <-- 200 https://test.nextdns.io/ (5ms, 194-byte body)
+]]></system-err>
+</testsuite>

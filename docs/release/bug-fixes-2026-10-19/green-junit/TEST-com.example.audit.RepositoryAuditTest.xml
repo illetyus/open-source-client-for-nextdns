@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.audit.RepositoryAuditTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-19T16:00:52.600Z" hostname="PHELESMEPHISTO" time="154.392">
+  <properties/>
+  <testcase name="invalidLogSnapshotPreservesHistoryAndNewerRefreshWins" classname="com.example.audit.RepositoryAuditTest" time="135.308"/>
+  <testcase name="inFlightLogRefreshCannotRestoreHistoryAfterSuccessfulClear" classname="com.example.audit.RepositoryAuditTest" time="0.221"/>
+  <testcase name="everyFailedAnalyticsPanelPreservesTheLastCompleteSnapshotAndTimestamp" classname="com.example.audit.RepositoryAuditTest" time="1.393"/>
+  <testcase name="olderAnalyticsFilterResponseMustNotOverwriteNewSelection" classname="com.example.audit.RepositoryAuditTest" time="0.346"/>
+  <testcase name="choosingGuestMustSupersedeAnInFlightLogin" classname="com.example.audit.RepositoryAuditTest" time="0.279"/>
+  <testcase name="failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess" classname="com.example.audit.RepositoryAuditTest" time="0.268"/>
+  <testcase name="unicodeAndWildcardRulesUseCanonicalIdsForWriteAndVerification" classname="com.example.audit.RepositoryAuditTest" time="0.219"/>
+  <testcase name="malformedOrSemanticAnalyticsFailureDoesNotLookSuccessful" classname="com.example.audit.RepositoryAuditTest" time="0.357"/>
+  <testcase name="cancellingOldAnalyticsCannotClearNewRequestLoading" classname="com.example.audit.RepositoryAuditTest" time="0.222"/>
+  <testcase name="malformedDomainRulesCannotBypassTheForms" classname="com.example.audit.RepositoryAuditTest" time="0.116"/>
+  <testcase name="obsoleteAnalyticsFailureCannotReplaceNewSelectionSuccess" classname="com.example.audit.RepositoryAuditTest" time="0.307"/>
+  <testcase name="emptyAuthoritativeLogRefreshMustRemoveDeletedRemoteHistory" classname="com.example.audit.RepositoryAuditTest" time="0.133"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
