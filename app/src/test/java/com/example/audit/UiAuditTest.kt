@@ -12,6 +12,8 @@ import com.example.i18n.LocalePreferences
 import com.example.ui.screens.AllowlistScreen
 import com.example.ui.screens.ConnectionStatusBanner
 import com.example.ui.screens.DenylistScreen
+import com.example.ui.screens.EndpointsSection
+import com.example.data.api.SetupDto
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NextDnsViewModel
 import org.junit.Rule
@@ -52,6 +54,34 @@ class UiAuditTest : AuditFixture() {
 
   @Test fun failedAllowlistSubmissionMustPreserveTypedDomain() { checkFailedDomainInput(true) }
   @Test fun failedDenylistSubmissionMustPreserveTypedDomain() { checkFailedDomainInput(false) }
+
+  @Test fun validPunycodeMustReachTheRepository() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { AllowlistScreen(model) } }
+    rule.onNode(hasSetTextAction()).performTextInput("xn--e1afmkfd.xn--p1ai")
+    rule.onNodeWithText(AppStrings.get(R.string.ui_422579fc64)).performClick()
+    rule.waitUntil(5_000) { requests.any { it.startsWith("POST ") } }
+  }
+
+  @Test fun malformedLabelsMustNotReachTheRepository() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { DenylistScreen(model) } }
+    rule.onNode(hasSetTextAction()).performTextInput("a..com")
+    rule.onNodeWithText(AppStrings.get(R.string.ui_422579fc64)).performClick()
+    rule.onNodeWithText(AppStrings.get(R.string.ui_585a0d389f)).assertIsDisplayed()
+    assert(requests.none { it.startsWith("POST ") })
+  }
+
+  @Test fun endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation() {
+    english()
+    val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
+    rule.setContent { AppTheme { EndpointsSection("abcdef", context,
+      setup = SetupDto(ipv6 = listOf("2a07:a8c0::ab:cdef", "2a07:a8c1::ab:cdef"))) } }
+    rule.onNodeWithText("2a07:a8c0::ab:cdef\n2a07:a8c1::ab:cdef").assertIsDisplayed()
+    rule.onNodeWithText("2a07:a8c0::abcdef\n2a07:a8c1::abcdef").assertDoesNotExist()
+  }
 
   private fun checkFailedDomainInput(allow: Boolean) {
     english()

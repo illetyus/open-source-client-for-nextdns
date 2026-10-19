@@ -336,10 +336,11 @@ internal fun ConnectionStatusBanner(
 }
 
 @Composable
-private fun EndpointsSection(
+internal fun EndpointsSection(
   profileId: String,
   context: Context,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  setup: com.example.data.api.SetupDto? = null
 ) {
   NextDnsCard(
     modifier = modifier,
