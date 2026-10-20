@@ -1,5 +1,13 @@
 # Hata defteri — yayın öncesi kod incelemesi
 
+## 20 Ekim 2026 — kullanıcı tarafından tanımlanan hız testi sunucusu
+
+| Kayıt | Bulgu | Düzeltme / doğrulama |
+|---|---|---|
+| NDNS-054 | Kamuya açık bir test sunucusunu varsayılan seçmek, sunucu izni ve IP/telemetry saklama koşulları doğrulanmadığı için kullanıcıyı beklenmeyen veri paylaşımına ve trafikten doğan sorunlara sokabilirdi. Önceki plan aktarım motorunu bu nedenle ertelemişti. | Uygulamaya varsayılan adres koymadan kullanıcı tarafından girilen HTTPS LibreSpeed uyumlu sunucu, HTTPS politika bağlantısı ve test başına yetki onayı eklendi. İndirme 10.000.000 baytta sınırlandırıldı; 1.000.000 baytlık sentetik yükleme ayrı onay gerektiriyor. Redirect/cookie/retry, IP-ISP sorgusu, telemetry ve sonuç kalıcılığı yok. MockWebServer ve Compose testleri eklendi; CI henüz bu değişiklikleri çalıştırmadı, gerçek sunucu/telefon doğrulaması açık. |
+
+LibreSpeed'in yayımlanmış sunucu belgesi `garbage.php` için `ckSize` büyüklüğünü ve `empty.php` ping/yükleme rollerini açıklar; güncel kaynak kodu veri parçalarını 1.048.576 bayt olarak yazar. Ayrıntı ve kaynak bağlantıları [hız testi araştırma kaydında](SPEED_TEST_RESEARCH_TR.md). Bu, herhangi bir üçüncü taraf sunucunun kullanım iznini veya kapasitesini doğrulamaz.
+
 ## 20 Ekim 2026 — PR #27 CI #322–#327 dispatcher yarışı ve son doğrulama
 
 CI #322 (run `39451553055`, head `b9e0173e00f7827933b76f881bd868082c3ad4ff`) başarısız oldu: `accountDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected` sırasında `TestMainDispatcher.kt:72` eşzamanlı Main-dispatcher erişim hatası verdi. JUnit 4.13.2, `@Before`/`@After` çağrılarını kuralların içine sarıyor; eski fixture, `@After` içinde Main'i sıfırlarken Compose kuralının teardown'ı hâlâ çalışabiliyordu ([JUnit 4.13.2 runner](https://github.com/junit-team/junit4/blob/r4.13.2/src/main/java/org/junit/runners/BlockJUnit4ClassRunner.java)). Main dispatcher kurulum/sıfırlaması dış TestRule'a taşındı; Compose test kuralı onun içine `RuleChain` ile yerleştirildi. Repository-only testler kendi Main kuralını, account ve UI testleri bileşik Compose kuralını kullanıyor.
@@ -47,7 +55,7 @@ Canlı `main` tabanı `c7db8d9d04d2022741ccc1564877940f45fe485a` üzerinde açı
 
 İlk test-only commit PR'da üç regresyon beklentisini tanımladı: 12 dp ikon, sunucu kataloğu olmadan tahmini TLD göstermeme ve tanı bölgesini kullanılamaz gösterme. CI #303'te tek Compose testi başarısız oldu; beklenen durum hatası ile yükleme durumunun aynı kabul edildiği ortaya çıktı. Katalog durumu şimdi yükleniyor/boş/erişilemiyor/var olarak ayrıldı ve dialog gövdesi saat animasyonuna bağımlı olmadan test ediliyor. CI #304 ayrıca Türkçe kaynak kaçış sorununu gösterdi; kaynak düzeltildi. CI #310 kod ve paket kapılarını geçti. `test.nextdns.io` gerçek bölge alanı sunmadığından herhangi bir şehir/IP/Anycast eşlemesi yapılmadı.
 
-**Kalan doğrulama:** PR CI geçti. BrowserStack/gerçek cihaz ve performans ölçümü hâlâ tamamlanmadı. Hız testi sunucusu ve koşulları kullanıcı seçimi beklediğinden aktarım motoru eklenmedi. Yaş doğrulama ve erken erişim alanları yayımlanmış API sözleşmesi veya sanitize edilmiş yanıtla doğrulanmadığı için yazma/anahtar tahmini eklenmedi.
+**Kalan doğrulama:** PR CI geçti. BrowserStack/gerçek cihaz ve performans ölçümü hâlâ tamamlanmadı. Hız testi istemcisi eklendi; operator onaylı HTTPS sunucusunda smoke test ve politika doğrulaması bekliyor. Yaş doğrulama ve erken erişim alanları yayımlanmış API sözleşmesi veya sanitize edilmiş yanıtla doğrulanmadığı için yazma/anahtar tahmini eklenmedi.
 
 ## 20 Ekim 2026 — günlükler, ikonlar ve arayüz düzeni
 
@@ -221,7 +229,7 @@ P1, son kabul aşamasından önce düzeltilmesi gereken yüksek öncelik; P2, be
 
 **Bu turdaki Gradle sonucu:** Yerel ve çalışma alanı önbellek kilidi sorunları ayrı Gradle user home ve salt-okunur bağımlılık önbelleğiyle aşıldı. `:app:compileDebugKotlin` PASS oldu; ilk turda derleme üç Kotlin hatası buldu, düzeltmelerden sonra Kotlin derlemesi geçti. `:app:testDebugUnitTest` daha sonra `compileDebugJavaWithJavac` aşamasında Gradle worker loopback soketi açılamadığı (`Unable to establish loopback connection`, `Permission denied`) için durdu; yükseltilmiş yürütme denemesi de aynı sistem hatasını verdi. Testler, lint ve APK üretimi bu turda tamamlanmadı. `python scripts/verify_localization.py` (607 kaynak/beş dil), `python scripts/verify_legal_assets.py` (DRAFT demeti), `git diff --check` ve kalite betiği koruması için 3 Python testi PASS oldu. Eski JUnit XML raporları `verify_quality_regressions.py` tarafından artık doğru biçimde reddediliyor. Mevcut test XML'leri ve debug APK önceki ağaçtan kalmadır ve güncel diff'i doğrulamaz.
 
-**Devam eden yayın/kanıt engelleri:** fiziksel cihazda Macrobenchmark/Perfetto ölçümü; güvenli HTTPS hız testi sunucusu ve kullanım/lisans şartları; sanitize edilmiş gerçek API yanıtı ve sözleşme olmadan erken erişim güvenlik alanları; API'de belgelenmeyen yaş doğrulama alanı; beş dil dışındaki hukuki inceleme ve yayıma hazır olmayan DRAFT metinler. Ayrıntılı API karşılaştırması [NEXTDNS_API_CAPABILITY_MATRIX_TR.md](NEXTDNS_API_CAPABILITY_MATRIX_TR.md) içindedir.
+**Devam eden yayın/kanıt engelleri:** fiziksel cihazda Macrobenchmark/Perfetto ölçümü; operator onaylı HTTPS hız testi sunucusunda smoke test ve sunucu politikasının doğrulanması; sanitize edilmiş gerçek API yanıtı ve sözleşme olmadan erken erişim güvenlik alanları; API'de belgelenmeyen yaş doğrulama alanı; beş dil dışındaki hukuki inceleme ve yayıma hazır olmayan DRAFT metinler. Ayrıntılı API karşılaştırması [NEXTDNS_API_CAPABILITY_MATRIX_TR.md](NEXTDNS_API_CAPABILITY_MATRIX_TR.md) içindedir.
 
 ## 20 Ekim 2026 — devam eden uygulama incelemesi
 
