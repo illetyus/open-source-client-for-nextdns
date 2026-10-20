@@ -392,4 +392,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - The user deferred live speed testing. No public test endpoint is configured; physical-device measurements remain open.
 ### CI follow-up — 21 October 2026
 
-- CI #349 on head `8d1e015` stopped during Kotlin compilation because `MIN_DOWNLOAD_BYTES` referenced later-declared constants. `MIN_DOWNLOAD_MEBIBYTES`, `MAX_DOWNLOAD_MEBIBYTES`, and `BYTES_PER_MEBIBYTE` were moved before the derived constant and recorded as NDNS-064. A fresh full CI run is pending.
+- CI #349 on head `8d1e015` stopped during Kotlin compilation because `MIN_DOWNLOAD_BYTES` referenced later-declared constants. The declarations were reordered and recorded as NDNS-064.
+- CI #350 on code head `7ce8db5` passed Android Lint, 227 tests (0 failed/0 skipped), 25 defect regressions, 88 required cases, 12 screenshots, 611 coverage classes, Debug and unsigned Release builds, Macrobenchmark compilation, 138 bundled license notices with 98 hashes, Snyk High (0 findings across 50 dependencies), and 12 release-emulator runtime tests. `Snyk Monitor Main` was skipped as expected on a PR.
+- The user deferred live speed testing. Contract, consent, cancellation, and response-validation tests passed offline; no endpoint was contacted and no public server is configured. Live measurements remain deferred.
+- Physical-device and BrowserStack evidence, same-device performance baseline, authenticated benchmark journeys, Perfetto/recomposition traces, and legal review remain open. Legal texts remain DRAFT; this draft PR is not release approval.
