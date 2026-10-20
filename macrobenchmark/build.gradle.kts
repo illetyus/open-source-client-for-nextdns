@@ -13,6 +13,12 @@ android {
     testInstrumentationRunnerArguments["androidx.benchmark.fullTracing.enable"] = "true"
   }
 
+  buildTypes {
+    create("benchmark") {
+      initWith(getByName("debug"))
+    }
+  }
+
   targetProjectPath = ":app"
   experimentalProperties["android.experimental.self-instrumenting"] = true
 }
@@ -24,3 +30,4 @@ dependencies {
   implementation(libs.androidx.tracing.perfetto)
   implementation(libs.androidx.tracing.perfetto.binary)
 }
+
