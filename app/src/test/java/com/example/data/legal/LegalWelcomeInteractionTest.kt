@@ -20,6 +20,7 @@ class LegalWelcomeInteractionTest {
   @Test fun readingPrivacyDoesNotAcceptTermsOrEnableContinue() {
     var attempts = 0
     rule.setContent { AppTheme { LegalWelcomeScreen(onAccept = { attempts++; true }) } }
+    rule.onNodeWithTag("welcome_legal_group").assertExists()
     rule.onNodeWithTag("welcome_accept_checkbox").assertIsOff()
     rule.onNodeWithTag("welcome_continue").assertIsNotEnabled()
     rule.onNodeWithTag("welcome_privacy").performScrollTo().performClick()

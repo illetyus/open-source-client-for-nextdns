@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -57,11 +58,9 @@ fun HomeScreen(
   val currentSectionSyncState by viewModel.currentSectionSyncState.collectAsStateWithLifecycle()
   val activeProfile by viewModel.activeProfile.collectAsStateWithLifecycle()
   val profiles by viewModel.profiles.collectAsStateWithLifecycle()
-  val hasApiKey by viewModel.hasApiKey.collectAsStateWithLifecycle()
   val uiMessage by viewModel.uiMessage.collectAsStateWithLifecycle()
 
   var showProfileMenu by remember { mutableStateOf(false) }
-  var showAccountMenu by remember { mutableStateOf(false) }
   var showNewProfileDialog by remember { mutableStateOf(false) }
   var newProfileNameInput by remember { mutableStateOf("") }
   val snackbarHostState = remember { SnackbarHostState() }
@@ -129,7 +128,7 @@ fun HomeScreen(
         modifier = Modifier.statusBarsPadding()
       ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-          // Independent client title, profile selector and account controls.
+          // Independent client title, profile selector and connection shortcut.
           Row(
             modifier = Modifier
               .fillMaxWidth()
@@ -299,92 +298,24 @@ fun HomeScreen(
               }
             }
 
-            // Right: User Account Dropdown Box
-            Box {
-              Surface(
-                modifier = Modifier
-                  .clip(RoundedCornerShape(10.dp))
-                  .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
-                  .heightIn(min = 48.dp)
-                  .bounceClick(scaleDown = 0.97f) { showAccountMenu = true },
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(10.dp)
-              ) {
-                Row(
-                  modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                  verticalAlignment = Alignment.CenterVertically,
-                  horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                  Icon(
-                    imageVector = if (hasApiKey) Icons.Default.AccountCircle else Icons.Default.PersonOutline,
-                    contentDescription = null,
-                    tint = if (hasApiKey) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(14.dp)
-                  )
-                  Text(
-                    text = if (hasApiKey) AppStrings.get(R.string.ui_c994874896) else AppStrings.get(R.string.ui_6d063986da),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                      fontWeight = FontWeight.Medium,
-                      fontSize = 11.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                  )
-                  Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
-                  )
-                }
-              }
-
-              DropdownMenu(
-                expanded = showAccountMenu,
-                onDismissRequest = { showAccountMenu = false },
-                modifier = Modifier
-                  .background(MaterialTheme.colorScheme.surfaceVariant)
-                  .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(14.dp))
-              ) {
-                DropdownMenuItem(
-                  text = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                      Icon(Icons.Default.Sync, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                      Text(AppStrings.get(R.string.ui_9758f9879f), color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
-                    }
-                  },
-                  onClick = {
-                    showAccountMenu = false
-                    viewModel.syncAllData()
-                  }
-                )
-                DropdownMenuItem(
-                  text = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                      Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(16.dp))
-                      Text(AppStrings.get(R.string.ui_3b01c686bb), color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
-                    }
-                  },
-                  onClick = {
-                    showAccountMenu = false
-                    viewModel.runDiagnostic()
-                  }
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                DropdownMenuItem(
-                  text = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                      Icon(Icons.Default.Logout, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
-                      Text(AppStrings.get(R.string.ui_283092d12a), color = MaterialTheme.colorScheme.error, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                  },
-                  onClick = {
-                    showAccountMenu = false
-                    viewModel.logout()
-                  }
-                )
-              }
+            IconButton(
+              onClick = { viewModel.selectTab(NavTab.ACCOUNT) },
+              modifier = Modifier
+                .size(48.dp)
+                .testTag("home_nextdns_connection_button")
+            ) {
+              Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = AppStrings.get(R.string.account_profile_action),
+                tint = if (currentTab == NavTab.ACCOUNT) {
+                  MaterialTheme.colorScheme.primary
+                } else {
+                  MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.size(24.dp)
+              )
             }
+
           }
 
           if (navigationMode == NavigationLayoutMode.COMPACT) {
@@ -398,7 +329,7 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
-              NavTab.values().forEach { tab ->
+              nextDnsNavigationGroups.flatMap { it.tabs }.forEach { tab ->
               val isSelected = currentTab == tab
               val tabBgColor by animateColorAsState(
                 targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent,

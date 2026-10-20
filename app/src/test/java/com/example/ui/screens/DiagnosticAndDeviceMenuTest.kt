@@ -7,10 +7,12 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.NextDnsApp
 import com.example.R
 import com.example.data.model.DiagnosticTestResult
+import com.example.data.model.DeviceMetric
 import com.example.data.model.NextDnsProfile
 import com.example.i18n.AppStrings
 import com.example.i18n.LocalePreferences
 import com.example.ui.theme.AppTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,7 +53,13 @@ class DiagnosticAndDeviceMenuTest {
     rule.setContent {
       key(language) {
         AppTheme {
-          LogsHeaderControls(selected, listOf("Tüm cihazlar", "My Device"), menu,
+          LogsHeaderControls(
+            selected,
+            listOf(
+              DeviceMetric(id = "turkish-device", name = "Tüm cihazlar"),
+              DeviceMetric(id = "device-a", name = "My Device")
+            ),
+            menu,
             { menu = it }, { selected = it }, false, {}, false, {}, {})
         }
       }
@@ -67,5 +75,28 @@ class DiagnosticAndDeviceMenuTest {
     rule.onNodeWithText("Tüm cihazlar").performClick()
     rule.onNodeWithText("Tüm cihazlar").assertIsDisplayed()
     rule.onNodeWithText(AppStrings.get(R.string.all_devices)).assertDoesNotExist()
+    rule.runOnIdle { assert(selected == "turkish-device") }
+  }
+
+  @Test fun logsStatusFiltersExposeAllDocumentedCategoriesAndReturnApiValues() {
+    val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
+    LocalePreferences.setSelection(context, "en")
+    var selected: String? = null
+    rule.setContent {
+      AppTheme {
+        LogsStatusFilterRow(selectedStatusFilter = selected, onSelectStatus = { selected = it })
+      }
+    }
+
+    rule.onNodeWithText("All statuses").assertIsDisplayed()
+    rule.onNodeWithTag("logs_status_blocked").performClick()
+    rule.runOnIdle { assertEquals("blocked", selected) }
+    rule.onNodeWithTag("logs_status_allowed").performClick()
+    rule.runOnIdle { assertEquals("allowed", selected) }
+    rule.onNodeWithTag("logs_status_default").performClick()
+    rule.runOnIdle { assertEquals("default", selected) }
+    rule.onNodeWithTag("logs_status_filters").performScrollToNode(hasTestTag("logs_status_error"))
+    rule.onNodeWithTag("logs_status_error").performClick()
+    rule.runOnIdle { assertEquals("error", selected) }
   }
 }

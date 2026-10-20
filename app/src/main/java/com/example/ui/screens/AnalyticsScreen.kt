@@ -23,11 +23,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -35,12 +35,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.AnalyticsSummary
+import com.example.data.model.DeviceLabelResolver
 import com.example.data.model.DeviceMetric
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.NextDnsViewModel
 import java.text.NumberFormat
-import java.util.Locale
 
 @Composable
 fun AnalyticsScreen(
@@ -52,9 +52,8 @@ fun AnalyticsScreen(
   val analyticsLastSuccessAt by viewModel.analyticsLastSuccessAt.collectAsStateWithLifecycle()
   val analyticsErrorMessage by viewModel.analyticsErrorMessage.collectAsStateWithLifecycle()
   val isAnalyticsLoading by viewModel.isAnalyticsLoading.collectAsStateWithLifecycle()
-  val allKnownDevices by viewModel.allKnownDevices.collectAsStateWithLifecycle()
 
-  var selectedDeviceFilter by remember { mutableStateOf("Tüm cihazlar") }
+  var selectedDeviceFilter by remember { mutableStateOf<String?>(null) }
   var selectedTimeFilter by remember { mutableStateOf("Son 30 gün") }
 
   val lifecycleOwner = LocalLifecycleOwner.current
@@ -92,19 +91,8 @@ fun AnalyticsScreen(
   val numFormat = remember { NumberFormat.getInstance(AppStrings.locale) }
   val timesList = listOf("Son 24 saat", "Son 7 gün", "Son 30 gün", "Son 3 ay")
 
-  val devicesList = remember(allKnownDevices, analytics.topDevices) {
-    val list = mutableListOf<String>()
-    analytics.topDevices.forEach { dev ->
-      if (dev.name.isNotBlank() && dev.name != AppStrings.get(R.string.ui_571961518d) && dev.name != "Cihaz") {
-        list.add(dev.name)
-      }
-    }
-    allKnownDevices.forEach { dev ->
-      if (dev.isNotBlank() && dev != AppStrings.get(R.string.ui_571961518d) && dev != "Cihaz") {
-        list.add(dev)
-      }
-    }
-    listOf("Tüm cihazlar") + list.distinct()
+  val devicesList = remember(analytics.topDevices) {
+    analytics.topDevices.filter { it.id.isNotBlank() }.distinctBy { it.id }
   }
 
   val contentAlpha by animateFloatAsState(
@@ -139,6 +127,32 @@ fun AnalyticsScreen(
         },
         isLoading = isAnalyticsLoading
       )
+    }
+
+    if (analyticsLastSuccessAt != null && !analyticsErrorMessage.isNullOrBlank()) {
+      item {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Icon(
+            imageVector = Icons.Default.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(18.dp)
+          )
+          Text(
+            text = analyticsErrorMessage.orEmpty(),
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            fontSize = 12.5.sp
+          )
+        }
+      }
     }
 
     if (analyticsLastSuccessAt == null) {
@@ -273,11 +287,11 @@ fun AnalyticsScreen(
 
 @Composable
 private fun AnalyticsFilterBar(
-  selectedDeviceFilter: String,
-  devicesList: List<String>,
+  selectedDeviceFilter: String?,
+  devicesList: List<DeviceMetric>,
   showDeviceFilterMenu: Boolean,
   onToggleDeviceFilterMenu: (Boolean) -> Unit,
-  onSelectDevice: (String) -> Unit,
+  onSelectDevice: (String?) -> Unit,
   selectedTimeFilter: String,
   timesList: List<String>,
   showTimeFilterMenu: Boolean,
@@ -286,6 +300,15 @@ private fun AnalyticsFilterBar(
   isLoading: Boolean = false,
   modifier: Modifier = Modifier
 ) {
+  val selectedDeviceLabel = if (selectedDeviceFilter == null) {
+    AppStrings.get(R.string.all_devices)
+  } else {
+    devicesList.firstOrNull { it.id == selectedDeviceFilter }?.let { device ->
+      DeviceLabelResolver.resolve(
+        device.name, device.model, device.id, AppStrings.get(R.string.device_unidentified)
+      )
+    } ?: AppStrings.get(R.string.device_unidentified)
+  }
   Row(
     modifier = modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -296,6 +319,7 @@ private fun AnalyticsFilterBar(
         modifier = Modifier
           .clip(RoundedCornerShape(10.dp))
           .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+          .testTag("analytics_device_filter")
           .bounceClick { onToggleDeviceFilterMenu(true) },
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(10.dp)
@@ -305,7 +329,7 @@ private fun AnalyticsFilterBar(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-          Text(UiLabels.canonical(selectedDeviceFilter), color = MaterialTheme.colorScheme.onSurface, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
+          Text(selectedDeviceLabel, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
           Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         }
       }
@@ -316,11 +340,35 @@ private fun AnalyticsFilterBar(
           .background(MaterialTheme.colorScheme.surface)
           .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
       ) {
+        DropdownMenuItem(
+          modifier = Modifier.testTag("analytics_device_option_all"),
+          text = {
+            Text(
+              AppStrings.get(R.string.all_devices),
+              color = if (selectedDeviceFilter == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+              fontSize = 12.sp
+            )
+          },
+          onClick = {
+            onSelectDevice(null)
+            onToggleDeviceFilterMenu(false)
+          }
+        )
         devicesList.forEach { dev ->
+          val deviceLabel = DeviceLabelResolver.resolve(
+            dev.name, dev.model, dev.id, AppStrings.get(R.string.device_unidentified)
+          )
           DropdownMenuItem(
-            text = { Text(UiLabels.canonical(dev), color = if (dev == selectedDeviceFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontSize = 12.sp) },
+            modifier = Modifier.testTag("analytics_device_option_${dev.id}"),
+            text = {
+              Text(
+                deviceLabel,
+                color = if (dev.id == selectedDeviceFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                fontSize = 12.sp
+              )
+            },
             onClick = {
-              onSelectDevice(dev)
+              onSelectDevice(dev.id)
               onToggleDeviceFilterMenu(false)
             }
           )
@@ -604,7 +652,12 @@ private fun DevicesAnalyticsCard(
               modifier = Modifier.size(16.dp)
             )
             Text(
-              text = dev.name,
+              text = DeviceLabelResolver.resolve(
+                dev.name,
+                dev.model,
+                dev.id,
+                AppStrings.get(R.string.device_unidentified)
+              ),
               color = MaterialTheme.colorScheme.onSurface,
               fontSize = 12.sp,
               fontWeight = FontWeight.Medium
@@ -679,6 +732,45 @@ private fun GafamDominanceCard(
   numFormat: NumberFormat,
   modifier: Modifier = Modifier
 ) {
+  val segments = remember(analytics) { GafamChartModel.from(analytics) }
+  val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+  val palette = remember(darkTheme) {
+    if (darkTheme) {
+      mapOf(
+        GafamCompany.GOOGLE to Color(0xFF56B4E9),
+        GafamCompany.FACEBOOK to Color(0xFFE58CC4),
+        GafamCompany.MICROSOFT to Color(0xFF48CFA6),
+        GafamCompany.APPLE to Color(0xFFD1D1D1),
+        GafamCompany.AMAZON to Color(0xFFFFCA66),
+        GafamCompany.OTHER to Color(0xFF858B94)
+      )
+    } else {
+      mapOf(
+        GafamCompany.GOOGLE to Color(0xFF0072B2),
+        GafamCompany.FACEBOOK to Color(0xFFCC79A7),
+        GafamCompany.MICROSOFT to Color(0xFF009E73),
+        GafamCompany.APPLE to Color(0xFF4D4D4D),
+        GafamCompany.AMAZON to Color(0xFFE69F00),
+        GafamCompany.OTHER to Color(0xFF9AA0A6)
+      )
+    }
+  }
+  val localizedSegmentLabels = segments.map { segment ->
+    AppStrings.get(
+      R.string.gafam_company_stats,
+      gafamDisplayName(segment.company),
+      AppStrings.get(
+        R.string.percentage_queries,
+        AppStrings.percent(segment.sharePercent),
+        numFormat.format(segment.queries)
+      )
+    )
+  }
+  val accessibilityDescription = AppStrings.get(
+    R.string.gafam_chart_accessibility,
+    localizedSegmentLabels.joinToString(AppStrings.get(R.string.gafam_accessibility_separator))
+  )
+
   NextDnsCard(
     title = AppStrings.get(R.string.ui_8f4d0d2695),
     subtitle = AppStrings.get(R.string.gafam_description),
@@ -689,74 +781,56 @@ private fun GafamDominanceCard(
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(modifier = Modifier.size(100.dp), contentAlignment = Alignment.Center) {
-        val outlineColor = MaterialTheme.colorScheme.outline
-        val primaryColor = MaterialTheme.colorScheme.primary
-        val secondaryColor = MaterialTheme.colorScheme.secondary
-        val tertiaryColor = MaterialTheme.colorScheme.tertiary
-
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        Canvas(
+          modifier = Modifier
+            .fillMaxSize()
+            .testTag("gafam_chart")
+            .semantics { contentDescription = accessibilityDescription }
+        ) {
           val stroke = 18.dp.toPx()
-          val google = (analytics.gafamMetrics["Google"]?.first ?: 0.0).toFloat().coerceIn(0f, 100f)
-          val fb = (analytics.gafamMetrics["Facebook"]?.first ?: 0.0).toFloat().coerceIn(0f, 100f)
-          val ms = (analytics.gafamMetrics["Microsoft"]?.first ?: 0.0).toFloat().coerceIn(0f, 100f)
-
-          val gSweep = ((google / 100f) * 360f).coerceIn(0f, 360f)
-          val fbSweep = ((fb / 100f) * 360f).coerceIn(0f, (360f - gSweep).coerceAtLeast(0f))
-          val msSweep = ((ms / 100f) * 360f).coerceIn(0f, (360f - gSweep - fbSweep).coerceAtLeast(0f))
-          val usedSweep = (gSweep + fbSweep + msSweep).coerceIn(0f, 360f)
-          val othersSweep = (360f - usedSweep).coerceIn(0f, 360f)
-
-          drawArc(color = outlineColor, startAngle = -90f + usedSweep, sweepAngle = othersSweep, useCenter = false, style = Stroke(width = stroke))
-          if (gSweep > 0f) drawArc(color = primaryColor, startAngle = -90f, sweepAngle = gSweep, useCenter = false, style = Stroke(width = stroke))
-          if (fbSweep > 0f) drawArc(color = secondaryColor, startAngle = -90f + gSweep, sweepAngle = fbSweep, useCenter = false, style = Stroke(width = stroke))
-          if (msSweep > 0f) drawArc(color = tertiaryColor, startAngle = -90f + gSweep + fbSweep, sweepAngle = msSweep, useCenter = false, style = Stroke(width = stroke))
+          var startAngle = -90f
+          segments.forEach { segment ->
+            val sweep = (segment.sharePercent / 100.0 * 360.0).toFloat().coerceIn(0f, 360f)
+            if (sweep > 0f) {
+              drawArc(
+                color = palette.getValue(segment.company),
+                startAngle = startAngle,
+                sweepAngle = sweep,
+                useCenter = false,
+                style = Stroke(width = stroke)
+              )
+              startAngle += sweep
+            }
+          }
         }
       }
 
-      Spacer(modifier = Modifier.width(24.dp))
+      Spacer(modifier = Modifier.width(16.dp))
 
-      Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        val gafamMetrics = analytics.gafamMetrics
-        fun getGafam(key: String): Pair<Double, Long>? {
-          return gafamMetrics.entries.find { it.key.contains(key, ignoreCase = true) }?.value
-        }
-        val google = getGafam("Google") ?: Pair(0.0, 0L)
-        val fb = getGafam("Facebook") ?: Pair(0.0, 0L)
-        val ms = getGafam("Microsoft") ?: Pair(0.0, 0L)
-        val apple = getGafam("Apple") ?: Pair(0.0, 0L)
-        val amazon = getGafam("Amazon") ?: Pair(0.0, 0L)
-
-        val totalGafamQueries = google.second + fb.second + ms.second + apple.second + amazon.second
-        val totalQueries = analytics.totalQueries.takeIf { it > 0 } ?: 1L
-        val othersQueries = (totalQueries - totalGafamQueries).coerceAtLeast(0L)
-        val othersPct = ((othersQueries.toDouble() / totalQueries) * 100.0).coerceIn(0.0, 100.0)
-
-        val others = Pair(othersPct, othersQueries)
-
-        val gafamList = listOf(
-          Triple("Google", AppStrings.get(R.string.percentage_queries, AppStrings.percent(google.first.coerceIn(0.0, 100.0)), numFormat.format(google.second)), MaterialTheme.colorScheme.primary),
-          Triple("Facebook", AppStrings.get(R.string.percentage_queries, AppStrings.percent(fb.first.coerceIn(0.0, 100.0)), numFormat.format(fb.second)), MaterialTheme.colorScheme.secondary),
-          Triple("Microsoft", AppStrings.get(R.string.percentage_queries, AppStrings.percent(ms.first.coerceIn(0.0, 100.0)), numFormat.format(ms.second)), MaterialTheme.colorScheme.tertiary),
-          Triple("Apple", AppStrings.get(R.string.percentage_queries, AppStrings.percent(apple.first.coerceIn(0.0, 100.0)), numFormat.format(apple.second)), MaterialTheme.colorScheme.outline),
-          Triple("Amazon", AppStrings.get(R.string.percentage_queries, AppStrings.percent(amazon.first.coerceIn(0.0, 100.0)), numFormat.format(amazon.second)), MaterialTheme.colorScheme.error),
-          Triple(AppStrings.get(R.string.ui_36ed682fbd), AppStrings.get(R.string.percentage_queries, AppStrings.percent(others.first.coerceIn(0.0, 100.0)), numFormat.format(others.second)), MaterialTheme.colorScheme.onSurfaceVariant)
-        )
-        gafamList.forEach { (name, stats, dotColor) ->
+      Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        segments.forEachIndexed { index, segment ->
+          val dotColor = palette.getValue(segment.company)
           Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(dotColor))
+            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(dotColor))
             Text(
-              text = buildAnnotatedString {
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)) { append(name) }
-                append(" ")
-                withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) { append(stats) }
-              },
-              fontSize = 11.5.sp
+              text = localizedSegmentLabels[index],
+              color = MaterialTheme.colorScheme.onSurface,
+              fontSize = 11.5.sp,
+              modifier = Modifier.semantics(mergeDescendants = true) {
+                contentDescription = localizedSegmentLabels[index]
+              }
             )
           }
         }
       }
     }
   }
+}
+
+@Composable
+private fun gafamDisplayName(company: GafamCompany): String = when (company) {
+  GafamCompany.OTHER -> AppStrings.get(R.string.ui_36ed682fbd)
+  else -> company.apiName
 }
 
 @Composable
@@ -821,33 +895,5 @@ private fun TrafficDestinationsCard(
       modifier = Modifier.padding(bottom = 12.dp)
     )
     WorldMapChart(countryData = analytics.topCountries)
-    if (analytics.topCountries.isNotEmpty()) {
-      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        analytics.topCountries.take(5).forEach { item ->
-          val country = item.first
-          val pct = item.second
-          Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Text(
-              text = country.uppercase(AppStrings.locale),
-              color = MaterialTheme.colorScheme.onSurface,
-              fontWeight = FontWeight.Medium,
-              fontSize = 13.sp
-            )
-            Text(
-              text = AppStrings.percent(pct),
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-              fontSize = 12.sp
-            )
-          }
-          Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.outline)) {
-            Box(modifier = Modifier.fillMaxWidth((pct / 100).toFloat().coerceIn(0f, 1f)).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
-          }
-        }
-      }
-    }
   }
 }

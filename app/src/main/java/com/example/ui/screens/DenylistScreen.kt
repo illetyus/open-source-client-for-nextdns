@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -131,22 +132,24 @@ fun DenylistScreen(
             modifier = Modifier
               .fillMaxWidth()
               .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
           ) {
             Row(
-              verticalAlignment = Alignment.Top,
-              horizontalArrangement = Arrangement.spacedBy(10.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
               modifier = Modifier.weight(1f)
             ) {
               Box(
                 modifier = Modifier
                   .width(3.5.dp)
-                  .height(30.dp)
+                  .height(24.dp)
                   .background(MaterialTheme.colorScheme.error, RoundedCornerShape(2.dp))
               )
               
-              FaviconImage(domain = item.domain, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))
+              FaviconImage(
+                domain = item.domain,
+                modifier = Modifier.size(16.dp).clip(RoundedCornerShape(3.dp)).testTag("denylist_domain_icon")
               )
               
               Text(
@@ -158,7 +161,7 @@ fun DenylistScreen(
             }
 
             Row(
-              verticalAlignment = Alignment.Top,
+              verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
               NextDnsSwitch(

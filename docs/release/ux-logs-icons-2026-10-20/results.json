@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-10-20",
+  "baselineCommit": "c78c9af464a4e23ac926f69478a59c5cc44a05f3",
+  "branch": "fix/settings-account-sync-ux-2026-10-19",
+  "changeState": "UNCOMMITTED_LOCAL_DEVELOPMENT_DIFF",
+  "scope": "Log pagination/device filtering, bounded best-effort favicon loading, settings/account ordering, guest legal presentation, launcher icon.",
+  "findings": [
+    {
+      "id": "NDNS-020",
+      "severity": "P2",
+      "title": "Historical logs were limited to the first page and device filtering lacked API-ID selection.",
+      "status": "FIXED_LOCAL_JVM_VERIFIED_DEVICE_PENDING",
+      "regressions": [
+        "NextDnsApiContractTest",
+        "RepositoryRegressionTest",
+        "DiagnosticAndDeviceMenuTest"
+      ],
+      "deviceRetest": "NOT_RUN",
+      "mainCi": "NOT_RUN_NOT_PUSHED"
+    },
+    {
+      "id": "NDNS-021",
+      "severity": "P2",
+      "title": "Domain icons had no bounded first-party loading path and local fallback.",
+      "status": "FIXED_LOCAL_URL_VALIDATION_VERIFIED_LIVE_ENDPOINT_UNVERIFIED",
+      "regressions": [
+        "NextDnsFaviconUrlTest"
+      ],
+      "deviceRetest": "NOT_RUN",
+      "endpointContract": "UNOFFICIAL_BEST_EFFORT_ROUTE_NOT_IN_PUBLISHED_API"
+    },
+    {
+      "id": "NDNS-022",
+      "severity": "P2",
+      "title": "Service settings, local preferences, and connection/account actions were poorly grouped.",
+      "status": "FIXED_LOCAL_COMPOSE_VERIFIED_DEVICE_PENDING",
+      "regressions": [
+        "AccountSettingsFlowTest",
+        "UiAuditTest"
+      ],
+      "deviceRetest": "NOT_RUN",
+      "mainCi": "NOT_RUN_NOT_PUSHED"
+    },
+    {
+      "id": "NDNS-023",
+      "severity": "P2",
+      "title": "Guest pre-login language/legal controls were scattered and repeated.",
+      "status": "FIXED_LOCAL_COMPOSE_VERIFIED_DEVICE_PENDING",
+      "regressions": [
+        "LegalWelcomeInteractionTest",
+        "GreetingScreenshotTest"
+      ],
+      "legalAcceptance": "EXPLICIT_ACCEPTANCE_AND_READ_ONLY_DOCUMENT_ACCESS_PRESERVED",
+      "deviceRetest": "NOT_RUN",
+      "mainCi": "NOT_RUN_NOT_PUSHED"
+    }
+  ],
+  "localVerification": {
+    "unitAndComposeTests": {
+      "status": "PASS",
+      "tests": 152,
+      "failures": 0,
+      "skipped": 0
+    },
+    "screenshots": {
+      "status": "PASS",
+      "count": 12
+    },
+    "coverageClasses": {
+      "count": 557
+    },
+    "localization": {
+      "status": "PASS",
+      "locales": [
+        "tr",
+        "en",
+        "de",
+        "fr",
+        "es"
+      ],
+      "resourceCount": 578
+    },
+    "androidLint": {
+      "status": "PASS",
+      "tasks": [
+        "lintDebug",
+        "lintVitalRelease"
+      ]
+    },
+    "packaging": {
+      "status": "PASS",
+      "artifacts": [
+        "debug APK",
+        "unsigned release APK",
+        "AAB",
+        "debug instrumentation APK"
+      ]
+    },
+    "dependencyEvidence": {
+      "status": "PASS",
+      "modules": 138,
+      "artifactHashes": 98,
+      "notes": "One direct POM license field is empty for listenablefuture 1.0; bundled inventory records inherited Apache-2.0 licensing."
+    },
+    "releaseDexAudit": {
+      "status": "PASS",
+      "releaseDexFiles": 5,
+      "typeReferences": 33631
+    },
+    "diffCheck": {
+      "status": "PASS"
+    }
+  },
+  "notRun": {
+    "snyk": "CLI_NOT_INSTALLED",
+    "browserStack": "CREDENTIALS_NOT_CONFIGURED; DO_NOT_SHARE_KEYS_IN_CHAT",
+    "localDevice": "ADB_SERVER_FAILED_TO_START",
+    "mainCi": "NOT_RUN_NOT_PUSHED"
+  },
+  "releaseStatus": {
+    "legalDocuments": "DRAFT",
+    "publicReleaseAuthorized": false,
+    "publisherIdentityInvented": false,
+    "nextdnsPartnershipImplied": false,
+    "inAppLogoChanged": false
+  }
+}

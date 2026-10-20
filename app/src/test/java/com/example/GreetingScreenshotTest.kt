@@ -53,7 +53,8 @@ class GreetingScreenshotTest {
       "Open Source Client for NextDNS", useUnmergedTree = true
     ).assertIsDisplayed()
     val profile = composeTestRule.onNodeWithText(AppStrings.get(R.string.ui_18d49619ba)).assertIsDisplayed()
-    val account = composeTestRule.onNodeWithText(AppStrings.get(R.string.ui_6d063986da)).assertIsDisplayed()
+    composeTestRule.onNodeWithText(AppStrings.get(R.string.ui_6d063986da)).assertDoesNotExist()
+    composeTestRule.onNodeWithTag("home_nextdns_connection_button").assertIsDisplayed()
     composeTestRule.onNodeWithContentDescription("NextDNS Logo").assertDoesNotExist()
 
     val layouts = mutableListOf<TextLayoutResult>()
@@ -62,7 +63,6 @@ class GreetingScreenshotTest {
     assertFalse("The full app title must fit without clipping", layouts.single().hasVisualOverflow)
     val titleBounds = title.fetchSemanticsNode().boundsInRoot
     assertTrue(titleBounds.bottom <= profile.fetchSemanticsNode().boundsInRoot.top)
-    assertTrue(titleBounds.right <= account.fetchSemanticsNode().boundsInRoot.left)
 
     composeTestRule.onRoot().captureRoboImage(
       filePath = "build/outputs/roborazzi/branding/greeting-compact-large-font.png"

@@ -1,58 +1,99 @@
 #!/usr/bin/env python3
-"""Create project-authored network-node launcher vectors and PNG derivatives.
+"""Generate the independent client launcher icon and its PNG derivatives.
 
-Requires Pillow only when regenerating bitmap assets; no third-party artwork.
+Requires Pillow only when regenerating bitmap assets. Shapes are original
+project artwork; NextDNS colors are used only as color references.
 """
 from pathlib import Path
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / 'app/src/main/res'
-BACKGROUND, EDGE, NODE, HUB = '#102330', '#2DD4BF', '#CBF7ED', '#FFCA70'
-NODES = [(35, 35), (73, 35), (35, 73), (73, 73)]
+BRAND = ROOT / 'docs/brand'
+WHITE = '#FFFFFF'
+BLUE = '#0055FF'
+GREEN = '#008000'
+BLACK = '#000000'
 
-def circle(x, y, radius):
-    return f'M{x-radius},{y} A{radius},{radius} 0 1,0 {x+radius},{y} A{radius},{radius} 0 1,0 {x-radius},{y} Z'
+SIGNALS = [
+    (GREEN, 2, ((34, 36), (20, 43), (20, 65), (34, 72))),
+    (GREEN, 2, ((74, 36), (88, 43), (88, 65), (74, 72))),
+]
+SHIELD = 'M54,30 L69,37 L69,51 C69,63 63,72 54,78 C45,72 39,63 39,51 L39,37 Z'
+
+
+def path(color, data, *, fill=None, stroke_width=None):
+    stroke = f' android:strokeColor="{color}" android:strokeWidth="{stroke_width}" android:strokeLineCap="round" android:strokeLineJoin="round"' if stroke_width else ''
+    fill_color = fill if fill is not None else '@android:color/transparent'
+    return f'    <path android:fillColor="{fill_color}"{stroke} android:pathData="{data}" />'
+
 
 def vector(monochrome=False):
-    color = '#000000' if monochrome else EDGE
-    paths = [f'    <path android:fillColor="@android:color/transparent" android:strokeColor="{color}" android:strokeWidth="3" android:strokeLineCap="round" android:pathData="M{x},{y} L54,54" />' for x, y in NODES]
-    for x, y in NODES:
-        paths.append(f'    <path android:fillColor="{color if monochrome else NODE}" android:pathData="{circle(x,y,5)}" />')
-    paths.append(f'    <path android:fillColor="{color if monochrome else EDGE}" android:pathData="{circle(54,54,9)}" />')
-    if not monochrome:
-        paths.append(f'    <path android:fillColor="{HUB}" android:pathData="{circle(54,54,4)}" />')
+    paths = []
+    for color, width, points in SIGNALS:
+        signal_color = BLACK if monochrome else color
+        start, control_one, control_two, end = points
+        path_data = (
+            f'M{start[0]},{start[1]} '
+            f'C{control_one[0]},{control_one[1]} '
+            f'{control_two[0]},{control_two[1]} '
+            f'{end[0]},{end[1]}'
+        )
+        paths.append(path(signal_color, path_data, stroke_width=width))
+    paths.append(path(BLACK if monochrome else BLUE, SHIELD, fill=BLACK if monochrome else BLUE))
     return '<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">\n' + '\n'.join(paths) + '\n</vector>\n'
 
+
+def cubic(points, steps=32):
+    p0, p1, p2, p3 = points
+    result = []
+    for index in range(steps + 1):
+        t = index / steps
+        u = 1 - t
+        result.append((
+            u**3 * p0[0] + 3 * u**2 * t * p1[0] + 3 * u * t**2 * p2[0] + t**3 * p3[0],
+            u**3 * p0[1] + 3 * u**2 * t * p1[1] + 3 * u * t**2 * p2[1] + t**3 * p3[1],
+        ))
+    return result
+
+
 def render(size, round_mask=False):
-    # Legacy icons use the visible 72dp viewport of the 108dp adaptive layer.
+    # Legacy icons use the 72dp center viewport of the adaptive 108dp layer.
     scale = size * 4 / 72
-    image = Image.new('RGBA', (size*4, size*4), BACKGROUND)
+    image = Image.new('RGBA', (size * 4, size * 4), WHITE)
     draw = ImageDraw.Draw(image)
-    def point(x,y): return ((x-18)*scale, (y-18)*scale)
-    for x,y in NODES:
-        draw.line([point(x,y),point(54,54)], fill=EDGE, width=round(3*scale))
-    for x,y,r,color in [(x,y,5,NODE) for x,y in NODES]+[(54,54,9,EDGE),(54,54,4,HUB)]:
-        draw.ellipse([point(x-r,y-r),point(x+r,y+r)],fill=color)
+
+    def point(x, y):
+        return ((x - 18) * scale, (y - 18) * scale)
+
+    for color, width, points in SIGNALS:
+        draw.line(
+            [point(x, y) for x, y in cubic(points)],
+            fill=color,
+            width=round(width * scale),
+            joint='curve'
+        )
+    shield = [
+        (54, 30), (69, 37), (69, 51),
+        *cubic(((69, 51), (69, 63), (63, 72), (54, 78)))[1:],
+        *cubic(((54, 78), (45, 72), (39, 63), (39, 51)))[1:],
+        (39, 37),
+    ]
+    draw.polygon([point(x, y) for x, y in shield], fill=BLUE)
+
     if round_mask:
-        mask=Image.new('L',image.size); ImageDraw.Draw(mask).ellipse((0,0,size*4-1,size*4-1),fill=255)
+        mask = Image.new('L', image.size)
+        ImageDraw.Draw(mask).ellipse((0, 0, image.width - 1, image.height - 1), fill=255)
         image.putalpha(mask)
-    return image.resize((size,size),Image.Resampling.LANCZOS)
+    return image.resize((size, size), Image.Resampling.LANCZOS)
+
 
 if __name__ == '__main__':
-    for name,mono in [('ic_launcher_foreground',False),('ic_launcher_monochrome',True)]:
-        (RES/'drawable'/f'{name}.xml').write_text(vector(mono),encoding='utf8',newline='\n')
-    glyph = vector(True).replace('108', '48').replace('>\n    <path', '>\n    <group android:translateX="-30" android:translateY="-30">\n    <path', 1).replace('</vector>', '    </group>\n</vector>')
-    (RES/'drawable/ic_client_network.xml').write_text(glyph,encoding='utf8',newline='\n')
-    background = f'<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">\n    <path android:fillColor="{BACKGROUND}" android:pathData="M0,0 h108 v108 h-108 z" />\n</vector>\n'
-    (RES/'drawable/ic_launcher_background.xml').write_text(background,encoding='utf8',newline='\n')
-    for density,size in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
-        for name,rounded in [('ic_launcher',False),('ic_launcher_round',True)]:
-            render(size,rounded).save(RES/f'mipmap-{density}'/f'{name}.png')
-    assets = ROOT/'docs/brand'; assets.mkdir(parents=True,exist_ok=True)
-    render(512).save(assets/'store-icon-512.png')
-    svg=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 18 72 72"><path fill="{BACKGROUND}" d="M18 18h72v72H18z"/>'
-    for x,y in NODES: svg+=f'<path d="M{x} {y}L54 54" stroke="{EDGE}" stroke-width="3" stroke-linecap="round"/>'
-    for x,y,r,color in [(x,y,5,NODE) for x,y in NODES]+[(54,54,9,EDGE),(54,54,4,HUB)]: svg+=f'<circle cx="{x}" cy="{y}" r="{r}" fill="{color}"/>'
-    (assets/'network-nodes.svg').write_text(svg+'</svg>\n',encoding='utf8',newline='\n')
-    print('Generated adaptive/monochrome vectors, ten legacy PNGs and the 512px store icon.')
+    RES.joinpath('drawable/ic_launcher_foreground.xml').write_text(vector(), encoding='utf8', newline='\n')
+    RES.joinpath('drawable/ic_launcher_monochrome.xml').write_text(vector(monochrome=True), encoding='utf8', newline='\n')
+    for density, size in [('mdpi', 48), ('hdpi', 72), ('xhdpi', 96), ('xxhdpi', 144), ('xxxhdpi', 192)]:
+        for name, rounded in [('ic_launcher', False), ('ic_launcher_round', True)]:
+            render(size, rounded).save(RES / f'mipmap-{density}' / f'{name}.png')
+    BRAND.mkdir(parents=True, exist_ok=True)
+    render(512).save(BRAND / 'store-icon-512.png')
+    print('Generated adaptive and monochrome shield vectors, ten legacy PNGs, and the 512px store icon.')

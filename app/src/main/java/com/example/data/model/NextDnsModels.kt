@@ -2,6 +2,8 @@ package com.example.data.model
 
 import java.util.UUID
 
+const val NEXTDNS_UNIDENTIFIED_DEVICE_ID = "__UNIDENTIFIED__"
+
 enum class DnsStatus {
   ALLOWED,
   BLOCKED
@@ -109,16 +111,19 @@ data class DnsLogEntry(
   val timestamp: String = "",
   val domain: String,
   val rootDomain: String = domain,
+  val deviceId: String? = null,
   val tracker: String? = null,
   val encrypted: Boolean? = null,
   val client: String? = null,
   val clientIp: String? = null,
   val deviceName: String? = null,
   val blocked: Boolean = false,
+  val status: String = if (blocked) "blocked" else "default",
   val blockReason: String? = null,
   val protocol: String = "",
   val dnssec: Boolean? = null,
-  val responseTimeMs: Int? = null
+  val responseTimeMs: Int? = null,
+  val deviceModel: String? = null
 )
 
 typealias DnsLogItem = DnsLogEntry
@@ -172,6 +177,13 @@ data class IpMetric(
   val longitude: Double? = null
 )
 
+data class CountryTrafficMetric(
+  val code: String,
+  val queries: Long,
+  val percentage: Double,
+  val domains: List<String> = emptyList()
+)
+
 data class AnalyticsSummary(
   val totalQueries: Long = 0L,
   val blockedQueries: Long = 0L,
@@ -189,7 +201,7 @@ data class AnalyticsSummary(
   val gafamMetrics: Map<String, Pair<Double, Long>> = emptyMap(),
   val encryptedDnsPercentage: Float = 0f,
   val dnssecPercentage: Float = 0f,
-  val topCountries: List<Pair<String, Double>> = emptyList()
+  val topCountries: List<CountryTrafficMetric> = emptyList()
 )
 
 
@@ -208,7 +220,8 @@ data class AnalyticsItemDto(
   val queries: Long? = null,
   val validated: Boolean? = null,
   val encrypted: Boolean? = null,
-  val code: String? = null
+  val code: String? = null,
+  val domains: List<String>? = null
 )
 
 data class DiagnosticTestResult(
@@ -218,6 +231,7 @@ data class DiagnosticTestResult(
   val clientIp: String = "",
   val resolver: String? = null,
   val serverPoP: String = "",
+  val anycast: Boolean? = null,
   val latencyMs: Int = 0,
   val isEncrypted: Boolean = false,
   val isTesting: Boolean = false,
@@ -236,19 +250,10 @@ data class ConfigSettings(
   val cacheBoost: Boolean = false,
   val cnameFlattening: Boolean = true,
   val web3: Boolean = false,
-  val bypassAgeVerification: Boolean = false,
   val rewrites: List<RewriteItem> = emptyList()
 )
 
 data class ConfigStatus(
   val status: String = "Yok",
   val clientIp: String? = null
-)
-
-data class NextDnsAccountInfo(
-  val email: String? = null,
-  val name: String? = null,
-  val plan: String? = null,
-  val subscriptionStatus: String? = null,
-  val subscriptionPeriod: String? = null
 )

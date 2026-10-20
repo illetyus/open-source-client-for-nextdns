@@ -24,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.core.content.ContextCompat
@@ -149,41 +150,18 @@ fun SettingsScreen(
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
-      .padding(horizontal = 16.dp),
+      .padding(horizontal = 16.dp)
+      .testTag("settings_scroll_list"),
     contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp),
     verticalArrangement = Arrangement.spacedBy(14.dp)
   ) {
-    // 1. Görünüm (Appearance)
     item {
-      AppearanceSection()
-      com.example.ui.components.LanguagePicker(Modifier.fillMaxWidth())
-    }
-
-    item { LegalDocumentLinks() }
-
-    item {
-      NotificationSettingsSection(
-        settings = notificationSettings,
-        onConfigChangeAlertsChanged = {
-          updateNotificationToggle(NotificationToggleType.CONFIG_CHANGES, it)
-        },
-        onDailySummaryChanged = {
-          updateNotificationToggle(NotificationToggleType.DAILY_SUMMARY, it)
-        }
+      SettingsSectionHeading(
+        title = AppStrings.get(R.string.nextdns_service_settings),
+        tag = "settings_section_service"
       )
     }
 
-    // 2. Profil İsmi
-    item {
-      ProfileNameSection(
-        initialName = profileName,
-        onSaveName = { newName ->
-          viewModel.renameProfile(newName)
-        }
-      )
-    }
-
-    // 3. Günlükler (Logs & Gizlilik)
     item {
       LogsAndPrivacySection(
         configSettings = configSettings,
@@ -195,7 +173,6 @@ fun SettingsScreen(
       )
     }
 
-    // 4. Engel Sayfası
     item {
       BlockPageSection(
         blockPageEnabled = configSettings.blockPage,
@@ -203,7 +180,6 @@ fun SettingsScreen(
       )
     }
 
-    // 5. Performans
     item {
       PerformanceSection(
         configSettings = configSettings,
@@ -211,7 +187,6 @@ fun SettingsScreen(
       )
     }
 
-    // 7. Web3
     item {
       Web3Section(
         web3Enabled = configSettings.web3,
@@ -219,12 +194,45 @@ fun SettingsScreen(
       )
     }
 
-    // Profil Eylemleri
     item {
-      ProfileActionsSection(
-        profileName = profileName,
-        onDeleteProfile = { showDeleteProfileDialog = true }
-      )
+      Column(
+        modifier = Modifier.fillMaxWidth().testTag("settings_section_app_preferences"),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+      ) {
+        SettingsSectionHeading(title = AppStrings.get(R.string.app_preferences))
+        AppearanceSection()
+        com.example.ui.components.LanguagePicker(Modifier.fillMaxWidth())
+        NotificationSettingsSection(
+          settings = notificationSettings,
+          onConfigChangeAlertsChanged = {
+            updateNotificationToggle(NotificationToggleType.CONFIG_CHANGES, it)
+          },
+          onDailySummaryChanged = {
+            updateNotificationToggle(NotificationToggleType.DAILY_SUMMARY, it)
+          }
+        )
+        Column(
+          modifier = Modifier.fillMaxWidth().testTag("settings_section_legal"),
+          verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          NextDnsCard(title = AppStrings.get(R.string.legal_and_about)) {
+            LegalDocumentLinks()
+          }
+        }
+      }
+    }
+
+    item {
+      Column(
+        modifier = Modifier.fillMaxWidth().testTag("settings_section_delete"),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+      ) {
+        SettingsSectionHeading(title = AppStrings.get(R.string.settings_delete_profile))
+        ProfileActionsSection(
+          profileName = profileName,
+          onDeleteProfile = { showDeleteProfileDialog = true }
+        )
+      }
     }
   }
 
@@ -254,6 +262,16 @@ fun SettingsScreen(
       }
     )
   }
+}
+
+@Composable
+private fun SettingsSectionHeading(title: String, tag: String? = null) {
+  Text(
+    text = title,
+    modifier = if (tag == null) Modifier else Modifier.testTag(tag),
+    style = MaterialTheme.typography.titleSmall,
+    color = MaterialTheme.colorScheme.onSurfaceVariant
+  )
 }
 
 private enum class NotificationToggleType {
@@ -332,56 +350,6 @@ fun AppearanceSection(
           }
         )
       }
-    }
-  }
-}
-
-/**
- * 2. Profil İsmi Bölümü
- */
-@Composable
-fun ProfileNameSection(
-  initialName: String,
-  onSaveName: (String) -> Unit,
-  modifier: Modifier = Modifier
-) {
-  var profileNameInput by remember(initialName) { mutableStateOf(initialName) }
-
-  NextDnsCard(
-    title = AppStrings.get(R.string.ui_f5e0e67ae0),
-    subtitle = AppStrings.get(R.string.ui_0e37b40064),
-    modifier = modifier
-  ) {
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      OutlinedTextField(
-        value = profileNameInput,
-        onValueChange = { profileNameInput = it },
-        placeholder = { Text(AppStrings.get(R.string.ui_9382774b58), color = MaterialTheme.colorScheme.outline) },
-        singleLine = true,
-        modifier = Modifier.weight(1f),
-        colors = OutlinedTextFieldDefaults.colors(
-          focusedBorderColor = MaterialTheme.colorScheme.primary,
-          unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-          focusedTextColor = MaterialTheme.colorScheme.onSurface,
-          unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-          focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-          unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = RoundedCornerShape(12.dp)
-      )
-
-      NextDnsButton(
-        text = AppStrings.get(R.string.ui_8bbadb3bfe),
-        onClick = {
-          if (profileNameInput.isNotBlank()) {
-            onSaveName(profileNameInput.trim())
-          }
-        }
-      )
     }
   }
 }

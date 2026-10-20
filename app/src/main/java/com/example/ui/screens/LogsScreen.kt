@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,7 +34,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.data.model.DeviceMetric
+import com.example.data.model.DeviceLabelResolver
 import com.example.data.model.DnsLogEntry
+import com.example.data.model.NEXTDNS_UNIDENTIFIED_DEVICE_ID
+import com.example.data.repository.LogsPaginationState
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.NextDnsViewModel
@@ -85,7 +91,11 @@ fun LogsScreen(
 ) {
   val activeProfile by viewModel.activeProfile.collectAsStateWithLifecycle()
   val logs by viewModel.logs.collectAsStateWithLifecycle()
-  val allKnownDevices by viewModel.allKnownDevices.collectAsStateWithLifecycle()
+  val logDevices by viewModel.logDevices.collectAsStateWithLifecycle()
+  val selectedDeviceFilter by viewModel.logsDeviceFilter.collectAsStateWithLifecycle()
+  val selectedStatusFilter by viewModel.logsStatusFilter.collectAsStateWithLifecycle()
+  val selectedSearchFilter by viewModel.logsSearchFilter.collectAsStateWithLifecycle()
+  val paginationState by viewModel.logsPaginationState.collectAsStateWithLifecycle()
   val lifecycleOwner = LocalLifecycleOwner.current
   LaunchedEffect(activeProfile?.id) {
     viewModel.refreshLogs(showToast = false)
@@ -111,47 +121,46 @@ fun LogsScreen(
     }
   }
 
-  val analytics by viewModel.analytics.collectAsStateWithLifecycle()
   val isLiveStreaming by viewModel.isLiveStreaming.collectAsStateWithLifecycle()
 
-  var searchQuery by remember { mutableStateOf("") }
-  var selectedDeviceFilter by remember { mutableStateOf<String?>(null) }
+  var searchQuery by remember(selectedSearchFilter) { mutableStateOf(selectedSearchFilter.orEmpty()) }
   var showDeviceMenu by remember { mutableStateOf(false) }
   var expandedLogId by remember { mutableStateOf<String?>(null) }
   var showLiveStreamInfo by remember { mutableStateOf(false) }
 
-  val detectedDevices = remember(analytics.topDevices, allKnownDevices, logs) {
-    val list = mutableListOf<String>()
-    analytics.topDevices.forEach { dev ->
-      if (dev.name.isNotBlank() && dev.name != AppStrings.get(R.string.ui_571961518d) && dev.name != "Cihaz") {
-        list.add(dev.name)
-      }
-    }
-    allKnownDevices.forEach { dev ->
-      if (dev.isNotBlank() && dev != AppStrings.get(R.string.ui_571961518d) && dev != "Cihaz") {
-        list.add(dev)
-      }
-    }
-    logs.forEach { l ->
-      val dn = l.deviceName
-      if (!dn.isNullOrBlank() && dn != AppStrings.get(R.string.ui_571961518d) && dn != "Cihaz") {
-        list.add(dn)
-      }
-    }
-    list.distinct()
+  LaunchedEffect(searchQuery) {
+    delay(350)
+    viewModel.setLogsSearchFilter(searchQuery)
   }
 
-  val filteredLogs = remember(logs, searchQuery, selectedDeviceFilter) {
+  val detectedDevices = remember(logDevices) {
+    val devices = logDevices.filter { it.id.isNotBlank() && it.id != NEXTDNS_UNIDENTIFIED_DEVICE_ID }.toMutableList()
+    devices += DeviceMetric(
+      id = NEXTDNS_UNIDENTIFIED_DEVICE_ID,
+      name = AppStrings.get(R.string.logs_unidentified_device)
+    )
+    devices.distinctBy { it.id }.sortedBy { it.name.lowercase() }
+  }
+
+  val filteredLogs = remember(logs, searchQuery, selectedSearchFilter, selectedDeviceFilter, selectedStatusFilter) {
+    val normalizedSearch = searchQuery.trim().takeIf { it.isNotEmpty() }
+    val serverSearchIsCurrent = selectedSearchFilter == normalizedSearch
     logs.filter { log ->
-      val matchesSearch = searchQuery.isBlank() ||
-        log.domain.contains(searchQuery.trim(), ignoreCase = true) ||
-        (log.deviceName?.contains(searchQuery.trim(), ignoreCase = true) == true) ||
-        (log.blockReason?.contains(searchQuery.trim(), ignoreCase = true) == true)
+      val matchesSearch = serverSearchIsCurrent || normalizedSearch == null ||
+        log.domain.contains(normalizedSearch, ignoreCase = true) ||
+        (log.deviceName?.contains(normalizedSearch, ignoreCase = true) == true) ||
+        (log.blockReason?.contains(normalizedSearch, ignoreCase = true) == true)
 
-      val matchesDevice = selectedDeviceFilter == null ||
-        log.deviceName?.equals(selectedDeviceFilter, ignoreCase = true) == true
+      val matchesDevice = when (selectedDeviceFilter) {
+        null -> true
+        NEXTDNS_UNIDENTIFIED_DEVICE_ID ->
+          log.deviceId.isNullOrBlank() || log.deviceId == NEXTDNS_UNIDENTIFIED_DEVICE_ID
+        else -> log.deviceId == selectedDeviceFilter
+      }
 
-      matchesSearch && matchesDevice
+      val matchesStatus = selectedStatusFilter == null || log.status == selectedStatusFilter
+
+      matchesSearch && matchesDevice && matchesStatus
     }
   }
 
@@ -171,7 +180,7 @@ fun LogsScreen(
         detectedDevices = detectedDevices,
         showDeviceMenu = showDeviceMenu,
         onToggleDeviceMenu = { showDeviceMenu = it },
-        onSelectDevice = { selectedDeviceFilter = it },
+        onSelectDevice = viewModel::setLogsDeviceFilter,
         isLiveStreaming = isLiveStreaming,
         onToggleLiveStream = { viewModel.toggleLiveStream() },
         showLiveStreamInfo = showLiveStreamInfo,
@@ -187,40 +196,53 @@ fun LogsScreen(
         searchQuery = searchQuery,
         onQueryChange = { searchQuery = it }
       )
+
+      LogsStatusFilterRow(
+        selectedStatusFilter = selectedStatusFilter,
+        onSelectStatus = viewModel::setLogsStatusFilter
+      )
     }
 
-    if (filteredLogs.isEmpty()) {
-      EmptyLogsPlaceholder(searchQuery = searchQuery)
-    } else {
-      val listState = rememberLazyListState()
+    val listState = rememberLazyListState()
+    LaunchedEffect(selectedDeviceFilter) {
+      if (selectedDeviceFilter != null) listState.scrollToItem(0)
+    }
 
-      LaunchedEffect(filteredLogs.size) {
-        if (filteredLogs.isNotEmpty()) {
-          listState.animateScrollToItem(0)
-        }
+    LazyColumn(
+      state = listState,
+      modifier = Modifier.fillMaxSize(),
+      contentPadding = PaddingValues(bottom = 40.dp),
+      verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+      if (filteredLogs.isEmpty()) {
+        item(key = "empty_logs") { EmptyLogsPlaceholder(searchQuery = searchQuery) }
       }
-
-      LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 40.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-      ) {
-        items(filteredLogs, key = { it.id }) { log ->
-          val isExpanded = expandedLogId == log.id
-          LogItemRow(
-            log = log,
-            isExpanded = isExpanded,
-            onToggleExpand = {
-              expandedLogId = if (isExpanded) null else log.id
-            },
-            onAddToAllowlist = {
-              viewModel.addToAllowlist(log.domain)
-            },
-            onAddToDenylist = {
-              viewModel.addToDenylist(log.domain)
-            },
-            modifier = Modifier.animateItemPlacement()
+      items(filteredLogs, key = { it.id }) { log ->
+        val isExpanded = expandedLogId == log.id
+        LogItemRow(
+          log = log,
+          isExpanded = isExpanded,
+          onToggleExpand = {
+            expandedLogId = if (isExpanded) null else log.id
+          },
+          onAddToAllowlist = {
+            viewModel.addToAllowlist(log.domain)
+          },
+          onAddToDenylist = {
+            viewModel.addToDenylist(log.domain)
+          },
+          modifier = Modifier.animateItemPlacement()
+        )
+      }
+      if (paginationState.hasMore || paginationState.isLoading || paginationState.error != null ||
+        paginationState.retentionLimitReached) {
+        item(key = "logs_pagination") {
+          LogsPaginationFooter(
+            state = paginationState,
+            onLoadMore = {
+              if (paginationState.hasMore) viewModel.loadMoreLogs()
+              else viewModel.refreshLogs(showToast = false)
+            }
           )
         }
       }
@@ -235,7 +257,7 @@ fun LogsScreen(
 @Composable
 internal fun LogsHeaderControls(
   selectedDeviceFilter: String?,
-  detectedDevices: List<String>,
+  detectedDevices: List<DeviceMetric>,
   showDeviceMenu: Boolean,
   onToggleDeviceMenu: (Boolean) -> Unit,
   onSelectDevice: (String?) -> Unit,
@@ -246,6 +268,13 @@ internal fun LogsHeaderControls(
   onRefreshLogs: () -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val selectedDeviceName = when (selectedDeviceFilter) {
+    null -> AppStrings.get(R.string.all_devices)
+    NEXTDNS_UNIDENTIFIED_DEVICE_ID -> AppStrings.get(R.string.logs_unidentified_device)
+    else -> detectedDevices.firstOrNull { it.id == selectedDeviceFilter }?.let {
+      DeviceLabelResolver.resolve(it.name, it.model, it.id, AppStrings.get(R.string.device_unidentified))
+    } ?: AppStrings.get(R.string.device_unidentified)
+  }
   Row(
     modifier = modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -267,10 +296,12 @@ internal fun LogsHeaderControls(
           horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
           Text(
-            text = selectedDeviceFilter ?: AppStrings.get(R.string.all_devices),
+            text = selectedDeviceName,
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = 12.5.sp,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
           )
           Icon(
             imageVector = Icons.Default.ArrowDropDown,
@@ -288,17 +319,37 @@ internal fun LogsHeaderControls(
           .background(MaterialTheme.colorScheme.surface)
           .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
       ) {
-        (listOf(null) + detectedDevices).forEach { dev ->
+        DropdownMenuItem(
+          modifier = Modifier.testTag("logs_device_option_all"),
+          text = {
+            Text(
+              text = AppStrings.get(R.string.all_devices),
+              color = if (selectedDeviceFilter == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+              fontSize = 12.sp
+            )
+          },
+          onClick = {
+            onSelectDevice(null)
+            onToggleDeviceMenu(false)
+          }
+        )
+        detectedDevices.forEach { dev ->
           DropdownMenuItem(
+            modifier = Modifier.testTag("logs_device_option_${dev.id}"),
             text = {
               Text(
-                text = dev ?: AppStrings.get(R.string.all_devices),
-                color = if (dev == selectedDeviceFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                text = DeviceLabelResolver.resolve(
+                  dev.name,
+                  dev.model,
+                  dev.id,
+                  AppStrings.get(R.string.device_unidentified)
+                ),
+                color = if (dev.id == selectedDeviceFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 fontSize = 12.sp
               )
             },
             onClick = {
-              onSelectDevice(dev)
+              onSelectDevice(dev.id)
               onToggleDeviceMenu(false)
             }
           )
@@ -367,6 +418,86 @@ internal fun LogsHeaderControls(
   }
 }
 
+private data class LogsStatusOption(
+  val status: String?,
+  val labelRes: Int,
+  val tag: String
+)
+
+@Composable
+internal fun LogsStatusFilterRow(
+  selectedStatusFilter: String?,
+  onSelectStatus: (String?) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  val options = listOf(
+    LogsStatusOption(null, R.string.logs_filter_all_statuses, "all"),
+    LogsStatusOption("blocked", R.string.state_blocked, "blocked"),
+    LogsStatusOption("allowed", R.string.state_allowed, "allowed"),
+    LogsStatusOption("default", R.string.logs_status_default, "default"),
+    LogsStatusOption("error", R.string.logs_status_error, "error")
+  )
+  LazyRow(
+    modifier = modifier.fillMaxWidth().testTag("logs_status_filters"),
+    horizontalArrangement = Arrangement.spacedBy(8.dp)
+  ) {
+    items(options, key = { it.tag }) { option ->
+      FilterChip(
+        selected = selectedStatusFilter == option.status,
+        onClick = { onSelectStatus(option.status) },
+        label = { Text(AppStrings.get(option.labelRes), maxLines = 1) },
+        modifier = Modifier.testTag("logs_status_${option.tag}")
+      )
+    }
+  }
+}
+
+private fun logStatusLabelResource(status: String): Int = when (status) {
+  "blocked" -> R.string.state_blocked
+  "allowed" -> R.string.state_allowed
+  "default" -> R.string.logs_status_default
+  "error" -> R.string.logs_status_error
+  else -> R.string.logs_status_unknown
+}
+
+@Composable
+internal fun LogsPaginationFooter(
+  state: LogsPaginationState,
+  onLoadMore: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Column(
+    modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(8.dp)
+  ) {
+    when {
+      state.isLoading -> {
+        CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+        Text(AppStrings.get(R.string.logs_page_loading), style = MaterialTheme.typography.labelMedium)
+      }
+      state.error != null -> {
+        Text(state.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = onLoadMore, modifier = Modifier.testTag("logs_page_retry")) {
+          Text(AppStrings.get(R.string.logs_load_older))
+        }
+      }
+      state.hasMore -> {
+        OutlinedButton(onClick = onLoadMore, modifier = Modifier.testTag("logs_load_older")) {
+          Text(AppStrings.get(R.string.logs_load_older))
+        }
+      }
+    }
+    if (state.retentionLimitReached) {
+      Text(
+        AppStrings.get(R.string.logs_history_limit_reached),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+    }
+  }
+}
+
 @Composable
 private fun LiveStreamInfoCard(modifier: Modifier = Modifier) {
   Surface(
@@ -411,7 +542,7 @@ private fun LogsSearchField(
       }
     },
     singleLine = true,
-    modifier = modifier.fillMaxWidth(),
+    modifier = modifier.fillMaxWidth().testTag("logs_search_field"),
     colors = OutlinedTextFieldDefaults.colors(
       focusedBorderColor = MaterialTheme.colorScheme.primary,
       unfocusedBorderColor = MaterialTheme.colorScheme.outline,
@@ -447,7 +578,7 @@ private fun EmptyLogsPlaceholder(searchQuery: String, modifier: Modifier = Modif
 }
 
 @Composable
-private fun LogItemRow(
+internal fun LogItemRow(
   log: DnsLogEntry,
   isExpanded: Boolean,
   onToggleExpand: () -> Unit,
@@ -457,7 +588,12 @@ private fun LogItemRow(
 ) {
   val context = LocalContext.current
   val isBlocked = log.blocked
-  val indicatorColor = if (isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+  val statusColor = when (log.status) {
+    "blocked", "error" -> MaterialTheme.colorScheme.error
+    "allowed" -> MaterialTheme.colorScheme.tertiary
+    "default" -> MaterialTheme.colorScheme.primary
+    else -> MaterialTheme.colorScheme.onSurfaceVariant
+  }
   var isCopied by remember { mutableStateOf(false) }
 
   LaunchedEffect(isCopied) {
@@ -495,14 +631,19 @@ private fun LogItemRow(
             modifier = Modifier
               .size(8.dp)
               .clip(CircleShape)
-              .background(indicatorColor)
+              .background(statusColor)
           )
           Spacer(modifier = Modifier.width(8.dp))
-          FaviconImage(domain = log.domain, modifier = Modifier.size(16.dp).clip(RoundedCornerShape(4.dp)))
+          Icon(
+            imageVector = Icons.Default.Language,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp).testTag("logs_local_domain_icon")
+          )
           Spacer(modifier = Modifier.width(8.dp))
           Text(
             text = log.domain,
-            color = if (isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            color = if (log.status == "blocked" || log.status == "error") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold,
             fontSize = 12.5.sp,
             fontFamily = FontFamily.Monospace,
@@ -549,14 +690,17 @@ private fun LogItemRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
       ) {
-        if (!log.deviceName.isNullOrBlank()) {
-          Text(
-            text = UiLabels.canonical(log.deviceName),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Medium
-          )
-        }
+        Text(
+          text = DeviceLabelResolver.resolve(
+            log.deviceName,
+            log.deviceModel,
+            log.deviceId,
+            AppStrings.get(R.string.device_unidentified)
+          ),
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          fontSize = 11.sp,
+          fontWeight = FontWeight.Medium
+        )
 
         Text(
           text = formatRelativeTime(log.timestamp),
@@ -578,7 +722,6 @@ private fun LogItemRow(
       AnimatedVisibility(visible = isExpanded) {
         LogExpandedDetails(
           log = log,
-          isBlocked = isBlocked,
           onAddToAllowlist = onAddToAllowlist,
           onAddToDenylist = onAddToDenylist
         )
@@ -590,7 +733,6 @@ private fun LogItemRow(
 @Composable
 private fun LogExpandedDetails(
   log: DnsLogEntry,
-  isBlocked: Boolean,
   onAddToAllowlist: () -> Unit,
   onAddToDenylist: () -> Unit,
   modifier: Modifier = Modifier
@@ -620,8 +762,13 @@ private fun LogExpandedDetails(
       Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(AppStrings.get(R.string.response_time, log.responseTimeMs?.let { "$it ms" } ?: AppStrings.get(R.string.unavailable)), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.5.sp)
         Text(
-          text = AppStrings.get(R.string.status_label, AppStrings.get(if (isBlocked) R.string.state_blocked else R.string.state_allowed)),
-          color = if (isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+          text = AppStrings.get(R.string.status_label, AppStrings.get(logStatusLabelResource(log.status))),
+          color = when (log.status) {
+            "blocked", "error" -> MaterialTheme.colorScheme.error
+            "allowed" -> MaterialTheme.colorScheme.tertiary
+            "default" -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+          },
           fontSize = 11.5.sp,
           fontWeight = FontWeight.Bold
         )

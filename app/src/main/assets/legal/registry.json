@@ -1,7 +1,7 @@
 {
   "status": "DRAFT",
   "terms_revision": "terms-2026-10-DRAFT-2",
-  "privacy_revision": "privacy-2026-10-DRAFT-2",
+  "privacy_revision": "privacy-2026-10-DRAFT-6",
   "review_date": "2026-10-09",
   "publisher": null,
   "contact": null,
@@ -9,7 +9,7 @@
   "documents": [
     {
       "path": "privacy_en.txt",
-      "sha256": "00a4659a3f727f6f9bdf3e2f9baa5de15422448265e0ac50e83019d679a80576",
+      "sha256": "81a55c122b5a4b85e049ed3d1e9ed105f298730eb604dd4410dfe7861d238632",
       "status": "DRAFT"
     },
     {

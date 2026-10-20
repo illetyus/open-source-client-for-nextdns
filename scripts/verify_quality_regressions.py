@@ -1,8 +1,9 @@
-"""Require executed regression cases for NDNS-001..019; emit JVM fixture evidence."""
+"""Require executed regression cases for NDNS-001..019 and NDNS-047; emit JVM evidence."""
 from pathlib import Path
 import hashlib
 import json
 import subprocess
+import time
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,6 +15,7 @@ POLLING = "com.example.ui.screens.DiagnosticPollingTest"
 AUDIT_REPOSITORY = "com.example.audit.RepositoryAuditTest"
 AUDIT_UI = "com.example.audit.UiAuditTest"
 IDENTITY = "com.example.audit.InputAndIdentityTest"
+ACCOUNT = "com.example.audit.AccountSettingsFlowTest"
 
 REQUIRED = {
     "NDNS-001": [(REPOSITORY, name) for name in (
@@ -62,8 +64,8 @@ REQUIRED = {
         "successfulAllowlistSubmissionClearsOnlyTheConfirmedText", "successfulDenylistSubmissionClearsOnlyTheConfirmedText",
         "lateAllowlistSuccessMustPreserveNewText", "lateDenylistSuccessMustPreserveNewText")],
     "NDNS-015": [(AUDIT_REPOSITORY, name) for name in (
-        "failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess",
-        "everyFailedAnalyticsPanelPreservesTheLastCompleteSnapshotAndTimestamp",
+        "eachFailedAnalyticsPanelIsReportedAsPartialWhileSuccessfulPanelsAdvance",
+        "failedCountryPanelRetainsItsLastSuccessfulSnapshot",
         "malformedOrSemanticAnalyticsFailureDoesNotLookSuccessful")],
     "NDNS-016": [(AUDIT_REPOSITORY, name) for name in (
         "olderAnalyticsFilterResponseMustNotOverwriteNewSelection",
@@ -81,12 +83,55 @@ REQUIRED = {
         [(IDENTITY, name) for name in (
             "internationalDomainsAndWildcardRulesNormalizeToAscii",
             "invalidLabelsUrlsIpsAndOversizedRulesAreRejected")],
+    "NDNS-047": [(ACCOUNT, "fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels")],
 }
+
+
+def changed_app_sources(root):
+    tracked = subprocess.check_output(
+        ["git", "diff", "--name-only", "HEAD", "--", "app/src"],
+        cwd=root,
+        text=True,
+    ).splitlines()
+    untracked = subprocess.check_output(
+        ["git", "ls-files", "--others", "--exclude-standard", "--", "app/src"],
+        cwd=root,
+        text=True,
+    ).splitlines()
+    return sorted(set(tracked + untracked))
+
+
+def assert_reports_cover_changed_sources(root, reports, changed_paths):
+    if not changed_paths:
+        return
+
+    missing = [path for path in changed_paths if not (root / path).is_file()]
+    assert not missing, f"Changed or deleted app sources require fresh JVM tests: {missing}"
+
+    newest_source = max((root / path).stat().st_mtime for path in changed_paths)
+    oldest_report = min(path.stat().st_mtime for path in reports)
+    assert oldest_report >= newest_source, (
+        "JVM test reports predate changed app sources; run :app:testDebugUnitTest before "
+        "recording quality evidence"
+    )
+
+
+def source_tree_sha256(root):
+    digest = hashlib.sha256()
+    for path in sorted((root / "app/src").rglob("*")):
+        if path.is_file():
+            digest.update(path.relative_to(root).as_posix().encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(path.read_bytes())
+            digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def verify(root=ROOT):
     reports = sorted((root / "app/build/test-results/testDebugUnitTest").glob("TEST-*.xml"))
     assert reports, "No executed JVM test reports"
+    changed_sources = changed_app_sources(root)
+    assert_reports_cover_changed_sources(root, reports, changed_sources)
     executed = set()
     hashes = {}
     for path in reports:
@@ -103,6 +148,9 @@ def verify(root=ROOT):
     evidence = {
         "schemaVersion": 1,
         "builtCommit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip(),
+        "sourceTreeSha256": source_tree_sha256(root),
+        "workingTreeSourceChanges": changed_sources,
+        "verifiedAtEpochSeconds": int(time.time()),
         "evidenceKind": "JVM_ROBOLECTRIC_COMPOSE_AND_CONTROLLED_NETWORK_FIXTURES",
         "physicalDeviceAcceptance": "NOT_RUN",
         "realAccountMutation": "NOT_RUN",
