@@ -1,7 +1,6 @@
 package com.example.audit
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.core.app.ApplicationProvider
 import com.example.NextDnsApp
 import com.example.R
@@ -31,7 +30,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], qualifiers = "w400dp-h900dp-mdpi", application = NextDnsApp::class)
 class UiAuditTest : AuditFixture() {
-  @get:Rule val rule = createComposeRule()
+  @get:Rule val rule = AuditComposeTestRule()
   private fun english() { LocalePreferences.setSelection(ApplicationProvider.getApplicationContext<NextDnsApp>(), "en") }
 
   @Test fun identicalRealisticFingerprintMustShowConnectedForSelectedProfile() {
