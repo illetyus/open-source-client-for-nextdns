@@ -228,13 +228,8 @@ fun SecurityScreen(
     val liveTldCatalog by viewModel.availableTldsCatalog.collectAsStateWithLifecycle()
     var tldSearchQuery by remember { mutableStateOf("") }
 
-    val rawTldList = if (liveTldCatalog.isNotEmpty()) {
-      liveTldCatalog.map { it.id }
-    } else {
-      listOf("work", "fit", "surf", "review", "asia", "tokyo", "cn", "monster", "info", "机构", "xyz", "top", "ru", "zip", "mov", "app", "dev")
-    }
-
-    val availableTlds = rawTldList
+    val availableTlds = liveTldCatalog
+      .map { it.id }
       .map { if (it.startsWith(".")) it else ".$it" }
       .filter { tld ->
         !settings.blockedTlds.any { added -> added.equals(tld.removePrefix("."), ignoreCase = true) }
@@ -265,37 +260,51 @@ fun SecurityScreen(
             onValueChange = { tldSearchQuery = it },
             placeholder = { Text(AppStrings.get(R.string.ui_d812357041), fontSize = 12.sp) },
             singleLine = true,
+            enabled = liveTldCatalog.isNotEmpty(),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp)
           )
         }
       },
       text = {
-        LazyColumn(
-          modifier = Modifier.fillMaxSize(),
-          verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
-          items(availableTlds) { tld ->
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Text(tld, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-              Button(
-                onClick = { viewModel.addBlockedTld(tld.removePrefix(".")) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(6.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                modifier = Modifier.height(28.dp)
+        if (liveTldCatalog.isEmpty()) {
+          Box(
+            modifier = Modifier.fillMaxWidth().height(180.dp),
+            contentAlignment = Alignment.Center
+          ) {
+            Text(
+              text = AppStrings.get(R.string.security_tld_catalog_unavailable),
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.testTag("security_tld_catalog_unavailable")
+            )
+          }
+        } else {
+          LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+          ) {
+            items(availableTlds) { tld ->
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .background(MaterialTheme.colorScheme.surfaceVariant)
+                  .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
               ) {
-                Text(AppStrings.get(R.string.add), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(tld, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Button(
+                  onClick = { viewModel.addBlockedTld(tld.removePrefix(".")) },
+                  colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                  shape = RoundedCornerShape(6.dp),
+                  contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                  modifier = Modifier.height(28.dp)
+                ) {
+                  Text(AppStrings.get(R.string.add), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
               }
+              HorizontalDivider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(horizontal = 16.dp))
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(horizontal = 16.dp))
           }
         }
       },

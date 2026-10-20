@@ -550,6 +550,8 @@
     <string name="server_latency">"Sunucu: %1$s (%2$s) • Gecikme: %3$d ms"</string>
     <string name="diagnostic_resolver_identifier">Çözümleyici: %1$s</string>
     <string name="diagnostic_server_information_unavailable">Sunucu ve çözümleyici bilgisi alınamıyor.</string>
+    <string name="diagnostic_region_unavailable">Bu tanı yanıtı bölge bilgisini içermiyor.</string>
+    <string name="security_tld_catalog_unavailable">Kullanılabilir TLD listesi yüklenemedi. Daha sonra tekrar deneyin.</string>
     <string name="diagnostic_anycast_enabled">Anycast: açık</string>
     <string name="diagnostic_anycast_disabled">Anycast: kapalı</string>
     <string name="diagnostic_source">Tanı kaynağı: test.nextdns.io</string>

@@ -68,15 +68,24 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 ## Current evidence and repository state
 
 - GitHub repository: `illetyus/open-source-client-for-nextdns`; public, writable by the connected account; default branch `main`.
-- `main` currently resolves locally to `4812323`; the active local branch is `fix/settings-account-sync-ux-2026-10-19` at `c78c9af`, six commits ahead of `main`, with a substantial uncommitted user-authorized diff. GitHub currently reports no open PR. Preserve this work and inspect the exact diff before commit or push.
+- GitHub `main` was fetched and verified at `c7db8d9d04d2022741ccc1564877940f45fe485a`. Work is isolated in `feat/nextdns-api-performance-audit`; draft PR #27 was opened from that exact main commit for a test-first red phase. Its first remote comparison accidentally showed line-ending churn; the branch was corrected with a lease-protected update. The remote red-phase diff contains only regression tests in `AccountSettingsFlowTest.kt`.
 - The existing local plan `docs/superpowers/plans/2026-10-20-logs-icons-settings-onboarding.md` records log cursor pagination/device filtering, first-party best-effort favicon loading, settings/guest/legal grouping, and launcher redesign as locally implemented. Its recorded build and test results predate this plan and do not prove the present tree or GitHub CI.
 - Official NextDNS API documentation currently labels the API beta, documents cursor/limit pagination, security fields, profile settings, and log parameters. It does not document an age-verification bypass field. The codebase has no live account API-key evidence available to this audit.
 - A NextDNS Help Center bug report dated 2026-03-09 discusses the option's dashboard availability but provides no API field or read/write contract. This is community evidence about uncertainty, not proof that the feature is absent.
-- `NextDnsTestResponse` already models `server`, `resolver`, and `anycast`; whether the UI communicates these fields accurately remains to be verified.
-- Logs have a cursor-based API call, a device filter, and a load-older action in the current local diff. Status/category filtering and complete reason display require source/test verification.
-- The current GAFAM legend lists six groups, but the donut canvas draws only Google, Facebook, Microsoft, and a remainder arc; Apple and Amazon are omitted from the plotted segments.
+- `NextDnsTestResponse` models `server`, `resolver`, and `anycast`; these are shown without geo inference. The response does not provide a region field, so the screen now has a five-language explicit unavailable-region row.
+- At the verified live-main base, logs already use documented status/device/search parameters, cursor pagination, stale-response rejection and raw-reason fallback; date/sort controls remain a documented UI gap.
+- At the verified live-main base, the interactive country map and six-segment GAFAM chart already exist. They will be validated through PR CI rather than reimplemented.
 - `FaviconImage` uses HTTPS `favicons.nextdns.io`, bounded network reads, and a generic fallback. The route is not in the published API reference and the cache is process-memory only.
 - No speed-test or Macrobenchmark module is present. The local ADB server currently fails to start, so a live-device measurement is not yet available.
+
+### Execution update — 20 October 2026
+
+- PR #27 red-phase runs `39410235278`, `39411101417`, and `39411876774` passed lint, metadata, localization, and legal-draft checks. Their targeted assertions failed on the missing diagnostic region row and 16 dp list icons; the TLD test first exposed Compose/Espresso cursor-animation timing. Run `39412587641` then failed all three targeted assertions for the expected old behavior, including the missing unavailable-catalog label, across 194 tests.
+- The matching implementation is prepared locally: no guessed TLD choices are shown when `/security/tlds` has no results; list icons are 12 dp; DNS region remains explicitly unavailable because the diagnostic response has no such field. Strings are present for all five supported locales. The implementation commit has not yet been evaluated by CI.
+- Local Gradle tasks remain blocked before execution because the Gradle daemon cannot establish its required localhost loopback connection. No local build, lint, unit test or APK result is claimed.
+- BrowserStack credentials are not configured in the current process or Windows user/machine environment, and no device is attached. Physical-device performance values, recomposition traces and BrowserStack results therefore remain unverified.
+- The speed-test service choice is still awaiting the user. No public M-Lab endpoint or associated AUP/privacy obligations will be accepted by default; a configurable owned LibreSpeed endpoint remains the recommended direction.
+- Keep age-verification and early-access settings unsupported until a documented API field or sanitized response proves them; do not guess names or send speculative writes. The current API matrix and error ledger record these boundaries.
 
 ---
 

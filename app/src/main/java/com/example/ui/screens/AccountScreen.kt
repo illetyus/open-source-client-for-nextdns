@@ -582,6 +582,12 @@ fun AccountScreen(
                   fontSize = 11.5.sp
                 )
               }
+              Text(
+                text = AppStrings.get(R.string.diagnostic_region_unavailable),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 11.5.sp,
+                modifier = Modifier.testTag("diagnostic_region_unavailable")
+              )
               if (!resolverValue.isNullOrBlank()) {
                 Text(
                   text = AppStrings.get(R.string.diagnostic_resolver_identifier, resolverValue),

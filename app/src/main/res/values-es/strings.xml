@@ -550,6 +550,8 @@
     <string name="server_latency">"Servidor: %1$s (%2$s) • Latencia: %3$d ms"</string>
     <string name="diagnostic_resolver_identifier">Resolvedor: %1$s</string>
     <string name="diagnostic_server_information_unavailable">La información del servidor y del resolvedor no está disponible.</string>
+    <string name="diagnostic_region_unavailable">Este diagnóstico no proporciona información de la región.</string>
+    <string name="security_tld_catalog_unavailable">No se pudieron cargar los TLD disponibles. Inténtalo de nuevo más tarde.</string>
     <string name="diagnostic_anycast_enabled">Anycast: activado</string>
     <string name="diagnostic_anycast_disabled">Anycast: desactivado</string>
     <string name="diagnostic_source">Origen del diagnóstico: test.nextdns.io</string>
