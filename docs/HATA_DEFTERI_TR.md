@@ -1,7 +1,16 @@
-Warning: truncated output (original token count: 17434)
-Total output lines: 403
-
 # Hata defteri — yayın öncesi kod incelemesi
+
+## 20 Ekim 2026 — PR #27 CI #322–#327 dispatcher yarışı ve son doğrulama
+
+CI #322 (run `39451553055`, head `b9e0173e00f7827933b76f881bd868082c3ad4ff`) başarısız oldu: `accountDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected` sırasında `TestMainDispatcher.kt:72` eşzamanlı Main-dispatcher erişim hatası verdi. JUnit 4.13.2, `@Before`/`@After` çağrılarını kuralların içine sarıyor; eski fixture, `@After` içinde Main'i sıfırlarken Compose kuralının teardown'ı hâlâ çalışabiliyordu ([JUnit 4.13.2 runner](https://github.com/junit-team/junit4/blob/r4.13.2/src/main/java/org/junit/runners/BlockJUnit4ClassRunner.java)). Main dispatcher kurulum/sıfırlaması dış TestRule'a taşındı; Compose test kuralı onun içine `RuleChain` ile yerleştirildi. Repository-only testler kendi Main kuralını, account ve UI testleri bileşik Compose kuralını kullanıyor.
+
+İlk kural-wrapper denemesi CI #326'da (`39454569461`) derlenmedi: `createComposeRule()` dönüşünün `ComposeContentTestRule` API'si yerine `ComposeTestRule` diye tiplendirilmesi `setContent` metodunu görünmez yaptı; ayrıca test kuralı sınıfı public `@Rule` alanında internal tip olarak açığa çıkıyordu. Wrapper, Compose'un content-rule arayüzüne ve public görünürlüğe geçirildi.
+
+Düzeltilmiş kod başlığı `6096f584ffef25bcf3d151f6924b8c443880e5de` için [CI #327](https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39455562687) başarılı tamamlandı: Android Lint, metadata/API matrisi/beş dil/hukuki DRAFT kapıları, 205 JVM/Compose testi (0 başarısız/0 atlanan), 12 ekran görüntüsü, 588 coverage sınıfı, Debug ve unsigned Release, Macrobenchmark derlemesi, bağımlılık/SDK/NOTICE/DEX ve Snyk High (50 bağımlılık, 0 bulgu). Release-payload emülatöründe 12 test geçti; logcat'te canary bulunmadı ve imzalı/unsigned payload girdileri eşleşti. `Snyk Monitor Main` PR çalışması olduğu için beklendiği şekilde atlandı. Hız testi kullanıcı kararıyla ertelenmiş durumda. BrowserStack/gerçek cihaz, aynı cihazda kıyas, Perfetto ve recomposition ölçümleri hâlâ fiziksel kanıt bekliyor.
+
+| Kayıt | Öncelik | Bulgu | Düzeltme / doğrulama |
+|---|---|---|---|
+| NDNS-059 | P2 | Test fixture, Compose kuralı kapanmadan önce global `Dispatchers.Main` değerini `@After` içinde sıfırladığı için CI'da eşzamanlı okuma/yazma yarışı oluştu. | Dispatcher yaşam döngüsü Compose teardown'ını saran JUnit RuleChain'e taşındı; account/UI ve repository testleri ayrı kuralla çalışıyor. CI #327 tüm 205 testi ve test kanıtı kapısını geçti. |
 
 ## 20 Ekim 2026 — PR #27 CI #319 kapanışı ve doğrulama düzeltmeleri
 
