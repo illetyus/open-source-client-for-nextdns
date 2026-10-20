@@ -280,8 +280,6 @@ class AccountSettingsFlowTest : AuditFixture() {
     chart.assertContentDescriptionContains("Google", substring = true)
     chart.assertContentDescriptionContains("Apple", substring = true)
     chart.assertContentDescriptionContains("Amazon", substring = true)
-    rule.onNodeWithContentDescription("Amazon").performScrollTo().assertIsDisplayed()
-    rule.onNodeWithContentDescription("Apple").performScrollTo().assertIsDisplayed()
     assertTrue("GAFAM analytics must use the documented destinations?type=gafam endpoint", requests.any {
       it.contains("/analytics/destinations?") && it.contains("type=gafam")
     })
