@@ -89,9 +89,10 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - The user explicitly deferred the speed-test feature on 20 October 2026. No public M-Lab endpoint, configurable server, or transfer code was added; retain it as deferred until the user reopens it.
 - Keep age-verification and early-access settings unsupported until a documented API field or sanitized response proves them; do not guess names or send speculative writes. The current API matrix and error ledger record these boundaries.
 
+- CI #322 (`39451553055`) exposed a concurrent `Dispatchers.Main` access during Compose teardown because fixture `@After` reset Main before the Compose rule had closed. The fix moves Main setup/reset into an outer JUnit RuleChain; repository tests use a standalone Main rule. CI #326 (`39454569461`) caught the first wrapper's incorrect Compose rule interface and internal visibility; corrected to public `ComposeContentTestRule`. CI #327 (`39455562687`, code head `6096f584ffef25bcf3d151f6924b8c443880e5de`) passed all gates: 205 JVM/Compose tests, 12 screenshots, 588 coverage classes, Lint, debug/unsigned release, Macrobenchmark compilation, dependency/NOTICE/DEX, Snyk High (50 dependencies, 0 findings), and 12 release-payload emulator tests (no canary, signed/unsigned payload parity).
 ---
 
-**Current patch:** Extends PR #27 with OkHttp cancellation coverage, a release-emulator StrictMode audit, and a CI check that keeps the 61-route inventory aligned with Retrofit. Local Gradle execution could not start because of a loopback-connection error. CI #319 validated the code, and final head CI #321 passed after documentation updates.
+**Current patch:** Extends PR #27 with OkHttp cancellation coverage, a release-emulator StrictMode audit, and a CI check that keeps the 61-route inventory aligned with Retrofit. CI #327 passed the corrected test-rule lifecycle and all build, test, security, release-payload, and evidence gates. Local Gradle execution remains unavailable because the configured wrapper-cache lock is denied.
 
 ## Numbered work items
 
