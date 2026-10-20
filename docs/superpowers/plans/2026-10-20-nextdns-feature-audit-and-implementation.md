@@ -86,7 +86,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - The performance harness uses the official AndroidX `com.android.test` Macrobenchmark setup, `StartupTimingMetric`, `FrameTimingMetric`, release-like non-debuggable/profileable app variant, the already bundled ProfileInstaller 1.4.0, and benchmark-only Compose tracing. AndroidX documents that Macrobenchmark is intended for Compose UI measurement and reports startup and frame percentiles; emulator results are not representative of phone performance ([Macrobenchmark setup](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview), [metric definitions](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)).
 - Local Gradle tests could not start because the configured wrapper-cache lock returned access denied. No local build, lint, unit test or APK result is claimed; GitHub CI remains the executable validation path.
 - BrowserStack credentials are not configured in the current process or Windows user/machine environment, and no device is attached. Physical-device performance values, recomposition traces and BrowserStack results therefore remain unverified.
-- The speed-test service choice is still awaiting the user. No public M-Lab endpoint or associated AUP/privacy obligations will be accepted by default; a configurable owned LibreSpeed endpoint remains the recommended direction.
+- The user explicitly deferred the speed-test feature on 20 October 2026. No public M-Lab endpoint, configurable server, or transfer code was added; retain it as deferred until the user reopens it.
 - Keep age-verification and early-access settings unsupported until a documented API field or sanitized response proves them; do not guess names or send speculative writes. The current API matrix and error ledger record these boundaries.
 
 ---
@@ -175,17 +175,17 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 4. User-controlled open-source internet speed test
 
-**Current status:** Client/license candidates were compared. No acceptable, verified HTTPS test server and usage terms are available, so runtime transfer code and UI remain deferred.
+**Current status:** Kullanıcı 20 Ekim 2026'da hız testi özelliğini erteledi. Sunucu, aktarım motoru, test UI'ı veya varsayılan uç nokta eklenmedi. Yeniden ele alınması için açıkça yeniden başlatılması ve sunucu/lisans/gizlilik kapılarının geçilmesi gerekir.
 
 **Root Cause Analysis:** No speed-test engine exists. A library license alone does not grant permission to use a third-party test server, and the candidate JSpeedTest project documents legacy HTTP/FTP endpoints as examples.
 
-**Scope of Change:** Select an Android-compatible open-source engine only after verifying license, maintenance/dependency risks, HTTPS support, ping/upload behavior, and an actual server’s terms. Do not silently use a vendor’s undocumented endpoint.
+**Scope of Change:** Work is deferred per user decision. No engine, server, or runtime UI is in scope unless the user explicitly reopens this feature; any future implementation must first verify license, maintenance/dependency risks, HTTPS support, ping/upload behavior, and the selected server’s terms.
 
 **Implementation Steps:**
 - [x] Compare the MIT JSpeedTest client with the LGPL-3.0 LibreSpeed Android template; inspect source, dependency freshness, TLS behavior, server configuration, and NOTICE obligations.
-- [ ] Verify a test endpoint/server is currently online over HTTPS and permits user-initiated test traffic; otherwise make the server configurable or record the item as blocked pending a valid server.
-- [ ] Implement a foreground, user-started flow with server identity, approximate transfer size, upload confirmation, metered-network notice, progress, cancellation, and explicit results deletion/no-retention behavior.
-- [ ] Keep test traffic, IP information, and results out of analytics and logs; add license/NOTICE and privacy copy in all five languages.
+- [ ] Deferred: verify an endpoint/server only if the user explicitly reopens this feature; then confirm HTTPS and permission for user-initiated test traffic.
+- [ ] Deferred: implement no transfer flow until the feature is explicitly reopened and a suitable server is approved.
+- [ ] If reopened, keep test traffic, IP information, and results out of analytics/logs and complete the license/NOTICE and five-language privacy copy before implementation.
 
 **Testing Strategy:** Deterministic local HTTP(S) test server for ping, download, upload, rate calculation, timeout, TLS failure, cancellation, and metered-network prompts; license inventory and release dependency scan.
 
