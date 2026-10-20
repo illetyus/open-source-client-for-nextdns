@@ -390,3 +390,6 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - NDNS-061 rejects HTML fallback pages and incomplete LibreSpeed download bodies; NDNS-062 cancels work when the screen stops and invalidates measurements after server or authorization changes.
 - NDNS-063 retains bounded unknown security response fields for read-only inspection, hides non-Boolean values, and excludes all unknown data from persistence and PATCH requests. The public API does not establish age-verification semantics or write support.
 - The user deferred live speed testing. No public test endpoint is configured; physical-device measurements remain open.
+### CI follow-up — 21 October 2026
+
+- CI #349 on head `8d1e015` stopped during Kotlin compilation because `MIN_DOWNLOAD_BYTES` referenced later-declared constants. `MIN_DOWNLOAD_MEBIBYTES`, `MAX_DOWNLOAD_MEBIBYTES`, and `BYTES_PER_MEBIBYTE` were moved before the derived constant and recorded as NDNS-064. A fresh full CI run is pending.

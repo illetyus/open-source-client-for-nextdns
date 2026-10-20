@@ -311,12 +311,12 @@ internal class LibreSpeedClient(
   companion object {
     const val DEFAULT_PING_SAMPLES = 3
     const val MAX_PING_SAMPLES = 5
-    const val DEFAULT_DOWNLOAD_BYTES = 10_000_000L
-    const val MAX_DOWNLOAD_BYTES = 10_000_000L
-    const val MIN_DOWNLOAD_BYTES = MIN_DOWNLOAD_MEBIBYTES * BYTES_PER_MEBIBYTE
     const val MIN_DOWNLOAD_MEBIBYTES = 4L
     const val MAX_DOWNLOAD_MEBIBYTES = 9L
     const val BYTES_PER_MEBIBYTE = 1_048_576L
+    const val DEFAULT_DOWNLOAD_BYTES = 10_000_000L
+    const val MAX_DOWNLOAD_BYTES = 10_000_000L
+    const val MIN_DOWNLOAD_BYTES = MIN_DOWNLOAD_MEBIBYTES * BYTES_PER_MEBIBYTE
     private const val DOWNLOAD_MEDIA_TYPE = "application/octet-stream"
     const val DEFAULT_UPLOAD_BYTES = 1_000_000
     const val MAX_UPLOAD_BYTES = 1_000_000
