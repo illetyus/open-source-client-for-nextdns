@@ -26,7 +26,7 @@ Düzeltilmiş kod başlığı `6096f584ffef25bcf3d151f6924b8c443880e5de` için [
 
 | Kayıt | Öncelik | Bulgu | Düzeltme / doğrulama |
 |---|---|---|---|
-| NDNS-056 | P2 | GitHub CI Java 17 ile çalışırken Robolectric varsayılan SDK 36 seçimi test sürecinde Java 21 gereksinimi nedeniyle duruyordu. | Favicon ağ testine proje/test zinciriyle uyumlu `@Config(sdk = [35])` sabitlendi; CI #319 JVM test kapısı geçti. |
+| NDNS-056 | P2 | GitHub CI Java 17 ile çalışırken Robolectric varsayılan SDK 36 seçimi test sürecinde Java 21 gereksinimi nedeniyle duruyordu. | Düzeltildi; CI #346 lint ve derlemeyi, 214 testi ve güvenlik kapılarını geçti. |
 | NDNS-057 | P2 | Robolectric `ShadowBitmapFactory`, geçersiz görüntü baytları için sentetik bitmap üretebildiğinden yalnız decode sonucuna dayalı bozuk PNG testi güvenilir değildi. | PNG uç noktası için decode öncesi PNG imza baytları doğrulandı; bozuk veri regresyonu CI #319'da geçti. |
 | NDNS-058 | P2 | StrictMode ihlal dinleyicisi ana döngüye ertelenirken test politikayı aynı döngü çağrısı içinde geri yüklediği için dinleyici bildirimi kaybolabiliyordu. | Test, disk/ağ negatif kontrollerinin latch bildirimi gelene kadar politikayı etkin tutuyor ve ardından önceki politikayı geri yüklüyor. CI #319 release-emülatör kapısında 12 testle geçti. |
 
