@@ -635,7 +635,7 @@
     <string name="speed_test_privacy_url">"URL der Datenschutzerklärung des Servers"</string>
     <string name="speed_test_open_privacy">"Datenschutzerklärung öffnen"</string>
     <string name="speed_test_authorization">"Ich betreibe diesen Server oder darf ihn für Geschwindigkeitstests verwenden."</string>
-    <string name="speed_test_metered_consent">"Ich stimme zu, für diesen Test bis zu 10 MB mobile Daten zu verwenden. Der optionale Upload-Test benötigt weitere 1 MB."</string>
+    <string name="speed_test_transfer_consent">Ich stimme zu, für diesen Test bis zu 10 MB herunterzuladen. In getakteten Netzwerken kann dies mobile Daten verbrauchen; der optionale Upload von 1 MB erfordert eine separate Bestätigung.</string>
     <string name="speed_test_data_usage">Für den Download werden bis zu 10 MB heruntergeladen; für die Latenz gibt es drei HTTP-Anfragen. Der separate Uploadtest sendet nach deiner Bestätigung bis zu 1 MB. Die Latenz ist die HTTP-Rundlaufzeit, nicht ICMP. Die App speichert keine Ergebnisse.</string>
     <string name="speed_test_invalid_server">"Gib eine gültige Server-Basis-URL ohne Zugangsdaten, Abfrage oder Fragment ein."</string>
     <string name="speed_test_https_required">"Der Server muss HTTPS verwenden."</string>
