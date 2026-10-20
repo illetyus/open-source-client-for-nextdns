@@ -27,11 +27,21 @@ data class LogsPaginationState(
 )
 
 /** Results for supported profile data areas. Local credentials and connection diagnostics are excluded. */
+enum class SyncAreaOutcome {
+  SUCCEEDED,
+  PARTIAL,
+  FAILED
+}
+
 data class ProfileDataSyncResult(
   val sectionResults: Map<SyncSection, Boolean>,
   val logsRefreshed: Boolean,
-  val analyticsRefreshed: Boolean
+  val analyticsOutcome: SyncAreaOutcome
 ) {
+  /** True only when every analytics request completed successfully. */
+  val analyticsRefreshed: Boolean
+    get() = analyticsOutcome == SyncAreaOutcome.SUCCEEDED
+
   val successfulAreaCount: Int
     get() = sectionResults.count { it.value } + (if (logsRefreshed) 1 else 0) + (if (analyticsRefreshed) 1 else 0)
 
@@ -40,7 +50,7 @@ data class ProfileDataSyncResult(
 
   val allAreasSucceeded: Boolean
     get() = sectionResults.keys == SyncSection.values().toSet() &&
-      sectionResults.values.all { it } && logsRefreshed && analyticsRefreshed
+      sectionResults.values.all { it } && logsRefreshed && analyticsOutcome == SyncAreaOutcome.SUCCEEDED
 }
 
 sealed interface FullSyncStatus {

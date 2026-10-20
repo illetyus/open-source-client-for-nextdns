@@ -771,7 +771,11 @@ class NextDnsRepository(
     profileId: String = _activeProfileId.value
   ): ProfileDataSyncResult = withSessionContext(expectedKey = key, expectedProfile = profileId) {
     if (key.isBlank() || profileId.isBlank()) {
-      return@withSessionContext ProfileDataSyncResult(emptyMap(), logsRefreshed = false, analyticsRefreshed = false)
+      return@withSessionContext ProfileDataSyncResult(
+        emptyMap(),
+        logsRefreshed = false,
+        analyticsOutcome = SyncAreaOutcome.FAILED
+      )
     }
     val snapshot = checkNotNull(currentCoroutineContext()[SessionContext]).snapshot
     val token = requestSequence.incrementAndGet()
@@ -783,11 +787,18 @@ class NextDnsRepository(
       }
       val logsRefreshed = refreshLogsFromApi(limit = 100)
       val deviceAnalyticsRefreshed = applyDevicesAnalyticsFromApi(key, profileId)
-      val analyticsRefreshed = fetchAnalytics(key, profileId, null, null)
+      val analyticsFetchOutcome = fetchAnalyticsOutcome(
+        beginAnalyticsRequest(key, profileId, null, null)
+      )
+      val analyticsOutcome = when {
+        analyticsFetchOutcome == SyncAreaOutcome.FAILED -> SyncAreaOutcome.FAILED
+        !deviceAnalyticsRefreshed -> SyncAreaOutcome.PARTIAL
+        else -> analyticsFetchOutcome
+      }
       ProfileDataSyncResult(
         sectionResults = sectionResults,
         logsRefreshed = logsRefreshed,
-        analyticsRefreshed = deviceAnalyticsRefreshed && analyticsRefreshed
+        analyticsOutcome = analyticsOutcome
       )
     } finally {
       synchronized(sessionLock) {
@@ -2548,14 +2559,17 @@ class NextDnsRepository(
   }
 
   suspend fun fetchAnalytics(key: String, profileId: String, device: String? = null, from: String? = null): Boolean =
-    fetchAnalytics(beginAnalyticsRequest(key, profileId, device, from))
+    fetchAnalyticsOutcome(beginAnalyticsRequest(key, profileId, device, from)) != SyncAreaOutcome.FAILED
 
-  private suspend fun fetchAnalytics(request: AnalyticsRequest): Boolean = withSessionContext(snapshot = request.session) {
+  private suspend fun fetchAnalytics(request: AnalyticsRequest): Boolean =
+    fetchAnalyticsOutcome(request) != SyncAreaOutcome.FAILED
+
+  private suspend fun fetchAnalyticsOutcome(request: AnalyticsRequest): SyncAreaOutcome = withSessionContext(snapshot = request.session) {
     val key = request.session.apiKey
     val profileId = request.session.profileId
     val device = request.device
     val from = request.from
-    if (key.isBlank() || profileId.isBlank()) return@withSessionContext false
+    if (key.isBlank() || profileId.isBlank()) return@withSessionContext SyncAreaOutcome.FAILED
 
     val devParam = if (device == "Tüm cihazlar" || device.isNullOrBlank()) {
       null
@@ -2660,7 +2674,7 @@ class NextDnsRepository(
     }
 
     commitCurrentSession {
-      if (analyticsRequest !== request) return@commitCurrentSession false
+      if (analyticsRequest !== request) return@commitCurrentSession SyncAreaOutcome.FAILED
       val responses = listOf(statusResp, devicesResp, allowedDomainsResp, blockedDomainsResp,
         rootDomainsResp, reasonsResp, companiesResp, destinationsResp, dnssecResp,
         encryptionResp, protocolsResp, queryTypesResp, ipVersionsResp, ipsResp)
@@ -2669,7 +2683,7 @@ class NextDnsRepository(
       }
       if (successfulResponses.none { it }) {
         _analyticsErrorMessage.value = AppStrings.get(R.string.ui_d4c19c0ba4)
-        return@commitCurrentSession false
+        return@commitCurrentSession SyncAreaOutcome.FAILED
       }
 
       val previousAnalytics = _analytics.value
@@ -2721,7 +2735,7 @@ class NextDnsRepository(
       } else {
         AppStrings.get(R.string.analytics_partial_failure_notice)
       }
-      true
+      if (successfulResponses.all { it }) SyncAreaOutcome.SUCCEEDED else SyncAreaOutcome.PARTIAL
     }
   }
 

@@ -1,4 +1,4 @@
-"""Require executed regression cases for NDNS-001..019; emit JVM fixture evidence."""
+"""Require executed regression cases for NDNS-001..019 and NDNS-047; emit JVM evidence."""
 from pathlib import Path
 import hashlib
 import json
@@ -15,6 +15,7 @@ POLLING = "com.example.ui.screens.DiagnosticPollingTest"
 AUDIT_REPOSITORY = "com.example.audit.RepositoryAuditTest"
 AUDIT_UI = "com.example.audit.UiAuditTest"
 IDENTITY = "com.example.audit.InputAndIdentityTest"
+ACCOUNT = "com.example.audit.AccountSettingsFlowTest"
 
 REQUIRED = {
     "NDNS-001": [(REPOSITORY, name) for name in (
@@ -82,6 +83,7 @@ REQUIRED = {
         [(IDENTITY, name) for name in (
             "internationalDomainsAndWildcardRulesNormalizeToAscii",
             "invalidLabelsUrlsIpsAndOversizedRulesAreRejected")],
+    "NDNS-047": [(ACCOUNT, "fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels")],
 }
 
 

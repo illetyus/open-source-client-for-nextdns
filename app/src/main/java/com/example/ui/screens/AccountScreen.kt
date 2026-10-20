@@ -44,6 +44,7 @@ import com.example.data.model.DiagnosticConnectionState
 import com.example.data.model.diagnosticConnectionState
 import com.example.data.repository.ApiConnectionStatus
 import com.example.data.repository.FullSyncStatus
+import com.example.data.repository.SyncAreaOutcome
 import com.example.ui.components.*
 import com.example.ui.viewmodel.NavTab
 import com.example.ui.viewmodel.NextDnsViewModel
@@ -490,9 +491,14 @@ fun AccountScreen(
                 }
               }
               listOf(
-                NavTab.LOGS.title to result.logsRefreshed,
-                NavTab.ANALYTICS.title to result.analyticsRefreshed
-              ).forEachIndexed { index, (label, succeeded) ->
+                NavTab.LOGS.title to if (result.logsRefreshed) SyncAreaOutcome.SUCCEEDED else SyncAreaOutcome.FAILED,
+                NavTab.ANALYTICS.title to result.analyticsOutcome
+              ).forEachIndexed { index, (label, outcome) ->
+                val (statusResource, statusColor) = when (outcome) {
+                  SyncAreaOutcome.SUCCEEDED -> R.string.sync_section_synced to MaterialTheme.colorScheme.tertiary
+                  SyncAreaOutcome.PARTIAL -> R.string.sync_section_partial to MaterialTheme.colorScheme.error
+                  SyncAreaOutcome.FAILED -> R.string.sync_section_failed to MaterialTheme.colorScheme.error
+                }
                 Row(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.SpaceBetween,
@@ -505,8 +511,8 @@ fun AccountScreen(
                     modifier = Modifier.testTag(if (index == 0) "full_sync_logs_label" else "full_sync_analytics_label")
                   )
                   Text(
-                    AppStrings.get(if (succeeded) R.string.sync_section_synced else R.string.sync_section_failed),
-                    color = if (succeeded) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
+                    AppStrings.get(statusResource),
+                    color = statusColor,
                     fontSize = 12.sp,
                     modifier = Modifier.testTag(if (index == 0) "full_sync_logs_status" else "full_sync_analytics_status")
                   )

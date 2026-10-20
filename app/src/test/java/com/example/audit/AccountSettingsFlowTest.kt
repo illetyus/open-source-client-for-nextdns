@@ -26,6 +26,7 @@ import com.example.ui.viewmodel.NextDnsViewModel
 import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import androidx.compose.ui.unit.dp
 import org.junit.runner.RunWith
@@ -391,5 +392,37 @@ class AccountSettingsFlowTest : AuditFixture() {
     val failureMessage = model.uiMessage.value?.text.orEmpty()
     assertTrue(failureMessage.contains(NavTab.LOGS.title))
     assertTrue(failureMessage.contains(NavTab.ANALYTICS.title))
+  }
+
+  @Test fun fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels() {
+    english()
+    response = { request ->
+      val path = request.requestUrl?.encodedPath.orEmpty()
+      if (path.endsWith("/analytics/destinations") &&
+        request.requestUrl?.queryParameter("type") == "countries") {
+        json("{}", 500)
+      } else if (path.endsWith("/analytics/status")) {
+        json("""{"data":[{"status":"default","queries":123,"blocked":12}]}""")
+      } else {
+        json("""{"data":[]}""")
+      }
+    }
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { AccountScreen(model) } }
+
+    model.syncAllData()
+    rule.waitUntil(30_000) {
+      model.fullSyncStatus.value is com.example.data.repository.FullSyncStatus.Completed &&
+        model.uiMessage.value?.isError == true
+    }
+
+    val result = (model.fullSyncStatus.value as com.example.data.repository.FullSyncStatus.Completed).result
+    assertFalse("A partially refreshed analytics area must not count as fully refreshed", result.analyticsRefreshed)
+    assertEquals(com.example.data.repository.SyncAreaOutcome.PARTIAL, result.analyticsOutcome)
+    assertFalse("Partial analytics must prevent an all-areas success", result.allAreasSucceeded)
+    assertEquals("Successful analytics panels should still be committed", 123L, repository.analytics.value.totalQueries)
+    rule.onNodeWithTag("full_sync_analytics_status")
+      .assertTextEquals(AppStrings.get(R.string.sync_section_partial))
+    assertTrue(model.uiMessage.value?.text?.contains(NavTab.ANALYTICS.title) == true)
   }
 }

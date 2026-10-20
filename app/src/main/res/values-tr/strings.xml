@@ -592,6 +592,7 @@
     <string name="sync_status_count">"%2$d bölümün %1$d tanesi eşitlendi."</string>
     <string name="sync_section_synced">"Eşitlendi"</string>
     <string name="sync_section_failed">"Kontrol gerekli"</string>
+    <string name="sync_section_partial">"Kısmen eşitlendi"</string>
     <string name="sync_all_success">"Tüm bölümler NextDNS ile eşitlendi."</string>
     <string name="account_status_connected">"API bağlı • %1$d profil"</string>
     <string name="account_status_connected_many">"API bağlı • %1$d profil"</string>

@@ -593,6 +593,7 @@
     <string name="sync_status_count">"%1$d of %2$d sections synced."</string>
     <string name="sync_section_synced">"Synced"</string>
     <string name="sync_section_failed">"Needs attention"</string>
+    <string name="sync_section_partial">"Partially synced"</string>
     <string name="sync_all_success">"All sections synced with NextDNS."</string>
     <string name="account_status_connected">"API connected • %1$d profile"</string>
     <string name="account_status_connected_many">"API connected • %1$d profiles"</string>
