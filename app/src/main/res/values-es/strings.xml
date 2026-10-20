@@ -635,7 +635,7 @@
     <string name="speed_test_privacy_url">URL de la política de privacidad del servidor</string>
     <string name="speed_test_open_privacy">Abrir política de privacidad</string>
     <string name="speed_test_authorization">Administro este servidor o tengo permiso para usarlo en pruebas de velocidad.</string>
-    <string name="speed_test_metered_consent">Acepto usar hasta 10 MB de datos móviles. La subida opcional usa 1 MB adicional.</string>
+    <string name="speed_test_transfer_consent">Acepto descargar hasta 10 MB para esta prueba. En redes de uso medido puede consumir datos móviles; la subida opcional de 1 MB requiere una confirmación aparte.</string>
     <string name="speed_test_data_usage">La prueba descarga hasta 10 MB y realiza tres solicitudes HTTP para medir la latencia. La subida, tras confirmarla por separado, envía hasta 1 MB. La latencia es el tiempo de ida y vuelta HTTP, no ICMP. La aplicación no guarda resultados.</string>
     <string name="speed_test_invalid_server">Introduce una URL base válida sin credenciales, consulta ni fragmento.</string>
     <string name="speed_test_https_required">El servidor debe usar HTTPS.</string>
