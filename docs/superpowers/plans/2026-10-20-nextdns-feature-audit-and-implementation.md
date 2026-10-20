@@ -382,3 +382,11 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - `librespeed/speedtest-android`, [README and LGPL-3.0 terms](https://github.com/librespeed/speedtest-android); requires a configured LibreSpeed server.
 - NextDNS favicon host use is evidenced by [NextDNS Help Center discussion](https://help.nextdns.io/t/m1h08qc/using-favicons-nextdns-io-to-request-other-resources) and independent code examples, not by the official API schema.
 
+
+
+### Execution update — 21 October 2026
+
+- NDNS-060 rejects queued events from an obsolete log-search stream after a filter change.
+- NDNS-061 rejects HTML fallback pages and incomplete LibreSpeed download bodies; NDNS-062 cancels work when the screen stops and invalidates measurements after server or authorization changes.
+- NDNS-063 retains bounded unknown security response fields for read-only inspection, hides non-Boolean values, and excludes all unknown data from persistence and PATCH requests. The public API does not establish age-verification semantics or write support.
+- The user deferred live speed testing. No public test endpoint is configured; physical-device measurements remain open.

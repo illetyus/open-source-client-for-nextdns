@@ -83,9 +83,12 @@ class RepositoryRegressionTest {
     repository = newRepository()
   }
 
-  private fun newRepository(probe: suspend (String?) -> NextDnsTestResponse? = { null }) =
+  private fun newRepository(
+    streamClient: OkHttpClient = NextDnsNetworkClient.client,
+    probe: suspend (String?) -> NextDnsTestResponse? = { null }
+  ) =
     NextDnsRepository(preferences, apiService = api, diagnosticService = testApi,
-      diagnosticProbe = probe, backgroundWorkEnabled = false)
+      diagnosticProbe = probe, streamClient = streamClient, backgroundWorkEnabled = false)
 
   @After fun tearDown() {
     gates.forEach { it.countDown() }
@@ -192,6 +195,57 @@ class RepositoryRegressionTest {
     assertTrue(requests.last().contains("device=__UNIDENTIFIED__"))
     assertEquals("unidentified.example", repository.logs.value.single().domain)
     assertNull(repository.logs.value.single().deviceId)
+  }
+
+  @Test fun oldSearchStreamCannotLeakRowsIntoNewSearchResults() = runBlocking {
+    val oldStreamRequest = gate()
+    val releaseOldStream = gate()
+    val searchRequest = gate()
+    val releaseSearch = gate()
+    val streamClient = OkHttpClient.Builder()
+      .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().url(server.url("/stream")).build()) }
+      .build()
+    repository = newRepository(streamClient = streamClient)
+    response = { request ->
+      val requestUrl = request.requestUrl!!
+      when {
+        requestUrl.encodedPath == "/stream" && requestUrl.queryParameter("search") == null -> {
+          oldStreamRequest.countDown()
+          await(releaseOldStream)
+          MockResponse()
+            .setBody("""id: outside-search
+data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"default"}
+
+""")
+            .setBodyDelay(250, TimeUnit.MILLISECONDS)
+        }
+        requestUrl.encodedPath == "/stream" -> MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE)
+        requestUrl.queryParameter("search") == "needle" -> {
+          searchRequest.countDown()
+          await(releaseSearch)
+          json("""{"data":[{"domain":"needle.example","timestamp":"2026-10-20T00:00:01Z","status":"default"}]}""")
+        }
+        else -> json("""{"data":[],"meta":{"stream":{"id":"seed-cursor"}}}""")
+      }
+    }
+
+    repository.startLogsStream()
+    await(oldStreamRequest)
+    val filter = async(Dispatchers.IO) { repository.setLogsSearchFilter("needle") }
+    await(searchRequest)
+    releaseOldStream.countDown()
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+    while (repository.logs.value.none { it.domain == "outside.example" } && System.nanoTime() < deadline) {
+      shadowOf(Looper.getMainLooper()).idle()
+      delay(5)
+    }
+    releaseSearch.countDown()
+    try {
+      assertTrue(filter.await())
+      assertEquals(listOf("needle.example"), repository.logs.value.map { it.domain })
+    } finally {
+      repository.stopLogsStream()
+    }
   }
 
   @Test fun logStatusesAndApiReasonsRemainFaithfulToTheResponse() = runBlocking {

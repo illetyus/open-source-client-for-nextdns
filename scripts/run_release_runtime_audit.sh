@@ -56,3 +56,4 @@ timeout 240 adb shell am instrument -w -r -e class com.example.ReleaseSecurityRu
 adb logcat -d -v threadtime > "$out/logcat.txt"
 python3 scripts/verify_release_runtime.py
 
+

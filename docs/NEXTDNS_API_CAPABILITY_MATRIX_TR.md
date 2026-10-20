@@ -1,6 +1,6 @@
 # NextDNS API yetenek matrisi
 
-**İnceleme tarihi:** 20 Ekim 2026
+**İnceleme tarihi:** 21 Ekim 2026
 **Ürün:** NextDNS hizmet API'siyle konuşan bağımsız, gayriresmî Android istemcisi
 **Kapsam:** Yayımlanmış API sözleşmesi ile bu depodaki servis, DTO, repository, arayüz ve testlerin karşılaştırması.
 
@@ -14,7 +14,7 @@ Bu belge uygulamanın NextDNS tarafından onaylandığı veya desteklendiği anl
 |---|---|---|
 | Profiller: `GET /profiles`, `GET /profiles/{id}`, `POST /profiles`, `PATCH /profiles/{id}`, `DELETE /profiles/{id}` | `NextDnsApiService`; `NextDnsRepository`; profil seçimi ve yönetim ekranları | `SUPPORTED_READ_WRITE`. Liste sayfaları cursor kullanır; oluşturma, yeniden adlandırma ve silme kullanıcı eylemiyle yapılır. |
 | Profil kurulumu: `GET /profiles/{id}/setup`; `POST /profiles/{id}/setup/linkedIp` | `getProfileSetup` repository tarafından çağrılır; `updateLinkedIp` Retrofit'te tanımlı ancak repository/UI çağrısı yok | Okuma `SUPPORTED_READ_ONLY`; linked-IP yazma `PARTIAL`, uygulama akışı bulunmuyor. |
-| Güvenlik: `GET/PATCH /profiles/{id}/security`; `/security/tlds` kataloğu ve profil TLD ekleme/silme uçları | Sabit `SecurityDto` ve `SecurityUpdateRequest`; `NextDnsRepository`; güvenlik ekranı | Belgelenen Boolean alanlar ve TLD'ler `SUPPORTED_READ_WRITE`. İstek DTO'su yalnızca bilinen alanları yazar. TLD kataloğu alınamazsa arayüz örnek/tahmini uzantı göstermez; açık kullanılamıyor durumu verir. DTO yayımlanmamış alanları yakalamaz; dinamik erken erişim alanları `UNVERIFIED / NOT IMPLEMENTED`. |
+| Güvenlik: `GET/PATCH /profiles/{id}/security`; `/security/tlds` kataloğu ve profil TLD ekleme/silme uçları | Sınırlı Moshi `SecurityDto` adaptörü ve `SecurityUpdateRequest`; `NextDnsRepository`; güvenlik ekranı | Belgelenen alanlar ve TLD'ler `SUPPORTED_READ_WRITE`. Güvenlik yanıtı 512 KiB ile sınırlıdır. Yayımlanmamış en fazla 32 üst düzey alan bellek içi DTO'da yakalanır; en fazla 24 güvenli anahtar adı/tür gösterilir, yalnız Boolean değeri görünür. Diğer ham değerler arayüze, kalıcı depoya veya API isteğine girmez. Taşan alanlar sayı ve SHA-256 özetiyle eşitleme anlık görüntüsüne katılır. Bilinmeyen alanların anlamı/yazılabilirliği ve yaş doğrulama alanı `UNVERIFIED`; hiçbir dinamik PATCH yapılmaz. |
 | Gizlilik: `GET/PATCH /profiles/{id}/privacy`; blocklist/native katalog ve profil alt kaynakları | `PrivacyDto`, mutasyon DTO'ları, `NextDnsRepository`, Gizlilik ekranı | `SUPPORTED_READ_WRITE`; kataloglar cursor ile okunur, ekleme ve silme profil alt kaynaklarından yapılır. |
 | Ebeveyn denetimi: `/parentalControl/services`, `/parentalControl/categories`; profil için `GET/PATCH /parentalControl`, kategori/hizmet alt kaynakları | `ParentalControlDto`, katalog DTO'ları, `NextDnsRepository`, ekran | `SUPPORTED_READ_WRITE`. `blockBypass` yayımlanmış ebeveyn denetimi alanıdır; yaş doğrulamasını atlama ayarı olarak yorumlanmaz. |
 | Engelleme/izin listeleri: `GET/POST /profiles/{id}/denylist|allowlist`; öğe `PATCH/DELETE` | İlgili DTO'lar, `NextDnsRepository`, iki liste ekranı | `SUPPORTED_READ_WRITE`; sayfalar cursor ile çekilir, filtre/eylemler servis öğe kimliğini kullanır. Küçük 12 dp favicon listede yalnızca görsel yardımcıdır; servis verisinin yerini almaz. |
@@ -93,6 +93,8 @@ Bu liste kod içindeki HTTP metotlarını ve servis-relative yolları aynen kayd
 <!-- API_ROUTE_INVENTORY_END -->
 
 ## API dışı ve doğrulanmamış veriler
+
+Güvenlik yanıtındaki yayımlanmamış anahtarlar yalnızca keşif ve fark algılama amacıyla korunur. Alan adı/türü gerçek API yanıtından alınır; bu istemci tarafından yeni bir hizmet özelliği olarak yorumlanmaz. Boolean dışı değerler gösterilmez, bilinmeyen alanlar PATCH gövdesine eklenmez ve yerel tercih deposuna yazılmaz. Resmî şema alanın anlamını veya ileriye dönük uyumluluk garantisini açıklamadığından yaş doğrulamasını atlama alanı ayrı olarak doğrulanmamış kalır.
 
 | Veri/özellik | Kaynak ve uygulamadaki davranış | Durum |
 |---|---|---|

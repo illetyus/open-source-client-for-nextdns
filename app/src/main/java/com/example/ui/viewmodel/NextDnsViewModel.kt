@@ -98,6 +98,7 @@ class NextDnsViewModel(
   val profiles = repository.profiles
   val activeProfileId = repository.activeProfileId
   val securitySettings = repository.securitySettings
+  val unverifiedSecurityFields = repository.unverifiedSecurityFields
   val privacySettings = repository.privacySettings
   val parentalControlSettings = repository.parentalControlSettings
   val denylist = repository.denylist

@@ -107,8 +107,8 @@ class LibreSpeedContractTest {
 
   @Test
   fun downloadStreamsBoundedSyntheticBytesAndReportsMbps() = runBlocking {
-    val bytes = ByteArray(8_192) { (it % 251).toByte() }
-    server.enqueue(MockResponse().setBody(Buffer().write(bytes)))
+    val bytes = ByteArray((LibreSpeedClient.MIN_DOWNLOAD_MEBIBYTES * LibreSpeedClient.BYTES_PER_MEBIBYTE).toInt()) { (it % 251).toByte() }
+    server.enqueue(MockResponse().addHeader("Content-Type", "application/octet-stream").setBody(Buffer().write(bytes)))
     val config = validTestServer()
     val client = LibreSpeedClient(OkHttpClient(), allowHttpForTests = true)
 
@@ -119,6 +119,36 @@ class LibreSpeedContractTest {
     val request = server.takeRequest()
     assertTrue(request.path.orEmpty().startsWith("/speed/backend/garbage.php?ckSize=4"))
     assertEquals("identity", request.getHeader("Accept-Encoding"))
+  }
+
+  @Test
+  fun downloadRejectsSuccessfulHtmlFallbackInsteadOfReportingASpeed() = runBlocking {
+    server.enqueue(MockResponse().addHeader("Content-Type", "text/html; charset=utf-8").setBody("<html>Not Found</html>"))
+    val client = LibreSpeedClient(OkHttpClient(), allowHttpForTests = true)
+
+    val error = runCatching {
+      client.measureDownload(validTestServer(), maxBytes = LibreSpeedClient.MIN_DOWNLOAD_MEBIBYTES * LibreSpeedClient.BYTES_PER_MEBIBYTE)
+    }.exceptionOrNull()
+
+    assertNotNull("A 200 HTML error page must not become a successful speed result", error)
+    assertEquals(1, server.requestCount)
+  }
+
+  @Test
+  fun downloadRejectsTruncatedBinaryPayload() = runBlocking {
+    val expectedBytes = LibreSpeedClient.MIN_DOWNLOAD_MEBIBYTES * LibreSpeedClient.BYTES_PER_MEBIBYTE
+    server.enqueue(
+      MockResponse()
+        .addHeader("Content-Type", "application/octet-stream")
+        .setBody(Buffer().write(ByteArray(8_192)))
+        .setHeader("Content-Length", expectedBytes.toString())
+    )
+    val client = LibreSpeedClient(OkHttpClient(), allowHttpForTests = true)
+
+    val error = runCatching { client.measureDownload(validTestServer(), maxBytes = expectedBytes) }.exceptionOrNull()
+
+    assertNotNull("A prematurely terminated payload must not produce a measurement", error)
+    assertEquals(1, server.requestCount)
   }
 
   @Test
@@ -163,11 +193,12 @@ class LibreSpeedContractTest {
 
   @Test
   fun oversizedDownloadIsStoppedAtConfiguredByteLimit() = runBlocking {
-    val bytes = ByteArray(8_193) { 1 }
-    server.enqueue(MockResponse().setBody(Buffer().write(bytes)))
+    val maxBytes = LibreSpeedClient.MIN_DOWNLOAD_MEBIBYTES * LibreSpeedClient.BYTES_PER_MEBIBYTE
+    val bytes = ByteArray((maxBytes + 1).toInt()) { 1 }
+    server.enqueue(MockResponse().addHeader("Content-Type", "application/octet-stream").setBody(Buffer().write(bytes)))
     val client = LibreSpeedClient(OkHttpClient(), allowHttpForTests = true)
 
-    val error = runCatching { client.measureDownload(validTestServer(), maxBytes = 8_192) }.exceptionOrNull()
+    val error = runCatching { client.measureDownload(validTestServer(), maxBytes = maxBytes) }.exceptionOrNull()
 
     assertNotNull(error)
     assertEquals(1, server.requestCount)

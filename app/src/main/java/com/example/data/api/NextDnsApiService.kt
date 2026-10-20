@@ -77,7 +77,10 @@ data class SecurityDto(
   val ddns: Boolean? = null,
   val parking: Boolean? = null,
   val csam: Boolean? = null,
-  val tlds: List<TldDto>? = null
+  val tlds: List<TldDto>? = null,
+  @Json(ignore = true) val unknownFields: Map<String, Any?> = emptyMap(),
+  @Json(ignore = true) val unknownFieldOverflowCount: Int = 0,
+  @Json(ignore = true) val unknownFieldOverflowDigest: String = ""
 )
 
 data class TldDto(
@@ -881,6 +884,7 @@ object NextDnsNetworkClient {
   val client = OkHttpClient.Builder()
     .followRedirects(false)
     .followSslRedirects(false)
+    .addInterceptor(SecurityResponseSizeInterceptor())
     .addInterceptor { chain ->
       val original = chain.request()
       val request = original.newBuilder()
@@ -902,7 +906,8 @@ object NextDnsNetworkClient {
     .build()
 
   val moshi = Moshi.Builder()
-    .add(KotlinJsonAdapterFactory())
+    .add(SecurityDtoJsonAdapterFactory())
+    .addLast(KotlinJsonAdapterFactory())
     .build()
 
   val api: NextDnsApiService by lazy {

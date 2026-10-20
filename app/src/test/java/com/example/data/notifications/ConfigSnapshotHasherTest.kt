@@ -71,6 +71,46 @@ class ConfigSnapshotHasherTest {
   }
 
   @Test
+  fun digestChangesWhenAnUnverifiedServerSecurityFieldChanges() {
+    val originalSecurity = sampleSnapshot().security
+    val first = sampleSnapshot().copy(
+      security = originalSecurity.copy(
+        unknownFields = mapOf("previewFlag" to true, "nested" to mapOf("b" to 2.0, "a" to 1.0))
+      )
+    )
+    val changed = first.copy(
+      security = first.security.copy(
+        unknownFields = mapOf("previewFlag" to false, "nested" to mapOf("b" to 2.0, "a" to 1.0))
+      )
+    )
+
+    assertNotEquals(
+      ConfigSnapshotHasher.digest(first),
+      ConfigSnapshotHasher.digest(changed)
+    )
+  }
+
+  @Test
+  fun digestRemainsOrderIndependentForNestedUnknownServerFields() {
+    val originalSecurity = sampleSnapshot().security
+    val first = sampleSnapshot().copy(
+      security = originalSecurity.copy(
+        unknownFields = mapOf("nested" to linkedMapOf("b" to 2.0, "a" to 1.0))
+      )
+    )
+    val reordered = first.copy(
+      security = first.security.copy(
+        unknownFields = mapOf("nested" to linkedMapOf("a" to 1.0, "b" to 2.0))
+      )
+    )
+
+    assertEquals(
+      ConfigSnapshotHasher.digest(first),
+      ConfigSnapshotHasher.digest(reordered)
+    )
+  }
+
+  @Test
   fun blocklistMetadataChangesDoNotCreateFalseConfigChange() {
     val first = sampleSnapshot()
     val metadataOnly = first.copy(

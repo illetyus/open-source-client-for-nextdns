@@ -626,7 +626,7 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Dominios más consultados en este país"</string>
     <string name="traffic_country_map_accessibility">"Mapa interactivo de destinos del tráfico. Elige un país en el mapa o en el selector para consultar el tráfico DNS."</string>
-<string name="speed_test_title">Prueba de velocidad</string>
+    <string name="speed_test_title">Prueba de velocidad</string>
     <string name="speed_test_card_summary">Mide la descarga y la latencia HTTP en un servidor que controlas.</string>
     <string name="speed_test_open">Configurar prueba de velocidad</string>
     <string name="speed_test_disclosure">No se selecciona ningún servidor público de forma predeterminada. El operador puede ver tu dirección IP y los metadatos de las solicitudes. Consulta su política de privacidad. La aplicación no guarda resultados.</string>
@@ -657,4 +657,13 @@
     <string name="speed_test_upload_confirm_title">¿Iniciar la prueba de subida?</string>
     <string name="speed_test_upload_confirm_body">Se enviará 1 MB de datos de prueba al servidor. El operador puede ver tu IP y conservar registros. ¿Continuar?</string>
     <string name="speed_test_upload_confirm_button">Enviar 1 MB</string>
+    <string name="security_unverified_title">Campos de seguridad de API sin verificar</string>
+    <string name="security_unverified_explanation">Estas claves proceden de la respuesta del servidor. Su significado y la compatibilidad de escritura no están verificados. Solo se muestran los valores booleanos; aquí no se pueden cambiar estos campos.</string>
+    <string name="security_unverified_boolean">Valor booleano: %1$s · solo lectura</string>
+    <string name="security_unverified_text">Texto · valor oculto · solo lectura</string>
+    <string name="security_unverified_number">Número · valor oculto · solo lectura</string>
+    <string name="security_unverified_object">Objeto · contenido oculto · solo lectura</string>
+    <string name="security_unverified_array">Lista · contenido oculto · solo lectura</string>
+    <string name="security_unverified_null">Null · solo lectura</string>
+    <string name="security_unverified_omitted">Se omitieron %1$d campos adicionales por seguridad</string>
 </resources>

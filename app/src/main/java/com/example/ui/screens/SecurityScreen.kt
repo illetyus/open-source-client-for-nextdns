@@ -27,6 +27,8 @@ import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.NextDnsViewModel
 import com.example.data.repository.TldCatalogLoadState
+import com.example.data.api.SecurityFieldDiscovery
+import com.example.data.api.SecurityJsonValueType
 
 @Composable
 fun SecurityScreen(
@@ -34,6 +36,7 @@ fun SecurityScreen(
   modifier: Modifier = Modifier
 ) {
   val settings by viewModel.securitySettings.collectAsStateWithLifecycle()
+  val unverifiedFields by viewModel.unverifiedSecurityFields.collectAsStateWithLifecycle()
   var showAddTldDialog by remember { mutableStateOf(false) }
   var newTldInput by remember { mutableStateOf("") }
 
@@ -223,6 +226,9 @@ fun SecurityScreen(
         onCheckedChange = { viewModel.toggleSecurityFeature("csam", it) }
       )
     }
+    if (unverifiedFields.fields.isNotEmpty() || unverifiedFields.omittedCount > 0) {
+      item { UnverifiedSecurityFieldsSection(unverifiedFields) }
+    }
   }
 
   // TLD Ekle Dialog
@@ -279,6 +285,59 @@ fun SecurityScreen(
       confirmButton = {},
       dismissButton = {}
     )
+  }
+}
+
+@Composable
+internal fun UnverifiedSecurityFieldsSection(discovery: SecurityFieldDiscovery) {
+  if (discovery.fields.isEmpty() && discovery.omittedCount == 0) return
+
+  NextDnsCard(
+    title = AppStrings.get(R.string.security_unverified_title),
+    subtitle = AppStrings.get(R.string.security_unverified_explanation)
+  ) {
+    Column(
+      modifier = Modifier.fillMaxWidth(),
+      verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+      discovery.fields.forEach { field ->
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("security_unverified_field_${field.name}"),
+          verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+          Text(
+            text = field.name,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+            fontSize = 13.sp
+          )
+          Text(
+            text = when (field.valueType) {
+              SecurityJsonValueType.BOOLEAN -> AppStrings.get(
+                R.string.security_unverified_boolean,
+                field.booleanValue.toString()
+              )
+              SecurityJsonValueType.STRING -> AppStrings.get(R.string.security_unverified_text)
+              SecurityJsonValueType.NUMBER -> AppStrings.get(R.string.security_unverified_number)
+              SecurityJsonValueType.OBJECT -> AppStrings.get(R.string.security_unverified_object)
+              SecurityJsonValueType.ARRAY -> AppStrings.get(R.string.security_unverified_array)
+              SecurityJsonValueType.NULL -> AppStrings.get(R.string.security_unverified_null)
+            },
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp
+          )
+        }
+      }
+      if (discovery.omittedCount > 0) {
+        Text(
+          text = AppStrings.get(R.string.security_unverified_omitted, discovery.omittedCount),
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          fontSize = 12.sp
+        )
+      }
+    }
   }
 }
 
@@ -344,4 +403,3 @@ private fun CatalogMessage(text: String, tag: String) {
     )
   }
 }
-

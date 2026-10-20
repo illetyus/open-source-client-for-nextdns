@@ -28,10 +28,10 @@ import org.junit.Assert.*
 import org.junit.rules.RuleChain
 import org.junit.rules.TestRule
 import org.junit.runner.Description
-import org.junit.runners.model.Statement
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.junit.runners.model.Statement
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.CountDownLatch
@@ -371,3 +371,4 @@ class RepositoryAuditTest : AuditFixture() {
   }
 
 }
+

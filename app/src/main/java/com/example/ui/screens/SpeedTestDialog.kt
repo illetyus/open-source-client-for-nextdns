@@ -38,6 +38,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.R
 import com.example.data.diagnostics.LibreSpeedClient
 import com.example.data.diagnostics.SavedSpeedTestServer
@@ -53,6 +56,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun SpeedTestDialog(onDismiss: () -> Unit) {
   val context = LocalContext.current
+  val lifecycleOwner = LocalLifecycleOwner.current
   val scope = rememberCoroutineScope()
   val store = remember(context) { SpeedTestSettingsStore(context) }
   val client = remember { LibreSpeedClient() }
@@ -83,8 +87,25 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
   }
 
   val currentJob by rememberUpdatedState(activeJob)
-  DisposableEffect(Unit) {
-    onDispose { currentJob?.cancel() }
+  DisposableEffect(lifecycleOwner) {
+    val observer = speedTestLifecycleObserver { currentJob }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose {
+      lifecycleOwner.lifecycle.removeObserver(observer)
+      currentJob?.cancel()
+    }
+  }
+
+  val invalidateMeasurements = {
+    pingText = null
+    downloadResult = null
+    uploadResult = null
+    testFailed = false
+    uploadConfirmation = false
+  }
+  val invalidateServerAuthorization = {
+    authorizationConfirmed = false
+    invalidateMeasurements()
   }
 
   Dialog(
@@ -109,30 +130,33 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
 
         OutlinedTextField(
           value = serverUrl,
-          onValueChange = { serverUrl = it; error = null },
+          onValueChange = { serverUrl = it; error = null; invalidateServerAuthorization() },
           modifier = Modifier.fillMaxWidth().testTag("speed_test_server"),
           label = { Text(AppStrings.get(R.string.speed_test_server_url)) },
           placeholder = { Text("https://speed.example") },
-          singleLine = true
+          singleLine = true,
+          enabled = !running
         )
         OutlinedTextField(
           value = backendPath,
-          onValueChange = { backendPath = it; error = null },
+          onValueChange = { backendPath = it; error = null; invalidateServerAuthorization() },
           modifier = Modifier.fillMaxWidth(),
           label = { Text(AppStrings.get(R.string.speed_test_backend_path)) },
-          singleLine = true
+          singleLine = true,
+          enabled = !running
         )
         OutlinedTextField(
           value = privacyUrl,
-          onValueChange = { privacyUrl = it; error = null },
+          onValueChange = { privacyUrl = it; error = null; invalidateServerAuthorization() },
           modifier = Modifier.fillMaxWidth(),
           label = { Text(AppStrings.get(R.string.speed_test_privacy_url)) },
           placeholder = { Text("https://speed.example/privacy") },
-          singleLine = true
+          singleLine = true,
+          enabled = !running
         )
         TextButton(
           onClick = { validation.server?.let { context.openExternalUrl(it.privacyPolicyUrl.toString()) } },
-          enabled = validation.server != null,
+          enabled = validation.server != null && !running,
           modifier = Modifier.align(Alignment.Start)
         ) {
           Text(AppStrings.get(R.string.speed_test_open_privacy))
@@ -140,13 +164,15 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
 
         ConsentRow(
           checked = authorizationConfirmed,
-          onCheckedChange = { authorizationConfirmed = it; error = null },
+          onCheckedChange = { authorizationConfirmed = it; error = null; invalidateMeasurements() },
+          enabled = !running,
           text = AppStrings.get(R.string.speed_test_authorization),
           modifier = Modifier.testTag("speed_test_authorization")
         )
         ConsentRow(
           checked = meteredConfirmed,
-          onCheckedChange = { meteredConfirmed = it },
+          onCheckedChange = { meteredConfirmed = it; invalidateMeasurements() },
+          enabled = !running,
           text = AppStrings.get(R.string.speed_test_transfer_consent),
           modifier = Modifier.testTag("speed_test_transfer_consent")
         )
@@ -185,11 +211,8 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
               serverUrl = ""
               privacyUrl = ""
               backendPath = "backend"
-              authorizationConfirmed = false
+              invalidateServerAuthorization()
               error = null
-              pingText = null
-              downloadResult = null
-              uploadResult = null
             },
             enabled = !running && (serverUrl.isNotBlank() || privacyUrl.isNotBlank()),
             modifier = Modifier.weight(1f)
@@ -324,6 +347,7 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
 private fun ConsentRow(
   checked: Boolean,
   onCheckedChange: (Boolean) -> Unit,
+  enabled: Boolean,
   text: String,
   modifier: Modifier = Modifier
 ) {
@@ -331,10 +355,15 @@ private fun ConsentRow(
     modifier = modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+    Checkbox(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
     Text(text, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
   }
 }
+
+internal fun speedTestLifecycleObserver(activeJob: () -> Job?): LifecycleEventObserver =
+  LifecycleEventObserver { _, event ->
+    if (event == Lifecycle.Event.ON_STOP) activeJob()?.cancel()
+  }
 
 private fun Context.openExternalUrl(url: String) {
   runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }

@@ -626,7 +626,7 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Bu ülkedeki en sık alan adları"</string>
     <string name="traffic_country_map_accessibility">"Etkileşimli trafik varış noktaları haritası. DNS trafiğini incelemek için haritadan veya ülke seçicisinden ülke seçin."</string>
-<string name="speed_test_title">Hız testi</string>
+    <string name="speed_test_title">Hız testi</string>
     <string name="speed_test_card_summary">Denetiminizdeki bir sunucuda indirme hızını ve HTTP gecikmesini ölçün.</string>
     <string name="speed_test_open">Hız testini yapılandır</string>
     <string name="speed_test_disclosure">Varsayılan olarak genel sunucu seçilmez. Sunucu işletmecisi IP adresinizi ve istek üstverilerini görebilir. Gizlilik politikasını inceleyin. Uygulama test sonuçlarını kaydetmez.</string>
@@ -657,4 +657,13 @@
     <string name="speed_test_upload_confirm_title">Yükleme testi başlatılsın mı?</string>
     <string name="speed_test_upload_confirm_body">Yapılandırılmış sunucuya 1 MB oluşturulmuş test verisi gönderilir. İşletmeci IP adresinizi görebilir ve günlükleri saklayabilir. Devam edilsin mi?</string>
     <string name="speed_test_upload_confirm_button">1 MB gönder</string>
+    <string name="security_unverified_title">Doğrulanmamış API güvenlik alanları</string>
+    <string name="security_unverified_explanation">Bu anahtarlar sunucu yanıtından geldi. Anlamları ve yazma desteği doğrulanmadı. Yalnızca Boolean değerleri gösterilir; buradan hiçbir alan değiştirilemez.</string>
+    <string name="security_unverified_boolean">Boolean değeri: %1$s · salt okunur</string>
+    <string name="security_unverified_text">Metin · değer gizli · salt okunur</string>
+    <string name="security_unverified_number">Sayı · değer gizli · salt okunur</string>
+    <string name="security_unverified_object">Nesne · içerik gizli · salt okunur</string>
+    <string name="security_unverified_array">Dizi · içerik gizli · salt okunur</string>
+    <string name="security_unverified_null">Null · salt okunur</string>
+    <string name="security_unverified_omitted">Güvenlik sınırı nedeniyle %1$d ek alan gösterilmedi</string>
 </resources>

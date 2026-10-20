@@ -17,6 +17,10 @@ AUDIT_UI = "com.example.audit.UiAuditTest"
 IDENTITY = "com.example.audit.InputAndIdentityTest"
 ACCOUNT = "com.example.audit.AccountSettingsFlowTest"
 FAVICON = "com.example.ui.screens.NextDnsFaviconNetworkTest"
+SPEED = "com.example.data.diagnostics.LibreSpeedContractTest"
+SPEED_LIFECYCLE = "com.example.ui.screens.SpeedTestLifecycleTest"
+API_CONTRACT = "com.example.data.api.NextDnsApiContractTest"
+SNAPSHOT = "com.example.data.notifications.ConfigSnapshotHasherTest"
 
 REQUIRED = {
     "NDNS-001": [(REPOSITORY, name) for name in (
@@ -85,6 +89,22 @@ REQUIRED = {
             "internationalDomainsAndWildcardRulesNormalizeToAscii",
             "invalidLabelsUrlsIpsAndOversizedRulesAreRejected")],
 "NDNS-047": [(ACCOUNT, "fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels")],
+"NDNS-060": [(REPOSITORY, "oldSearchStreamCannotLeakRowsIntoNewSearchResults")],
+"NDNS-061": [(SPEED, name) for name in (
+    "downloadRejectsSuccessfulHtmlFallbackInsteadOfReportingASpeed",
+    "downloadRejectsTruncatedBinaryPayload")],
+"NDNS-062": [(SPEED_LIFECYCLE, name) for name in (
+    "backgroundStopCancelsTheActiveSpeedTestJob",
+    "temporaryPauseDoesNotCancelAStillVisibleSpeedTest")],
+"NDNS-063": [(API_CONTRACT, name) for name in (
+    "securityResponseRetainsUnknownJsonForReadOnlyDiscovery",
+    "securityUnknownFieldRetentionIsBoundedAndOverflowIsFingerprintable",
+    "oversizedSecurityResponseIsRejectedWhenLengthIsKnown",
+    "oversizedChunkedSecurityResponseIsRejectedWithoutContentLength")]+
+    [(SNAPSHOT, name) for name in (
+        "digestChangesWhenAnUnverifiedServerSecurityFieldChanges",
+        "digestRemainsOrderIndependentForNestedUnknownServerFields")]+
+    [(AUDIT_UI, "unverifiedSecurityFieldsAreDisclosedReadOnlyWithoutShowingRawValues")],
 "NDNS-054": [(FAVICON, name) for name in (
     "validImageLoadsAndIsCachedInMemory",
     "redirectIsRejectedWithoutRequestingItsTarget",

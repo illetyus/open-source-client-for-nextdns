@@ -4,6 +4,9 @@ import androidx.compose.ui.test.*
 import androidx.test.core.app.ApplicationProvider
 import com.example.NextDnsApp
 import com.example.R
+import com.example.data.api.SecurityFieldDiscovery
+import com.example.data.api.SecurityJsonValueType
+import com.example.data.api.UnverifiedSecurityField
 import com.example.data.model.DiagnosticTestResult
 import com.example.data.model.DnsLogEntry
 import com.example.data.model.DeviceMetric
@@ -18,6 +21,7 @@ import com.example.ui.screens.EndpointsSection
 import com.example.ui.screens.LogsHeaderControls
 import com.example.ui.screens.LogItemRow
 import com.example.ui.screens.LogsPaginationFooter
+import com.example.ui.screens.UnverifiedSecurityFieldsSection
 import com.example.data.api.SetupDto
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NextDnsViewModel
@@ -176,6 +180,23 @@ class UiAuditTest : AuditFixture() {
 
     rule.onNodeWithTag("logs_local_domain_icon", useUnmergedTree = true).assertExists()
     rule.onAllNodesWithTag("remote_favicon_image", useUnmergedTree = true).assertCountEquals(0)
+  }
+
+  @Test fun unverifiedSecurityFieldsAreDisclosedReadOnlyWithoutShowingRawValues() {
+    english()
+    val discovery = SecurityFieldDiscovery(
+      fields = listOf(
+        UnverifiedSecurityField("previewToggle", SecurityJsonValueType.BOOLEAN, true),
+        UnverifiedSecurityField("previewText", SecurityJsonValueType.STRING)
+      )
+    )
+    rule.setContent { AppTheme { UnverifiedSecurityFieldsSection(discovery) } }
+
+    rule.onNodeWithText("previewToggle").assertIsDisplayed()
+    rule.onNodeWithText("previewText").assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.security_unverified_boolean, "true")).assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.security_unverified_text)).assertIsDisplayed()
+    rule.onNodeWithText("unlogged-sensitive-value").assertDoesNotExist()
   }
 
   @Test fun successfulAllowlistSubmissionClearsOnlyTheConfirmedText() { checkSuccessfulInput(true, false) }

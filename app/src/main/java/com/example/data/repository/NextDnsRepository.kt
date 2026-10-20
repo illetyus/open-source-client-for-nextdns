@@ -98,6 +98,8 @@ class NextDnsRepository(
 
   private val _securitySettings = MutableStateFlow(SecuritySettings())
   val securitySettings = _securitySettings.asStateFlow()
+  private val _unverifiedSecurityFields = MutableStateFlow(SecurityFieldDiscovery())
+  val unverifiedSecurityFields = _unverifiedSecurityFields.asStateFlow()
 
   private val _privacySettings = MutableStateFlow(PrivacySettings())
   val privacySettings = _privacySettings.asStateFlow()
@@ -145,6 +147,7 @@ class NextDnsRepository(
   private var analyticsRequest: AnalyticsRequest? = null
   private var logsRefreshRequest: Long? = null
   private var logsSnapshotGeneration = 0L
+  private var logsFilterGeneration = 0L
 
   fun updateKnownDevices(newDevices: List<String>) {
     val valid = newDevices.filter { it.isNotBlank() && it != "Bilinmeyen" && it != "Cihaz" && it != "Bilinmeyen Cihaz" }
@@ -196,9 +199,11 @@ class NextDnsRepository(
     _logsDeviceFilter.value = null
     _logsStatusFilter.value = null
     _logsPaginationState.value = LogsPaginationState()
+    _unverifiedSecurityFields.value = SecurityFieldDiscovery()
     analyticsRequest = null
     logsRefreshRequest = null
     logsSnapshotGeneration++
+    logsFilterGeneration++
     _analytics.value = AnalyticsSummary()
     _analyticsLastSuccessAt.value = null
     _analyticsErrorMessage.value = null
@@ -848,6 +853,7 @@ class NextDnsRepository(
     val d = body.data ?: return false
     return commitCurrentSession {
       val previous = _securitySettings.value
+      _unverifiedSecurityFields.value = d.discoverUnverifiedFields()
 
       val tldList = d.tlds?.map { it.id } ?: previous.blockedTlds
       val updated = SecuritySettings(
@@ -1980,6 +1986,10 @@ class NextDnsRepository(
     val wasStreaming = _isLiveStreaming.value
     val changed = commitCurrentSession {
       if (!updateFilter()) return@commitCurrentSession false
+      // Stop the stream using the previous query before awaiting the new REST snapshot.
+      // Generation checks below also reject any event already queued by that stream.
+      if (wasStreaming) stopLogsStream()
+      logsFilterGeneration++
       logsRefreshRequest = requestSequence.incrementAndGet()
       logsSnapshotGeneration++
       logsStreamSeedId = null
@@ -2177,6 +2187,7 @@ class NextDnsRepository(
     val seedStatusFilter = _logsStatusFilter.value
     val seedSearchFilter = _logsSearchFilter.value
     val seedGeneration = synchronized(sessionLock) { logsSnapshotGeneration }
+    val streamFilterGeneration = synchronized(sessionLock) { logsFilterGeneration }
 
     stopLogsStream()
     _isLiveStreaming.value = true
@@ -2224,8 +2235,9 @@ class NextDnsRepository(
                 ?: throw java.io.IOException("Logs stream body is empty")
 
               reconnectDelayMs = 2_000L
-              consumeSseStream(body) { newId ->
+              consumeSseStream(body, streamFilterGeneration) { newId ->
                 commitCurrentSession {
+                  if (logsFilterGeneration != streamFilterGeneration) return@commitCurrentSession
                   lastId = newId
                   logsStreamSeedId = newId
                 }
@@ -2273,16 +2285,20 @@ class NextDnsRepository(
       .build()
   }
 
-  private suspend fun consumeSseStream(responseBody: okhttp3.ResponseBody, onNewId: suspend (String) -> Unit) {
+  private suspend fun consumeSseStream(
+    responseBody: okhttp3.ResponseBody,
+    streamFilterGeneration: Long,
+    onNewId: suspend (String) -> Unit
+  ) {
     val source = responseBody.source()
     var eventId: String? = null
     val dataLines = mutableListOf<String>()
 
     suspend fun dispatchEvent() {
       if (dataLines.isNotEmpty()) {
-        val entry = parseSseLogEntry(dataLines.joinToString("\n"), eventId)
+        val entry = parseSseLogEntry(dataLines.joinToString("\n"), eventId, streamFilterGeneration)
         if (entry != null) {
-          emitLogEntry(entry)
+          emitLogEntry(entry, streamFilterGeneration)
           eventId?.let { onNewId(it) }
         }
       }
@@ -2301,13 +2317,18 @@ class NextDnsRepository(
     dispatchEvent()
   }
 
-  private suspend fun parseSseLogEntry(jsonStr: String, eventId: String?): DnsLogEntry? {
+  private suspend fun parseSseLogEntry(
+    jsonStr: String,
+    eventId: String?,
+    streamFilterGeneration: Long
+  ): DnsLogEntry? {
     if (jsonStr.isBlank()) return null
     val logDto = safeApiCall("sseJsonParse") {
       NextDnsNetworkClient.moshi.adapter(DnsLogDto::class.java).fromJson(jsonStr)
     } ?: return null
 
     return commitCurrentSession {
+      if (logsFilterGeneration != streamFilterGeneration) return@commitCurrentSession null
       val devId = logDto.device?.id
       val candidateName = logDto.device?.name?.takeIf { it.isNotBlank() }
         ?: logDto.deviceName?.takeIf { it.isNotBlank() }
@@ -2351,9 +2372,10 @@ class NextDnsRepository(
     }
   }
 
-  private suspend fun emitLogEntry(entry: DnsLogEntry) {
+  private suspend fun emitLogEntry(entry: DnsLogEntry, streamFilterGeneration: Long) {
     withContext(Dispatchers.Main) {
       commitCurrentSession {
+        if (logsFilterGeneration != streamFilterGeneration) return@commitCurrentSession
         if (!matchesLogsDeviceFilter(entry.deviceId) || !matchesLogsStatusFilter(entry.status)) return@commitCurrentSession
         val current = _logs.value
         val isDuplicate = current.any { it.id == entry.id }

@@ -19,6 +19,10 @@ Hukuki yapı faaliyete özgü ayrım, ölçülü garanti/sorumluluk sınırı ve
 
 Faz 9 açık durumdadır. Son imzalı paket incelemesi, gerçek cihaz kanıtı ve mağaza kanalları olmadan ilk public sürüm tamamlanmış sayılmaz. Araştırma için [9 Ekim literatür dosyası](legal/LITERATURE_REVIEW_TR_EU_2026-10-09_DRAFT.md), cihaz kapsamı için [B01–B22 kapısı](PHASE9_BROWSERSTACK_RELEASE_GATE.md) esas alınır.
 
+## 21 Ekim 2026 — Faz 9 API/performans alt dilimi
+
+[PR #27](https://github.com/illetyus/open-source-client-for-nextdns/pull/27) açık ve taslaktır. Son doğrulanmış uzak başı `3281bf18f59534e8697fbe3fa4e50b9d50b29042`; CI #348 bu eski başta geçti. Yerel takip değişiklikleri yeni CI ile doğrulanmadan tamamlanmış sayılmaz. Kullanıcı canlı hız testi sunucusu kullanımını erteledi; bu nedenle varsayılan test sunucusu yok ve canlı hız ölçümü yayın kanıtı değildir. Güvenlik DTO'su için sınırlı, geçici bilinmeyen-alan keşfi eklendi; ekranda ham metin/sayı/nested içerik gösterilmez, hiçbir keşif alanı API'ye yazılmaz. Yaş doğrulama API alanı hâlâ belgelenmemiştir. BrowserStack değişkenleri bulunamadı, ADB başlatılamadı; fiziksel cihaz performans kıyası ve gerçek-device yayın kapısı açık kalır. Hukuk dosyaları DRAFT'tır.
+
 10 Ekim 2026 tarihli [kod kalitesi incelemesi](CODE_QUALITY_REVIEW_TR_2026-10-10.md), `4abf26a1a556cf42235fbf05c70f89cb5ad79e8c` kaynak commit'inde inceleme anında **3 P1 ve 7 P2 açık kod kusuru** kaydetmiştir. [Hata defteri](HATA_DEFTERI_TR.md) ve [JSON kayıt](release/quality-ledger.json) her kusurun koşulunu, kaynak konumunu ve kapanış ölçütünü korur. Bulgular kaynakta doğrulanmıştır; gerçek cihazda tekrar üretilmiş sonuç olarak sunulmaz. Son cihaz kabulünden önce düzeltme ve hedefli regresyon gereklidir; B01–B22 hâlâ 22 NOT_RUN, hukuk belgeleri DRAFT durumundadır. Önceki fazlar yeniden geliştirilmez; imzalı inceleme APK'sı bu kayıtlarla değiştirilmiş veya yeni kod için yeniden doğrulanmış sayılmaz.
 
 

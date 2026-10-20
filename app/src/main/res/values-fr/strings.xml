@@ -626,7 +626,7 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Domaines les plus consultés dans ce pays"</string>
     <string name="traffic_country_map_accessibility">"Carte interactive des destinations du trafic. Choisissez un pays sur la carte ou dans le sélecteur pour consulter le trafic DNS."</string>
-<string name="speed_test_title">Test de débit</string>
+    <string name="speed_test_title">Test de débit</string>
     <string name="speed_test_card_summary">Mesurez le débit descendant et la latence HTTP sur un serveur que vous contrôlez.</string>
     <string name="speed_test_open">Configurer le test de débit</string>
     <string name="speed_test_disclosure">Aucun serveur public n’est sélectionné par défaut. L’opérateur peut voir votre adresse IP et les métadonnées des requêtes. Consultez sa politique de confidentialité. L’application n’enregistre pas les résultats.</string>
@@ -657,4 +657,13 @@
     <string name="speed_test_upload_confirm_title">Lancer le test d’envoi ?</string>
     <string name="speed_test_upload_confirm_body">Cela envoie 1 Mo de données de test au serveur. L’opérateur peut voir votre IP et conserver des journaux. Continuer ?</string>
     <string name="speed_test_upload_confirm_button">Envoyer 1 Mo</string>
+    <string name="security_unverified_title">Champs de sécurité API non vérifiés</string>
+    <string name="security_unverified_explanation">Ces clés proviennent de la réponse du serveur. Leur sens et la prise en charge de leur modification ne sont pas vérifiés. Seules les valeurs booléennes sont affichées ; ces champs ne peuvent pas être modifiés ici.</string>
+    <string name="security_unverified_boolean">Valeur booléenne : %1$s · lecture seule</string>
+    <string name="security_unverified_text">Texte · valeur masquée · lecture seule</string>
+    <string name="security_unverified_number">Nombre · valeur masquée · lecture seule</string>
+    <string name="security_unverified_object">Objet · contenu masqué · lecture seule</string>
+    <string name="security_unverified_array">Liste · contenu masqué · lecture seule</string>
+    <string name="security_unverified_null">Null · lecture seule</string>
+    <string name="security_unverified_omitted">%1$d champs supplémentaires masqués pour des raisons de sécurité</string>
 </resources>

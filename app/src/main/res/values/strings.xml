@@ -627,7 +627,7 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Top domains in this country"</string>
     <string name="traffic_country_map_accessibility">"Interactive traffic destination map. Choose a country on the map or in the country selector to inspect DNS traffic."</string>
-<string name="speed_test_title">Speed test</string>
+    <string name="speed_test_title">Speed test</string>
     <string name="speed_test_card_summary">Test download speed and HTTP latency on a server you control.</string>
     <string name="speed_test_open">Configure speed test</string>
     <string name="speed_test_disclosure">No public server is selected by default. The configured server operator can see your IP address and request metadata. Read its privacy policy. This app does not save test results.</string>
@@ -658,5 +658,14 @@
     <string name="speed_test_upload_confirm_title">Start upload test?</string>
     <string name="speed_test_upload_confirm_body">This sends 1 MB of generated test data to the configured server. The operator can see your IP address and may keep server logs. Continue?</string>
     <string name="speed_test_upload_confirm_button">Send 1 MB</string>
+    <string name="security_unverified_title">Unverified API security fields</string>
+    <string name="security_unverified_explanation">These keys came from the server. Their meaning and write support are unverified. Only Boolean values are shown; these fields cannot be changed here.</string>
+    <string name="security_unverified_boolean">Boolean value: %1$s · read-only</string>
+    <string name="security_unverified_text">Text · value hidden · read-only</string>
+    <string name="security_unverified_number">Number · value hidden · read-only</string>
+    <string name="security_unverified_object">Object · contents hidden · read-only</string>
+    <string name="security_unverified_array">Array · contents hidden · read-only</string>
+    <string name="security_unverified_null">Null · read-only</string>
+    <string name="security_unverified_omitted">%1$d additional fields omitted for safety</string>
 </resources>
 <!-- Locale-only presentation; API privacy fields remain unchanged. -->

@@ -164,17 +164,27 @@ internal class LibreSpeedClient(
     maxBytes: Long = DEFAULT_DOWNLOAD_BYTES,
     onProgress: (transferredBytes: Long, maxBytes: Long) -> Unit = { _, _ -> }
   ): SpeedTestTransferResult {
-    require(maxBytes in 1..MAX_DOWNLOAD_BYTES)
+    require(maxBytes in MIN_DOWNLOAD_BYTES..MAX_DOWNLOAD_BYTES)
+    val requestedMebibytes = (maxBytes / BYTES_PER_MEBIBYTE)
+      .coerceIn(MIN_DOWNLOAD_MEBIBYTES, MAX_DOWNLOAD_MEBIBYTES)
+    val requestedBytes = requestedMebibytes * BYTES_PER_MEBIBYTE
     val url = server.downloadUrl.newBuilder()
       // LibreSpeed's garbage.php accepts the requested download size in MiB (4–1024),
       // while this client caps actual bytes at 10,000,000 to stay below 10 decimal MB.
-      .addQueryParameter("ckSize", (maxBytes / BYTES_PER_MEBIBYTE).coerceIn(MIN_DOWNLOAD_MEBIBYTES, MAX_DOWNLOAD_MEBIBYTES).toString())
+      .addQueryParameter("ckSize", requestedMebibytes.toString())
       .build()
     val startedAt = nanoTime()
     val transferred = execute(request(url)) { response ->
       validateResponse(response, server, url)
       val body = response.body ?: throw IOException("Missing download body")
+      val mediaType = body.contentType()?.let { "${it.type}/${it.subtype}" }
+      if (!mediaType.equals(DOWNLOAD_MEDIA_TYPE, ignoreCase = true)) {
+        throw IOException("The configured speed-test server returned an unexpected media type")
+      }
       if (body.contentLength() > maxBytes) throw IOException("Download exceeded the configured limit")
+      if (body.contentLength() >= 0 && body.contentLength() != requestedBytes) {
+        throw IOException("The configured speed-test server returned an incomplete payload")
+      }
 
       body.byteStream().use { input ->
         val buffer = ByteArray(16 * 1024)
@@ -190,7 +200,7 @@ internal class LibreSpeedClient(
         total
       }
     }
-    if (transferred == 0L) throw IOException("The configured speed-test server returned no data")
+    if (transferred != requestedBytes) throw IOException("The configured speed-test server returned an incomplete payload")
     return transferResult(transferred, startedAt, nanoTime())
   }
 
@@ -303,9 +313,11 @@ internal class LibreSpeedClient(
     const val MAX_PING_SAMPLES = 5
     const val DEFAULT_DOWNLOAD_BYTES = 10_000_000L
     const val MAX_DOWNLOAD_BYTES = 10_000_000L
+    const val MIN_DOWNLOAD_BYTES = MIN_DOWNLOAD_MEBIBYTES * BYTES_PER_MEBIBYTE
     const val MIN_DOWNLOAD_MEBIBYTES = 4L
     const val MAX_DOWNLOAD_MEBIBYTES = 9L
     const val BYTES_PER_MEBIBYTE = 1_048_576L
+    private const val DOWNLOAD_MEDIA_TYPE = "application/octet-stream"
     const val DEFAULT_UPLOAD_BYTES = 1_000_000
     const val MAX_UPLOAD_BYTES = 1_000_000
   }

@@ -626,7 +626,7 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Häufigste Domains in diesem Land"</string>
     <string name="traffic_country_map_accessibility">"Interaktive Karte der Verkehrszielorte. Wähle ein Land auf der Karte oder in der Länderauswahl, um DNS-Daten anzusehen."</string>
-<string name="speed_test_title">"Geschwindigkeitstest"</string>
+    <string name="speed_test_title">"Geschwindigkeitstest"</string>
     <string name="speed_test_card_summary">"Download und HTTP-Latenz auf einem Server messen, den du kontrollierst."</string>
     <string name="speed_test_open">"Geschwindigkeitstest einrichten"</string>
     <string name="speed_test_disclosure">"Standardmäßig ist kein öffentlicher Server ausgewählt. Der Betreiber des konfigurierten Servers kann deine IP-Adresse und Anfragemetadaten sehen. Lies seine Datenschutzerklärung. Die App speichert keine Testergebnisse."</string>
@@ -657,4 +657,13 @@
     <string name="speed_test_upload_confirm_title">"Uploadtest starten?"</string>
     <string name="speed_test_upload_confirm_body">"Dabei werden 1 MB erzeugte Testdaten an den konfigurierten Server gesendet. Der Betreiber kann deine IP-Adresse sehen und Serverprotokolle speichern. Fortfahren?"</string>
     <string name="speed_test_upload_confirm_button">"1 MB senden"</string>
+    <string name="security_unverified_title">Nicht verifizierte API-Sicherheitsfelder</string>
+    <string name="security_unverified_explanation">Diese Schlüssel stammen aus der Serverantwort. Bedeutung und Schreibunterstützung sind nicht verifiziert. Nur boolesche Werte werden angezeigt; hier lassen sich diese Felder nicht ändern.</string>
+    <string name="security_unverified_boolean">Boolescher Wert: %1$s · schreibgeschützt</string>
+    <string name="security_unverified_text">Text · Wert verborgen · schreibgeschützt</string>
+    <string name="security_unverified_number">Zahl · Wert verborgen · schreibgeschützt</string>
+    <string name="security_unverified_object">Objekt · Inhalt verborgen · schreibgeschützt</string>
+    <string name="security_unverified_array">Liste · Inhalt verborgen · schreibgeschützt</string>
+    <string name="security_unverified_null">Null · schreibgeschützt</string>
+    <string name="security_unverified_omitted">Aus Sicherheitsgründen wurden %1$d weitere Felder ausgelassen</string>
 </resources>
