@@ -35,6 +35,7 @@ private const val MAX_FAVICON_DIMENSION = 1024
 private const val CACHED_FAVICON_DIMENSION = 96
 private const val MAX_CACHED_FAVICONS = 96
 internal const val FAVICON_TOTAL_TIMEOUT_MS = 8_000
+private val PNG_SIGNATURE = byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
 private val LOCAL_ONLY_HOST_SUFFIXES = setOf(
   "localhost", "local", "internal", "lan", "test", "invalid", "example", "home.arpa",
   "nip.io", "sslip.io", "xip.io", "localtest.me", "lvh.me", "local.gd"
@@ -160,6 +161,9 @@ internal class NextDnsFaviconLoader(
   }
 
   private fun decode(bytes: ByteArray): Bitmap? {
+    if (bytes.size < PNG_SIGNATURE.size || !bytes.copyOfRange(0, PNG_SIGNATURE.size).contentEquals(PNG_SIGNATURE)) {
+      return null
+    }
     try {
       val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
       BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
