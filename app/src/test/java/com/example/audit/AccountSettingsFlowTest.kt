@@ -196,6 +196,10 @@ class AccountSettingsFlowTest : AuditFixture() {
       .performScrollTo()
       .performClick()
 
+    // The text field in the dialog has a blinking cursor; stop auto-advancing
+    // the test clock so Espresso does not wait forever for that animation.
+    rule.mainClock.autoAdvance = false
+    rule.mainClock.advanceTimeBy(1_000)
     rule.onNodeWithTag("security_tld_catalog_unavailable").assertIsDisplayed()
     rule.onNodeWithText(".work").assertDoesNotExist()
     rule.onNodeWithText(".zip").assertDoesNotExist()
