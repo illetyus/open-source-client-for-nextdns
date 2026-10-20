@@ -63,8 +63,8 @@ REQUIRED = {
         "successfulAllowlistSubmissionClearsOnlyTheConfirmedText", "successfulDenylistSubmissionClearsOnlyTheConfirmedText",
         "lateAllowlistSuccessMustPreserveNewText", "lateDenylistSuccessMustPreserveNewText")],
     "NDNS-015": [(AUDIT_REPOSITORY, name) for name in (
-        "failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess",
-        "everyFailedAnalyticsPanelPreservesTheLastCompleteSnapshotAndTimestamp",
+        "eachFailedAnalyticsPanelIsReportedAsPartialWhileSuccessfulPanelsAdvance",
+        "failedCountryPanelRetainsItsLastSuccessfulSnapshot",
         "malformedOrSemanticAnalyticsFailureDoesNotLookSuccessful")],
     "NDNS-016": [(AUDIT_REPOSITORY, name) for name in (
         "olderAnalyticsFilterResponseMustNotOverwriteNewSelection",
