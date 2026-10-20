@@ -176,7 +176,7 @@ class UiAuditTest : AuditFixture() {
     }
 
     rule.onNodeWithTag("logs_local_domain_icon", useUnmergedTree = true).assertExists()
-    rule.onAllNodesWithTag("remote_favicon_image").assertCountEquals(0)
+    rule.onAllNodesWithTag("remote_favicon_image", useUnmergedTree = true).assertCountEquals(0)
   }
 
   @Test fun successfulAllowlistSubmissionClearsOnlyTheConfirmedText() { checkSuccessfulInput(true, false) }

@@ -620,18 +620,21 @@ class RepositoryRegressionTest {
     }
 
     repository.startLogsStream()
-    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
-    while (streamBodyEnded.count > 0 && System.nanoTime() < deadline) {
-      // Each SSE event switches to Dispatchers.Main before it can be consumed.
-      // Pump Robolectric's main looper instead of blocking it on CountDownLatch.await.
-      shadowOf(Looper.getMainLooper()).idle()
-      Thread.sleep(1)
+    try {
+      val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+      while (streamBodyEnded.count > 0 && System.nanoTime() < deadline) {
+        // Each SSE event switches to Dispatchers.Main before it can be consumed.
+        // Pump Robolectric's main looper instead of blocking it on CountDownLatch.await.
+        shadowOf(Looper.getMainLooper()).idle()
+        Thread.sleep(1)
+      }
+      assertTrue("SSE response should finish", streamBodyEnded.count == 0L)
+      assertEquals(1_000, repository.logs.value.size)
+      assertEquals("host-1099.example", repository.logs.value.firstOrNull()?.domain)
+      assertTrue(repository.logsPaginationState.value.retentionLimitReached)
+    } finally {
+      repository.stopLogsStream()
     }
-    assertTrue("SSE response should finish", streamBodyEnded.count == 0L)
-    assertEquals(1_000, repository.logs.value.size)
-    assertEquals("host-1099.example", repository.logs.value.first().domain)
-    assertTrue(repository.logsPaginationState.value.retentionLimitReached)
-    repository.stopLogsStream()
   }
 
   companion object {
