@@ -1,7 +1,6 @@
 package com.example.audit
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.runtime.mutableStateOf
 import androidx.test.core.app.ApplicationProvider
 import com.example.NextDnsApp
@@ -40,7 +39,7 @@ import kotlinx.coroutines.runBlocking
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], qualifiers = "w400dp-h2400dp-mdpi", application = NextDnsApp::class)
 class AccountSettingsFlowTest : AuditFixture() {
-  @get:Rule val rule = createComposeRule()
+  @get:Rule val rule = AuditComposeTestRule()
 
   private fun english() {
     LocalePreferences.setSelection(ApplicationProvider.getApplicationContext<NextDnsApp>(), "en")
