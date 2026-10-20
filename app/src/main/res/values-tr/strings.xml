@@ -635,7 +635,7 @@
     <string name="speed_test_privacy_url">Sunucunun gizlilik politikası URL’si</string>
     <string name="speed_test_open_privacy">Gizlilik politikasını aç</string>
     <string name="speed_test_authorization">Bu sunucuyu işletiyorum veya hız testi için kullanma iznim var.</string>
-    <string name="speed_test_metered_consent">Bu testte en fazla 10 MB mobil veri kullanmayı kabul ediyorum. İsteğe bağlı yükleme testi ayrıca 1 MB kullanır.</string>
+    <string name="speed_test_transfer_consent">Bu test için en fazla 10 MB veri indirilmesini kabul ediyorum. Ölçümlü ağlarda bu mobil veri kullanabilir; isteğe bağlı 1 MB yükleme ayrıca onay gerektirir.</string>
     <string name="speed_test_data_usage">İndirme hızını ölçmek için sunucudan en fazla 10 MB veri indirilir ve gecikme için üç HTTP isteği yapılır. Yükleme, ayrı onaydan sonra en fazla 1 MB veri gönderir. Gecikme ICMP değil, HTTP gidiş-dönüş süresidir. Uygulama sonuçları kaydetmez.</string>
     <string name="speed_test_invalid_server">Kimlik bilgisi, sorgu veya parça içermeyen geçerli bir sunucu URL’si girin.</string>
     <string name="speed_test_https_required">Sunucu HTTPS kullanmalıdır.</string>
