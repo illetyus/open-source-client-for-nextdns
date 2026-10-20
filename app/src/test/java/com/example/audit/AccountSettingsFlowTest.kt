@@ -196,11 +196,12 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithText(AppStrings.get(R.string.ui_2e2a1e330e))
       .performScrollTo()
     // The dialog's text field has a blinking cursor. Freeze Compose time
-    // before opening it so Espresso does not wait for that infinite animation.
+    // before opening it, then finish the dialog entrance transition while the
+    // clock is controlled so Espresso does not wait on either animation.
     rule.mainClock.autoAdvance = false
     rule.onNodeWithText(AppStrings.get(R.string.ui_2e2a1e330e))
       .performClick()
-    rule.mainClock.advanceTimeBy(16L)
+    rule.mainClock.advanceTimeBy(1_000L)
 
     rule.onNodeWithTag("security_tld_catalog_loading").assertIsDisplayed()
     rule.onNodeWithText(".work").assertDoesNotExist()
@@ -471,3 +472,4 @@ class AccountSettingsFlowTest : AuditFixture() {
     assertTrue(model.uiMessage.value?.text?.contains(NavTab.ANALYTICS.title) == true)
   }
 }
+
