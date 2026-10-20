@@ -137,6 +137,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("speed_test_upload").assertIsNotEnabled()
     rule.onNodeWithText(AppStrings.get(R.string.speed_test_disclosure)).assertIsDisplayed()
     rule.onNodeWithText(AppStrings.get(R.string.speed_test_authorization)).assertIsDisplayed()
+    rule.onNodeWithTag("speed_test_transfer_consent").assertIsDisplayed()
   }
 
   @Test fun connectionAreaOpensFromDedicatedTopRightButton() {
