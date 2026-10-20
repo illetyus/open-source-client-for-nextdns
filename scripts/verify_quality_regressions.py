@@ -90,6 +90,8 @@ REQUIRED = {
     "redirectIsRejectedWithoutRequestingItsTarget",
     "nonImageMimeTypeIsRejected",
     "oversizedChunkedBodyIsRejectedEvenWithoutContentLength",
+    "cleartextUrlIsRejectedBeforeAnyRequest",
+    "unexpectedHostIsRejectedBeforeAnyRequest",
     "malformedImageBytesAreRejected",
     "wholeCallTimeoutReturnsFallbackResult",
     "cancellingLoadCancelsTheUnderlyingOkHttpCall")],
