@@ -2050,7 +2050,10 @@ class NextDnsRepository(
       val previousIds = before.first.mapTo(HashSet()) { it.id }
       val intervening = _logs.value.filter { it.id !in previousIds }
       val fetchedLogs = parseLogsResponse(body.data)
-      val mergedLogs = (intervening + fetchedLogs + before.first).distinctBy { it.id }
+      // An empty successful response is authoritative: clear stale history, but retain
+      // any live events received after this refresh began.
+      val mergedLogs = if (fetchedLogs.isEmpty()) intervening.distinctBy { it.id }
+        else (intervening + fetchedLogs + before.first).distinctBy { it.id }
       val retained = mergedLogs.take(MAX_RETAINED_LOG_ENTRIES)
       val retentionLimitReached = _logsPaginationState.value.retentionLimitReached ||
         mergedLogs.size > retained.size ||

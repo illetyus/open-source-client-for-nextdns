@@ -1,6 +1,7 @@
 package com.example.data.repository
 
 import android.content.Context
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.WorkManager
@@ -30,6 +31,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -618,8 +620,16 @@ class RepositoryRegressionTest {
     }
 
     repository.startLogsStream()
-    assertTrue("SSE response should finish", streamBodyEnded.await(10, TimeUnit.SECONDS))
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+    while (streamBodyEnded.count > 0 && System.nanoTime() < deadline) {
+      // Each SSE event switches to Dispatchers.Main before it can be consumed.
+      // Pump Robolectric's main looper instead of blocking it on CountDownLatch.await.
+      shadowOf(Looper.getMainLooper()).idle()
+      Thread.sleep(1)
+    }
+    assertTrue("SSE response should finish", streamBodyEnded.count == 0L)
     assertEquals(1_000, repository.logs.value.size)
+    assertEquals("host-1099.example", repository.logs.value.first().domain)
     assertTrue(repository.logsPaginationState.value.retentionLimitReached)
     repository.stopLogsStream()
   }

@@ -175,7 +175,7 @@ class UiAuditTest : AuditFixture() {
       }
     }
 
-    rule.onNodeWithTag("logs_local_domain_icon").assertExists()
+    rule.onNodeWithTag("logs_local_domain_icon", useUnmergedTree = true).assertExists()
     rule.onAllNodesWithTag("remote_favicon_image").assertCountEquals(0)
   }
 

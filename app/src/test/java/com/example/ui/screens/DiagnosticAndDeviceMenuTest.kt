@@ -95,6 +95,7 @@ class DiagnosticAndDeviceMenuTest {
     rule.runOnIdle { assertEquals("allowed", selected) }
     rule.onNodeWithTag("logs_status_default").performClick()
     rule.runOnIdle { assertEquals("default", selected) }
+    rule.onNodeWithTag("logs_status_filters").performScrollToNode(hasTestTag("logs_status_error"))
     rule.onNodeWithTag("logs_status_error").performClick()
     rule.runOnIdle { assertEquals("error", selected) }
   }
