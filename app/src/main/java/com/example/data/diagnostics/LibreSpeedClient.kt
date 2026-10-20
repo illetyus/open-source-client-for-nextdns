@@ -123,7 +123,7 @@ internal data class SpeedTestTransferResult(
  */
 @OptIn(InternalCoroutinesApi::class)
 internal class LibreSpeedClient(
-  httpClient: OkHttpClient = defaultClient(),
+  httpClient: OkHttpClient = OkHttpClient(),
   private val allowHttpForTests: Boolean = false,
   private val nanoTime: () -> Long = System::nanoTime
 ) {
@@ -287,17 +287,6 @@ internal class LibreSpeedClient(
       }
     }
   }
-
-  private fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
-    .cookieJar(CookieJar.NO_COOKIES)
-    .followRedirects(false)
-    .followSslRedirects(false)
-    .retryOnConnectionFailure(false)
-    .connectTimeout(5, TimeUnit.SECONDS)
-    .readTimeout(20, TimeUnit.SECONDS)
-    .writeTimeout(20, TimeUnit.SECONDS)
-    .callTimeout(30, TimeUnit.SECONDS)
-    .build()
 
   private fun <T : Any> resumeSuccess(continuation: CancellableContinuation<T>, result: T) {
     val token = continuation.tryResume(result) ?: return
