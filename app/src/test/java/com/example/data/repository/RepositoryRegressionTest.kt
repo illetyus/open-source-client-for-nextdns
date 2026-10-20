@@ -609,7 +609,7 @@ class RepositoryRegressionTest {
       repeat(1_100) { index ->
         val seconds = (index % 60).toString().padStart(2, '0')
         append("id: stream-$index\n")
-        append("data: {\"timestamp\":\"2026-10-20T00:00:$seconds.$indexZ\",\"domain\":\"host-$index.example\",\"status\":\"default\"}\n\n")
+        append("data: {\"timestamp\":\"2026-10-20T00:00:$seconds.${index}Z\",\"domain\":\"host-$index.example\",\"status\":\"default\"}\n\n")
       }
     }
     response = { request ->
