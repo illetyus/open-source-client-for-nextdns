@@ -467,14 +467,15 @@ fun AccountScreen(
             FullSyncStatus.ProfileRequired -> Text(AppStrings.get(R.string.sync_profile_required), color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
             FullSyncStatus.Failed -> Text(AppStrings.get(R.string.ui_4aae2f5c53), color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
             is FullSyncStatus.Completed -> {
-              val successCount = status.sectionResults.count { it.value }
+              val result = status.result
+              val successCount = result.successfulAreaCount
               Text(
-                AppStrings.get(R.string.sync_status_count, successCount, status.sectionResults.size),
-                color = if (successCount == status.sectionResults.size) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
+                AppStrings.get(R.string.sync_status_count, successCount, result.totalAreaCount),
+                color = if (result.allAreasSucceeded) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
               )
-              status.sectionResults.forEach { (section, succeeded) ->
+              result.sectionResults.forEach { (section, succeeded) ->
                 Row(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.SpaceBetween,
@@ -485,6 +486,29 @@ fun AccountScreen(
                     AppStrings.get(if (succeeded) R.string.sync_section_synced else R.string.sync_section_failed),
                     color = if (succeeded) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
                     fontSize = 12.sp
+                  )
+                }
+              }
+              listOf(
+                NavTab.LOGS.title to result.logsRefreshed,
+                NavTab.ANALYTICS.title to result.analyticsRefreshed
+              ).forEachIndexed { index, (label, succeeded) ->
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Text(
+                    label,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 12.sp,
+                    modifier = Modifier.testTag(if (index == 0) "full_sync_logs_label" else "full_sync_analytics_label")
+                  )
+                  Text(
+                    AppStrings.get(if (succeeded) R.string.sync_section_synced else R.string.sync_section_failed),
+                    color = if (succeeded) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp,
+                    modifier = Modifier.testTag(if (index == 0) "full_sync_logs_status" else "full_sync_analytics_status")
                   )
                 }
               }

@@ -199,21 +199,25 @@ class NextDnsViewModel(
 
       _fullSyncStatus.value = FullSyncStatus.Running
       try {
-        val outcomes = repository.loadActiveProfileDataFromApi(key, profileId)
-        if (outcomes.isEmpty()) {
+        val result = repository.loadActiveProfileDataFromApi(key, profileId)
+        if (result.sectionResults.isEmpty()) {
           _fullSyncStatus.value = FullSyncStatus.Failed
           showMessage(AppStrings.get(R.string.ui_4aae2f5c53), isError = true)
           return@launch
         }
 
-        _fullSyncStatus.value = FullSyncStatus.Completed(outcomes)
-        val failedSections = outcomes.filterValues { !it }.keys
-        if (failedSections.isEmpty() && outcomes.size == SyncSection.values().size) {
+        _fullSyncStatus.value = FullSyncStatus.Completed(result)
+        if (result.allAreasSucceeded) {
           showMessage(AppStrings.get(R.string.sync_all_success))
         } else {
-          val labels = failedSections.joinToString { section ->
-            NavTab.valueOf(section.name).title
+          val failedAreas = buildList {
+            result.sectionResults.filterValues { !it }.keys.forEach { section ->
+              add(NavTab.valueOf(section.name).title)
+            }
+            if (!result.logsRefreshed) add(NavTab.LOGS.title)
+            if (!result.analyticsRefreshed) add(NavTab.ANALYTICS.title)
           }
+          val labels = failedAreas.joinToString()
           showMessage(
             if (labels.isBlank()) AppStrings.get(R.string.ui_4aae2f5c53)
             else AppStrings.get(R.string.sync_failed_sections, labels),

@@ -323,11 +323,11 @@ class RepositoryRegressionTest {
   @Test fun fullSyncDoesNotRequestAnAccountEndpointThatIsNotInThePublicApi() = runBlocking {
     response = { json("""{"data":[]}""") }
 
-    val sectionResults = repository.loadActiveProfileDataFromApi()
+    val syncResult = repository.loadActiveProfileDataFromApi()
 
     assertFalse("Full sync must not call the undocumented /account route", requests.any { it.contains("/account") })
-    assertEquals("Every sync result must correspond to a supported profile section", SyncSection.values().toSet(), sectionResults.keys)
-    assertFalse("Account connection state is local app state, not an API sync section", sectionResults.keys.any { it.name == "ACCOUNT" })
+    assertEquals("Every sync result must correspond to a supported profile section", SyncSection.values().toSet(), syncResult.sectionResults.keys)
+    assertFalse("Account connection state is local app state, not an API sync section", syncResult.sectionResults.keys.any { it.name == "ACCOUNT" })
   }
 
   @Test fun fullSyncPreservesCursorPagesAlreadyLoadedFromTheLogsScreen() = runBlocking {

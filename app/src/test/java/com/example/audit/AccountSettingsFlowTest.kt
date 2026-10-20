@@ -280,8 +280,8 @@ class AccountSettingsFlowTest : AuditFixture() {
     chart.assertContentDescriptionContains("Google", substring = true)
     chart.assertContentDescriptionContains("Apple", substring = true)
     chart.assertContentDescriptionContains("Amazon", substring = true)
-    rule.onNodeWithText("Amazon").performScrollTo().assertIsDisplayed()
-    rule.onNodeWithText("Apple").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithContentDescription("Amazon").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithContentDescription("Apple").performScrollTo().assertIsDisplayed()
     assertTrue("GAFAM analytics must use the documented destinations?type=gafam endpoint", requests.any {
       it.contains("/analytics/destinations?") && it.contains("type=gafam")
     })
@@ -375,7 +375,9 @@ class AccountSettingsFlowTest : AuditFixture() {
 
     model.syncAllData()
     rule.waitUntil(30_000) {
-      model.fullSyncStatus.value is com.example.data.repository.FullSyncStatus.Completed
+      model.fullSyncStatus.value is com.example.data.repository.FullSyncStatus.Completed &&
+        model.uiMessage.value?.text?.contains(NavTab.LOGS.title) == true &&
+        model.uiMessage.value?.text?.contains(NavTab.ANALYTICS.title) == true
     }
 
     rule.onNodeWithTag("full_sync_logs_label")

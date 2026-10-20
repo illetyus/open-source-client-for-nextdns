@@ -769,8 +769,10 @@ class NextDnsRepository(
   suspend fun loadActiveProfileDataFromApi(
     key: String = _apiKey.value,
     profileId: String = _activeProfileId.value
-  ): Map<SyncSection, Boolean> = withSessionContext(expectedKey = key, expectedProfile = profileId) {
-    if (key.isBlank() || profileId.isBlank()) return@withSessionContext emptyMap()
+  ): ProfileDataSyncResult = withSessionContext(expectedKey = key, expectedProfile = profileId) {
+    if (key.isBlank() || profileId.isBlank()) {
+      return@withSessionContext ProfileDataSyncResult(emptyMap(), logsRefreshed = false, analyticsRefreshed = false)
+    }
     val snapshot = checkNotNull(currentCoroutineContext()[SessionContext]).snapshot
     val token = requestSequence.incrementAndGet()
     commitCurrentSession { fullSyncRequest = token; _isSyncing.value = true }
@@ -779,10 +781,14 @@ class NextDnsRepository(
       SyncSection.values().forEach { section ->
         sectionResults[section] = refreshSectionForSession(section)
       }
-      applyLogsFromApi(key, profileId)
-      applyDevicesAnalyticsFromApi(key, profileId)
-      fetchAnalytics(key, profileId, null, null)
-      sectionResults
+      val logsRefreshed = refreshLogsFromApi(limit = 100)
+      val deviceAnalyticsRefreshed = applyDevicesAnalyticsFromApi(key, profileId)
+      val analyticsRefreshed = fetchAnalytics(key, profileId, null, null)
+      ProfileDataSyncResult(
+        sectionResults = sectionResults,
+        logsRefreshed = logsRefreshed,
+        analyticsRefreshed = deviceAnalyticsRefreshed && analyticsRefreshed
+      )
     } finally {
       synchronized(sessionLock) {
         if (isCurrentSession(snapshot) && fullSyncRequest == token) {
@@ -1140,49 +1146,10 @@ class NextDnsRepository(
     }
   }
 
-  private suspend fun applyLogsFromApi(key: String, profileId: String) {
-    val deviceFilter = _logsDeviceFilter.value
-    val statusFilter = _logsStatusFilter.value
-    val searchFilter = _logsSearchFilter.value
-    val token = requestSequence.incrementAndGet()
-    val generation = commitCurrentSession {
-      logsRefreshRequest = token
-      ++logsSnapshotGeneration
-    }
-    val logsResp = safeApiCall("getLogs") {
-      apiService.getLogs(key, profileId, limit = 100, search = searchFilter, device = deviceFilter, status = statusFilter, raw = 1)
-    }
-    val body = logsResp?.body()
-    if (logsResp?.isSuccessful != true || body == null || body.hasApiErrors()) {
-      commitCurrentSession {
-        if (logsRefreshRequest == token) logsRefreshRequest = null
-      }
-      return
-    }
-
-    commitCurrentSession {
-      if (logsRefreshRequest != token || logsSnapshotGeneration != generation ||
-        _logsDeviceFilter.value != deviceFilter || _logsStatusFilter.value != statusFilter ||
-        _logsSearchFilter.value != searchFilter) return@commitCurrentSession
-      logsStreamSeedId = body.meta?.stream?.id
-      val fetchedLogs = parseLogsResponse(body.data.orEmpty())
-      val retained = fetchedLogs.take(MAX_RETAINED_LOG_ENTRIES)
-      nextLogsCursor = body.meta?.pagination?.cursor
-        ?.takeIf { retained.size < MAX_RETAINED_LOG_ENTRIES }
-      _logs.value = retained
-      _logsPaginationState.value = LogsPaginationState(
-        hasMore = nextLogsCursor != null,
-        retentionLimitReached = fetchedLogs.size > retained.size ||
-          (retained.size == MAX_RETAINED_LOG_ENTRIES && body.meta?.pagination?.cursor != null)
-      )
-      logsRefreshRequest = null
-    }
-  }
-
-  private suspend fun applyDevicesAnalyticsFromApi(key: String, profileId: String) {
-    val devResp = safeApiCall("getAnalyticsDevices") { apiService.getAnalyticsDevices(key, profileId) } ?: return
-    val dtoList = devResp.body()?.data ?: return
-    if (!devResp.isSuccessful) return
+  private suspend fun applyDevicesAnalyticsFromApi(key: String, profileId: String): Boolean {
+    val devResp = safeApiCall("getAnalyticsDevices") { apiService.getAnalyticsDevices(key, profileId) } ?: return false
+    if (!devResp.isSuccessful) return false
+    val dtoList = devResp.body()?.data ?: return false
 
     commitCurrentSession {
       val devItems = dtoList.map {
@@ -1199,18 +1166,19 @@ class NextDnsRepository(
           model = it.model.orEmpty()
         )
       }
-      if (devItems.isNotEmpty()) {
-        updateKnownDevices(devItems.map { it.name })
-        _analytics.value = _analytics.value.copy(topDevices = devItems)
-      }
+      updateKnownDevices(devItems.map { it.name })
+      _analytics.value = _analytics.value.copy(topDevices = devItems)
     }
+    return true
   }
 
   // =========================================================================
   // Logs Parsing
   // =========================================================================
 
-  private fun parseLogsResponse(dtoList: List<DnsLogDto>): List<DnsLogEntry> {
+  /** The raw logs API has no documented row ID, so page scope plus occurrence preserves identical queries. */
+  private fun parseLogsResponse(dtoList: List<DnsLogDto>, pageIdentity: String): List<DnsLogEntry> {
+    val fallbackOccurrences = mutableMapOf<String, Int>()
     val parsedLogs = dtoList.map { l ->
       val devId = l.device?.id
       val candidateName = l.device?.name?.takeIf { it.isNotBlank() }
@@ -1231,11 +1199,22 @@ class NextDnsRepository(
       val reasonObj = l.reasons?.firstOrNull()
       val blockReason = formatBlockReason(reasonObj?.id, reasonObj?.name)
 
+      val apiId = l.id?.takeIf { it.isNotBlank() }
+      val fallbackId = if (apiId == null) {
+        stableLogId(
+          pageIdentity, l.timestamp?.toString().orEmpty(), l.domain.orEmpty(), devId.orEmpty(),
+          l.status.orEmpty(), l.protocol.orEmpty(), l.clientIp ?: l.clientIpSnake.orEmpty(),
+          l.responseTime ?: l.responseTimeSnake
+        )
+      } else null
+      val occurrence = fallbackId?.let { identity ->
+        val current = fallbackOccurrences[identity] ?: 0
+        fallbackOccurrences[identity] = current + 1
+        current
+      }
+
       DnsLogEntry(
-        id = l.id?.takeIf { it.isNotBlank() } ?: stableLogId(
-          l.timestamp?.toString().orEmpty(), l.domain.orEmpty(), devId.orEmpty(), l.status.orEmpty(),
-          l.protocol.orEmpty(), l.clientIp ?: l.clientIpSnake.orEmpty(), l.responseTime ?: l.responseTimeSnake
-        ),
+        id = apiId ?: "$fallbackId:$occurrence",
         timestamp = l.timestamp?.toString() ?: "",
         domain = l.domain?.takeIf { it.isNotBlank() } ?: l.root?.takeIf { it.isNotBlank() } ?: l.rootDomain?.takeIf { it.isNotBlank() } ?: "",
         rootDomain = l.root?.takeIf { it.isNotBlank() } ?: l.rootDomain?.takeIf { it.isNotBlank() } ?: l.domain.orEmpty(),
@@ -1255,7 +1234,7 @@ class NextDnsRepository(
       )
     }
     updateKnownDevices(parsedLogs.mapNotNull { it.deviceName })
-    return parsedLogs.distinctBy { it.id }
+    return parsedLogs
   }
 
   private fun normalizedLogStatus(value: String?): String = when (value?.trim()?.lowercase(Locale.ROOT)) {
@@ -1264,6 +1243,7 @@ class NextDnsRepository(
   }
 
   private fun stableLogId(
+    pageIdentity: String,
     timestamp: String,
     domain: String,
     deviceId: String,
@@ -1272,7 +1252,7 @@ class NextDnsRepository(
     clientIp: String,
     responseTimeMs: Int?
   ): String {
-    val identity = listOf(timestamp, domain, deviceId, status, protocol, clientIp, responseTimeMs?.toString().orEmpty())
+    val identity = listOf(pageIdentity, timestamp, domain, deviceId, status, protocol, clientIp, responseTimeMs?.toString().orEmpty())
       .joinToString("\u001f")
     return UUID.nameUUIDFromBytes(identity.toByteArray(Charsets.UTF_8)).toString()
   }
@@ -2049,7 +2029,7 @@ class NextDnsRepository(
       logsRefreshRequest = null
       val previousIds = before.first.mapTo(HashSet()) { it.id }
       val intervening = _logs.value.filter { it.id !in previousIds }
-      val fetchedLogs = parseLogsResponse(body.data)
+      val fetchedLogs = parseLogsResponse(body.data, pageIdentity = "first")
       // An empty successful response is authoritative: clear stale history, but retain
       // any live events received after this refresh began.
       val mergedLogs = if (fetchedLogs.isEmpty()) intervening.distinctBy { it.id }
@@ -2103,7 +2083,8 @@ class NextDnsRepository(
       val responseCursor = body.meta?.pagination?.cursor?.takeIf { it != cursor }
       logsRefreshRequest = null
       val intervening = _logs.value.filter { current -> before.first.none { it.id == current.id } }
-      val mergedLogs = (intervening + before.first + parseLogsResponse(body.data)).distinctBy { it.id }
+      val mergedLogs = (intervening + before.first + parseLogsResponse(body.data, pageIdentity = "cursor:$cursor"))
+        .distinctBy { it.id }
       val retained = mergedLogs.take(MAX_RETAINED_LOG_ENTRIES)
       val retentionLimitReached = _logsPaginationState.value.retentionLimitReached ||
         mergedLogs.size > retained.size ||
@@ -2190,7 +2171,7 @@ class NextDnsRepository(
               if (_logsDeviceFilter.value == seedDeviceFilter && _logsStatusFilter.value == seedStatusFilter &&
                 _logsSearchFilter.value == seedSearchFilter &&
                 logsSnapshotGeneration == seedGeneration && logsRefreshRequest == null) {
-                val seededLogs = parseLogsResponse(seedBody?.data.orEmpty())
+                val seededLogs = parseLogsResponse(seedBody?.data.orEmpty(), pageIdentity = "first")
                 val retained = seededLogs.take(MAX_RETAINED_LOG_ENTRIES)
                 logsStreamSeedId = seedBody?.meta?.stream?.id
                 _logs.value = retained
@@ -2270,25 +2251,33 @@ class NextDnsRepository(
 
   private suspend fun consumeSseStream(responseBody: okhttp3.ResponseBody, onNewId: suspend (String) -> Unit) {
     val source = responseBody.source()
+    var eventId: String? = null
+    val dataLines = mutableListOf<String>()
+
+    suspend fun dispatchEvent() {
+      if (dataLines.isNotEmpty()) {
+        val entry = parseSseLogEntry(dataLines.joinToString("\n"), eventId)
+        if (entry != null) {
+          emitLogEntry(entry)
+          eventId?.let { onNewId(it) }
+        }
+      }
+      eventId = null
+      dataLines.clear()
+    }
+
     while (currentCoroutineContext().isActive && !source.exhausted()) {
       val line = source.readUtf8Line() ?: break
-      processSseLine(line, onNewId)
+      when {
+        line.startsWith("id:") -> eventId = line.substringAfter(':').trimStart().takeIf { it.isNotEmpty() }
+        line.startsWith("data:") -> dataLines += line.substringAfter(':').trimStart()
+        line.isEmpty() -> dispatchEvent()
+      }
     }
+    dispatchEvent()
   }
 
-  private suspend fun processSseLine(line: String, onNewId: suspend (String) -> Unit) {
-    if (line.startsWith("id: ")) {
-      onNewId(line.substring(4))
-      return
-    }
-    if (!line.startsWith("data: ")) return
-
-    val jsonStr = line.substring(6)
-    val entry = parseSseLogEntry(jsonStr) ?: return
-    emitLogEntry(entry)
-  }
-
-  private suspend fun parseSseLogEntry(jsonStr: String): DnsLogEntry? {
+  private suspend fun parseSseLogEntry(jsonStr: String, eventId: String?): DnsLogEntry? {
     if (jsonStr.isBlank()) return null
     val logDto = safeApiCall("sseJsonParse") {
       NextDnsNetworkClient.moshi.adapter(DnsLogDto::class.java).fromJson(jsonStr)
@@ -2317,11 +2306,7 @@ class NextDnsRepository(
       val blockReason = formatBlockReason(reasonObj?.id, reasonObj?.name)
 
       return@commitCurrentSession DnsLogEntry(
-        id = logDto.id?.takeIf { it.isNotBlank() } ?: stableLogId(
-          logDto.timestamp?.toString().orEmpty(), logDto.domain.orEmpty(), devId.orEmpty(), logDto.status.orEmpty(),
-          logDto.protocol.orEmpty(), logDto.clientIp ?: logDto.clientIpSnake.orEmpty(),
-          logDto.responseTime ?: logDto.responseTimeSnake
-        ),
+        id = eventId ?: logDto.id?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString(),
         timestamp = logDto.timestamp?.toString() ?: "",
         domain = logDto.domain?.takeIf { it.isNotBlank() } ?: logDto.root?.takeIf { it.isNotBlank() } ?: logDto.rootDomain?.takeIf { it.isNotBlank() } ?: "",
         rootDomain = logDto.root?.takeIf { it.isNotBlank() } ?: logDto.rootDomain?.takeIf { it.isNotBlank() } ?: logDto.domain.orEmpty(),
