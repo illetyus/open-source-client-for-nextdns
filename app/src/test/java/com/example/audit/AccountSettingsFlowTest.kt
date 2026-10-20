@@ -192,14 +192,14 @@ class AccountSettingsFlowTest : AuditFixture() {
     val model = NextDnsViewModel(repository)
     rule.setContent { AppTheme { SecurityScreen(model) } }
 
+    rule.onNodeWithText(AppStrings.get(R.string.ui_2e2a1e330e))
+      .performScrollTo()
     // The dialog's text field has a blinking cursor. Freeze Compose time
     // before opening it so Espresso does not wait for that infinite animation.
     rule.mainClock.autoAdvance = false
     rule.onNodeWithText(AppStrings.get(R.string.ui_2e2a1e330e))
-      .performScrollTo()
       .performClick()
 
-    rule.mainClock.advanceTimeBy(1_000)
     rule.onNodeWithTag("security_tld_catalog_unavailable").assertIsDisplayed()
     rule.onNodeWithText(".work").assertDoesNotExist()
     rule.onNodeWithText(".zip").assertDoesNotExist()
