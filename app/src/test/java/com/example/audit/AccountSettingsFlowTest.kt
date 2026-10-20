@@ -280,8 +280,8 @@ class AccountSettingsFlowTest : AuditFixture() {
     chart.assertContentDescriptionContains("Google", substring = true)
     chart.assertContentDescriptionContains("Apple", substring = true)
     chart.assertContentDescriptionContains("Amazon", substring = true)
-    rule.onNodeWithText("Amazon").assertIsDisplayed()
-    rule.onNodeWithText("Apple").assertIsDisplayed()
+    rule.onNodeWithText("Amazon").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText("Apple").performScrollTo().assertIsDisplayed()
     assertTrue("GAFAM analytics must use the documented destinations?type=gafam endpoint", requests.any {
       it.contains("/analytics/destinations?") && it.contains("type=gafam")
     })
@@ -361,5 +361,35 @@ class AccountSettingsFlowTest : AuditFixture() {
       "The sync result should identify at least one failed section",
       model.uiMessage.value!!.text.contains(AppStrings.get(R.string.ui_bde6632ed8))
     )
+  }
+
+  @Test fun fullSyncShowsLogAndAnalyticsFailuresSeparatelyFromRemoteSettings() {
+    english()
+    response = { request ->
+      val path = request.requestUrl?.encodedPath.orEmpty()
+      if (path.endsWith("/logs") || path.contains("/analytics/")) json("{}", 500)
+      else json("""{"data":[]}""")
+    }
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { AccountScreen(model) } }
+
+    model.syncAllData()
+    rule.waitUntil(30_000) {
+      model.fullSyncStatus.value is com.example.data.repository.FullSyncStatus.Completed
+    }
+
+    rule.onNodeWithTag("full_sync_logs_label")
+      .performScrollTo()
+      .assertTextEquals(NavTab.LOGS.title)
+    rule.onNodeWithTag("full_sync_analytics_label")
+      .performScrollTo()
+      .assertTextEquals(NavTab.ANALYTICS.title)
+    rule.onNodeWithTag("full_sync_logs_status")
+      .assertTextEquals(AppStrings.get(R.string.sync_section_failed))
+    rule.onNodeWithTag("full_sync_analytics_status")
+      .assertTextEquals(AppStrings.get(R.string.sync_section_failed))
+    val failureMessage = model.uiMessage.value?.text.orEmpty()
+    assertTrue(failureMessage.contains(NavTab.LOGS.title))
+    assertTrue(failureMessage.contains(NavTab.ANALYTICS.title))
   }
 }

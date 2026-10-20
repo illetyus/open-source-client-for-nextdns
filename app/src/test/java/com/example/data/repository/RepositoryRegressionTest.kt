@@ -131,7 +131,7 @@ class RepositoryRegressionTest {
   @Test fun olderLogPagesUseTheNextCursorAndAppendWithoutDuplicates() = runBlocking {
     response = { request ->
       if (request.requestUrl?.queryParameter("cursor") == "cursor-older") {
-        json("""{"data":[{"domain":"newer.example","timestamp":"2026-10-20T00:00:00Z","device":{"id":"device-a","name":"Annem"},"status":"default"},{"domain":"older.example","timestamp":"2026-10-19T23:00:00Z","device":{"id":"device-a","name":"Annem"},"status":"default"}],"meta":{"pagination":{"cursor":null}}}""")
+        json("""{"data":[{"domain":"older.example","timestamp":"2026-10-19T23:00:00Z","device":{"id":"device-a","name":"Annem"},"status":"default"}],"meta":{"pagination":{"cursor":null}}}""")
       } else {
         json("""{"data":[{"domain":"newer.example","timestamp":"2026-10-20T00:00:00Z","device":{"id":"device-a","name":"Annem"},"status":"default"}],"meta":{"pagination":{"cursor":"cursor-older"},"stream":{"id":"stream-current"}}}""")
       }
@@ -144,6 +144,16 @@ class RepositoryRegressionTest {
     assertEquals("Duplicate records across cursor pages must be removed", 2, repository.logs.value.map { it.id }.distinct().size)
     assertTrue(requests.any { it.contains("cursor=cursor-older") })
     assertFalse(repository.logsPaginationState.value.hasMore)
+  }
+
+  @Test fun rawLogSnapshotPreservesIdenticalQueriesWithoutApiRecordIds() = runBlocking {
+    val row = """{"domain":"repeat.example","timestamp":"2026-10-20T00:00:00.123Z","status":"default","protocol":"UDP"}"""
+    response = { json("""{"data":[$row,$row],"meta":{"pagination":{"cursor":null}}}""") }
+
+    assertTrue(repository.refreshLogsFromApi())
+
+    assertEquals("raw=1 must retain every query even when API rows have identical fields", 2, repository.logs.value.size)
+    assertEquals(2, repository.logs.value.map { it.id }.distinct().size)
   }
 
   @Test fun refreshingLogsPreservesPreviouslyLoadedOlderPages() = runBlocking {
@@ -318,6 +328,25 @@ class RepositoryRegressionTest {
     assertFalse("Full sync must not call the undocumented /account route", requests.any { it.contains("/account") })
     assertEquals("Every sync result must correspond to a supported profile section", SyncSection.values().toSet(), sectionResults.keys)
     assertFalse("Account connection state is local app state, not an API sync section", sectionResults.keys.any { it.name == "ACCOUNT" })
+  }
+
+  @Test fun fullSyncPreservesCursorPagesAlreadyLoadedFromTheLogsScreen() = runBlocking {
+    response = { request ->
+      if (request.requestUrl?.encodedPath?.endsWith("/logs") == true &&
+        request.requestUrl?.queryParameter("cursor") == "cursor-older") {
+        json("""{"data":[{"domain":"older.example","timestamp":"2026-10-19T23:00:00Z","status":"default"}],"meta":{"pagination":{"cursor":null}}}""")
+      } else if (request.requestUrl?.encodedPath?.endsWith("/logs") == true) {
+        json("""{"data":[{"domain":"newer.example","timestamp":"2026-10-20T00:00:00Z","status":"default"}],"meta":{"pagination":{"cursor":"cursor-older"},"stream":{"id":"stream-current"}}}""")
+      } else {
+        json("""{"data":[]}""")
+      }
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    assertTrue(repository.loadMoreLogsFromApi())
+    repository.loadActiveProfileDataFromApi()
+
+    assertEquals(listOf("newer.example", "older.example"), repository.logs.value.map { it.domain })
   }
 
   @Test fun changingDeviceFilterRejectsAnOlderInFlightPage() = runBlocking {
@@ -622,7 +651,8 @@ class RepositoryRegressionTest {
     repository.startLogsStream()
     try {
       val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
-      while (streamBodyEnded.count > 0 && System.nanoTime() < deadline) {
+      while ((streamBodyEnded.count > 0 || repository.logs.value.firstOrNull()?.domain != "host-1099.example") &&
+        System.nanoTime() < deadline) {
         // Each SSE event switches to Dispatchers.Main before it can be consumed.
         // Pump Robolectric's main looper instead of blocking it on CountDownLatch.await.
         shadowOf(Looper.getMainLooper()).idle()
@@ -632,6 +662,38 @@ class RepositoryRegressionTest {
       assertEquals(1_000, repository.logs.value.size)
       assertEquals("host-1099.example", repository.logs.value.firstOrNull()?.domain)
       assertTrue(repository.logsPaginationState.value.retentionLimitReached)
+    } finally {
+      repository.stopLogsStream()
+    }
+  }
+
+  @Test fun liveLogStreamKeepsIdenticalQueriesWithDifferentEventCursors() = runBlocking {
+    val streamBodyEnded = CountDownLatch(1)
+    val client = OkHttpClient.Builder()
+      .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().url(server.url("/stream")).build()) }
+      .eventListener(object : EventListener() {
+        override fun responseBodyEnd(call: Call, byteCount: Long) {
+          if (call.request().header("Accept") == "text/event-stream") streamBodyEnded.countDown()
+        }
+      }).build()
+    repository = NextDnsRepository(preferences, apiService = api, diagnosticService = testApi,
+      diagnosticProbe = { null }, streamClient = client, backgroundWorkEnabled = false)
+    val event = """{"timestamp":"2026-10-20T00:00:00.123Z","domain":"repeat.example","status":"default","protocol":"UDP"}"""
+    val streamBody = "id: event-one\ndata: $event\n\nid: event-two\ndata: $event\n\n"
+    response = { request ->
+      if (request.requestUrl!!.encodedPath == "/stream") MockResponse().setBody(streamBody)
+      else json("""{"data":[],"meta":{"stream":{"id":"snapshot-cursor"}}}""")
+    }
+
+    repository.startLogsStream()
+    try {
+      val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+      while ((streamBodyEnded.count > 0 || repository.logs.value.size < 2) && System.nanoTime() < deadline) {
+        shadowOf(Looper.getMainLooper()).idle()
+        Thread.sleep(1)
+      }
+      assertEquals("Each SSE cursor identifies a separate raw query", 2, repository.logs.value.size)
+      assertEquals(setOf("event-one", "event-two"), repository.logs.value.map { it.id }.toSet())
     } finally {
       repository.stopLogsStream()
     }
