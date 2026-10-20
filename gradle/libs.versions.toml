@@ -29,6 +29,7 @@ datastorePreferences = "1.1.7"
 robolectric = "4.16.1"
 roborazzi = "1.59.0"
 workManager = "2.12.0"
+composeRuntimeTracing = "1.7.0-rc01"
 benchmark = "1.5.0"
 profileInstaller = "1.4.0"
 uiAutomator = "2.3.0"
@@ -71,7 +72,7 @@ moshi-kotlin-codegen = { group = "com.squareup.moshi", name = "moshi-kotlin-code
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileInstaller" }
-androidx-compose-runtime-tracing = { group = "androidx.compose.runtime", name = "runtime-tracing" }
+androidx-compose-runtime-tracing = { group = "androidx.compose.runtime", name = "runtime-tracing", version.ref = "composeRuntimeTracing" }
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmark" }
 androidx-test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiAutomator" }
 androidx-tracing-perfetto = { group = "androidx.tracing", name = "tracing-perfetto", version.ref = "tracingPerfetto" }
