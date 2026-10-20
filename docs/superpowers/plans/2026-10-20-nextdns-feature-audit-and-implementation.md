@@ -50,7 +50,7 @@
 - `NextDnsApiService` remains the HTTP boundary. Repository methods translate its DTOs into app models; Compose screens consume repository/ViewModel state only.
 - `DeviceLabelResolver.label(name, model, unidentified)` will be the shared display-label boundary for logs and analytics; stable IDs stay in the existing filter state.
 - `GafamSegmentModel.from(analytics)` will be a pure calculation returning the same ordered segment values used by both the donut and legend; chart drawing will not recompute separate totals.
-- `SpeedTestEngine` will expose a cancellable suspend operation over an explicitly selected `SpeedTestServer`; UI disclosure and network execution share that selected server object.
+- `LibreSpeedClient` exposes cancellable suspend operations over a validated, explicitly selected server; UI disclosure and network execution share that server object.
 - `ApiCapabilityMatrix` is documentation, not runtime configuration. It cannot authorize a write; runtime mutation support still requires a contract test.
 
 ## Explicit uncertainty constraints
@@ -76,7 +76,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - At the verified live-main base, logs already use documented status/device/search parameters, cursor pagination, stale-response rejection and raw-reason fallback; date/sort controls remain a documented UI gap.
 - At the verified live-main base, the interactive country map and six-segment GAFAM chart already exist. They will be validated through PR CI rather than reimplemented.
 - `FaviconImage` uses HTTPS `favicons.nextdns.io`, bounded network reads, and a generic fallback. The route is not in the published API reference and the cache is process-memory only.
-- No speed-test endpoint has been accepted. The PR adds a profileable, release-like Macrobenchmark target with cold-start and initial-screen frame metrics plus benchmark-only Compose composition tracing. No physical-device baseline is available; authenticated home/logs/analytics journeys still need a reproducible profile fixture.
+- The native LibreSpeed-compatible adapter and localized configuration dialog are implemented with no public endpoint default; live measurement is deferred. The PR adds a profileable, release-like Macrobenchmark target with cold-start and initial-screen frame metrics plus benchmark-only Compose composition tracing. No physical-device baseline is available; authenticated home/logs/analytics journeys still need a reproducible profile fixture.
 
 ### Execution update — 20 October 2026
 
@@ -86,13 +86,14 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - The performance harness uses the official AndroidX `com.android.test` Macrobenchmark setup, `StartupTimingMetric`, `FrameTimingMetric`, release-like non-debuggable/profileable app variant, the already bundled ProfileInstaller 1.4.0, and benchmark-only Compose tracing. AndroidX documents that Macrobenchmark is intended for Compose UI measurement and reports startup and frame percentiles; emulator results are not representative of phone performance ([Macrobenchmark setup](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview), [metric definitions](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)).
 - Local Gradle tests could not start because the configured wrapper-cache lock returned access denied. No local build, lint, unit test or APK result is claimed; GitHub CI remains the executable validation path.
 - BrowserStack credentials are not configured in the current process or Windows user/machine environment, and no device is attached. Physical-device performance values, recomposition traces and BrowserStack results therefore remain unverified.
-- The full audit reopened the speed-test task. Implement a user-configured, authorized HTTPS LibreSpeed endpoint with no public default; live server permissions and behavior remain a release gate.
+- The user deferred live speed testing. The app now has a native LibreSpeed-compatible client with a user-configured authorized HTTPS endpoint, explicit transfer consent, separate upload confirmation, cancellation, and no public default; live endpoint permissions and behavior remain a release gate.
 - Keep age-verification and early-access settings unsupported until a documented API field or sanitized response proves them; do not guess names or send speculative writes. The current API matrix and error ledger record these boundaries.
 
+- PR #27 CI #346 (`39468316658`) passed on head `c85c01978cb6861dce9c9f7a2408bde6fd1c24a6`: Android Lint, metadata, all 61 API routes, 644 resources across five languages, DRAFT integrity, 214 JVM/Contract/Compose tests (0 failures/0 skipped), all 21 defect regressions and 76 required cases, 12 screenshots and 598 coverage classes, Debug and unsigned Release builds, Macrobenchmark compilation, dependency/SDK, NOTICE, manifest/signature and DEX checks, Snyk High, and 12 release-emulator security tests with no log canary. `Snyk Monitor Main` was skipped as expected. CI #340/#344 had identified two speed-test compile errors on earlier heads; the constructor default and Dialog import were fixed before #346 passed.
 - CI #322 (`39451553055`) exposed a concurrent `Dispatchers.Main` access during Compose teardown because fixture `@After` reset Main before the Compose rule had closed. The fix moves Main setup/reset into an outer JUnit RuleChain; repository tests use a standalone Main rule. CI #326 (`39454569461`) caught the first wrapper's incorrect Compose rule interface and internal visibility; corrected to public `ComposeContentTestRule`. CI #327 (`39455562687`, code head `6096f584ffef25bcf3d151f6924b8c443880e5de`) passed all gates: 205 JVM/Compose tests, 12 screenshots, 588 coverage classes, Lint, debug/unsigned release, Macrobenchmark compilation, dependency/NOTICE/DEX, Snyk High (50 dependencies, 0 findings), and 12 release-payload emulator tests (no canary, signed/unsigned payload parity).
 ---
 
-**Current patch:** Extends PR #27 with OkHttp cancellation coverage, a release-emulator StrictMode audit, and a CI check that keeps the 61-route inventory aligned with Retrofit. CI #327 passed the corrected test-rule lifecycle and all build, test, security, release-payload, and evidence gates. Local Gradle execution remains unavailable because the configured wrapper-cache lock is denied.
+**Current patch:** PR #27 includes API/UI audit corrections, bounded favicon handling, user-configured speed-test support, the release-emulator StrictMode audit, and the 61-route inventory check. CI #346 passed the full build, test, lint, security, release-payload, and evidence gates. Live BrowserStack execution remains unavailable because credentials are not present in this session.
 
 ## Numbered work items
 
@@ -124,7 +125,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 2. Performance and UI-fluidity measurements
 
-**Current status:** The world-map asset read is dispatched to `Dispatchers.IO`; CI #319 passed the release-emulator StrictMode negative probes and production map-load check. The release-like Macrobenchmark target compiles and defines cold-start/initial-screen frame metrics with Compose tracing, but it has not been run on a physical device. Authenticated home/logs/analytics benchmark journeys, collected Perfetto traces, recomposition analysis, and same-device baseline/candidate results remain incomplete: local Gradle/ADB execution did not start, and no BrowserStack credentials are exposed to this shell.
+**Current status:** The world-map asset read is dispatched to `Dispatchers.IO`; CI #346 passed the release-emulator StrictMode audit and compiled the release-like Macrobenchmark target. It has not been run on a physical device. Authenticated home/logs/analytics journeys, Perfetto traces, recomposition analysis, and same-device baseline/candidate results remain incomplete. BrowserStack credentials are absent from this process and the Windows user environment.
 
 **Root Cause Analysis:** The repository has no repeatable performance baseline for Compose recompositions, UI frame timing/jank, startup, or main-thread I/O. Source inspection and passing UI tests do not quantify these properties.
 
@@ -151,7 +152,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 3. DNS resolver/server identity and location wording
 
-**Current status:** Implemented in source and covered by Compose tests: the screen shows only the returned server/resolver/Anycast values, identifies `test.nextdns.io` and the local check time, and uses an explicit unavailable label. The previous full PR CI passed; the current patch adds no location inference or protocol changes.
+**Current status:** Implemented in source and covered by Compose tests: the screen shows only the returned server/resolver/Anycast values, identifies `test.nextdns.io` and the local check time, and uses an explicit unavailable label. CI #346 passed; no location inference or protocol change was added.
 
 **Root Cause Analysis:** The diagnostic response can provide server/resolver identifiers and an Anycast flag, but these values do not by themselves prove a city or country.
 
@@ -204,7 +205,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 5. Device analysis name fallback
 
-**Current status:** Implemented in repository, analytics, and logs source with API-ID filtering; unit and Compose regressions passed in the previous full PR CI.
+**Current status:** Implemented in repository, analytics, and logs source with API-ID filtering; unit and Compose regressions passed in CI #346.
 
 **Root Cause Analysis:** API analytics can omit device name/model or return placeholder text; rendering a nullable field directly can produce “undefined” or an empty label.
 
@@ -229,7 +230,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 6. DNS logs: status categories, reasons, and history
 
-**Current status:** API status/device/search filtering, cursor resets, stale-page rejection, exact unknown-reason fallback, and pagination/stream integration are implemented with repository/UI regressions; the previous full PR CI passed. Date and sort controls remain absent from the screen; existing retention limits are documented.
+**Current status:** API status/device/search filtering, cursor resets, stale-page rejection, exact unknown-reason fallback, and pagination/stream integration are implemented with repository/UI regressions; CI #346 passed. Date and sort controls remain absent from the screen; existing retention limits are documented.
 
 **Root Cause Analysis:** The API supports `status`, `device`, date, search, `raw`, `limit`, and `cursor`; first-page-only behavior or client-only filtering can hide historical/device-specific records and misstate why an event was blocked.
 
@@ -281,7 +282,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 8. GAFAM analytics chart correctness and accessibility
 
-**Current status:** Six-segment count-based model, accessibility description, API slug normalization, and light/dark colors are implemented with unit and Compose regressions; the previous full PR CI passed.
+**Current status:** Six-segment count-based model, accessibility description, API slug normalization, and light/dark colors are implemented with unit and Compose regressions; CI #346 passed.
 
 **Root Cause Analysis:** The current legend includes Google, Facebook, Microsoft, Apple, Amazon, and Other, but the donut renderer draws only the first three companies plus Other. Apple and Amazon query counts are excluded from the plotted arcs, so visual segments and labels disagree.
 
@@ -307,7 +308,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 9. Comprehensive API capability inventory
 
-**Current status:** `docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md` maps published endpoints to this client, distinguishes local/diagnostic/undocumented data, and records the API beta caveat. Its checked inventory lists all 61 Retrofit routes; `scripts/verify_api_capability_matrix.py` passes locally and CI #319 passed the route-to-matrix check.
+**Current status:** `docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md` maps published endpoints to this client, distinguishes local/diagnostic/undocumented data, and records the API beta caveat. Its checked inventory lists all 61 Retrofit routes; `scripts/verify_api_capability_matrix.py` passes locally and CI #346 passed the route-to-matrix check.
 
 **Root Cause Analysis:** Existing API calls are distributed across Retrofit declarations, repository methods, and screens; there is no single audited mapping of supported/read-only/writable/missing/unsupported options.
 
@@ -334,7 +335,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 10. NextDNS favicon quality, cache, and provenance
 
-**Current status:** Synthetic HTTPS GET confirmed 200 `image/png` for github.com/google.com and 404 for example.com on 20 October 2026. The route remains best-effort. Bounded network-path tests for redirect, MIME, chunked size, timeout, malformed PNG, cache, and coroutine cancellation passed PR CI #319; cancellation reaches the underlying OkHttp call. DNS log rows use local icons so browsing-history domains are not sent to the favicon host. No provider guarantee is claimed. Memory-only cache and local fallback are retained.
+**Current status:** Synthetic HTTPS GET confirmed 200 `image/png` for github.com/google.com and 404 for example.com on 20 October 2026. The route remains best-effort. Bounded network-path tests for redirect, MIME, chunked size, timeout, malformed PNG, cache, and coroutine cancellation passed CI #346; cancellation reaches the underlying OkHttp call. DNS log rows use local icons so browsing-history domains are not sent to the favicon host. No provider guarantee is claimed. Memory-only cache and local fallback are retained.
 
 **Root Cause Analysis:** Current code uses a high-resolution route on `favicons.nextdns.io`, but the route is absent from the published API contract and the cache is memory-only; provider response quality and reuse terms are not guaranteed.
 
