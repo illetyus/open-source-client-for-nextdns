@@ -81,6 +81,22 @@ class NextDnsApiContractTest {
   }
 
   @Test
+  fun countryDestinationResponseRetainsItsDomainSamples() = runTest {
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody("""{"data":[{"code":"US","domains":["dns.example","mail.example"],"queries":42}]}""")
+    )
+
+    val response = api.getAnalyticsDestinations("test-key", "abc123", type = "countries")
+    val country = response.body()?.data?.single()
+
+    assertEquals("US", country?.code)
+    assertEquals(42L, country?.queries)
+    assertEquals(listOf("dns.example", "mail.example"), country?.domains)
+  }
+
+  @Test
   fun logsResponse_parsesPaginationAndStreamMetadata() = runTest {
     server.enqueue(
       MockResponse()
@@ -97,6 +113,7 @@ class NextDnsApiContractTest {
       from = "-1h",
       to = "now",
       sort = "asc",
+      device = "device-123",
       cursor = "cursor-1",
       raw = 1
     )
@@ -110,6 +127,7 @@ class NextDnsApiContractTest {
     assertTrue(path.contains("from=-1h"))
     assertTrue(path.contains("to=now"))
     assertTrue(path.contains("sort=asc"))
+    assertTrue(path.contains("device=device-123"))
     assertTrue(path.contains("cursor=cursor-1"))
     assertFalse(path.contains("before="))
   }

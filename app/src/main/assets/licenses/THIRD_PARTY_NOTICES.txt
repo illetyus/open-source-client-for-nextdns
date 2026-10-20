@@ -18,6 +18,11 @@ Its geometry and reproducible assets are documented in
 docs/BRAND_ASSET_PROVENANCE.md. It does not reproduce a NextDNS logo or
 represent affiliation; final store presentation review remains pending.
 
+The offline traffic-destination map includes simplified country-boundary
+geometry derived from Natural Earth, 1:110m Cultural Vectors, Admin 0 –
+Countries. Natural Earth states that its data are public domain. Source and
+terms information are included in app/src/main/assets/licenses/world-map-NOTICE.txt.
+
 Dependencies retain their own upstream licenses and copyright notices.
 Full dependency license texts, artifact notices and resolved input hashes
 are bundled in app/src/main/assets/licenses/THIRD_PARTY_NOTICES.txt and

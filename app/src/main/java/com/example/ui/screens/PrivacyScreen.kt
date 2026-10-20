@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -322,7 +323,10 @@ private fun NativeTrackingItemCard(
         )
         FaviconImage(
           domain = domain,
-          modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))
+          modifier = Modifier
+            .size(24.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .testTag("native_tracking_icon_${nat.id}")
         )
         Column {
           Text(

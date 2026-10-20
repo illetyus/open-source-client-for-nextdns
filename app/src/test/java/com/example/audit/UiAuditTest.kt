@@ -6,13 +6,19 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.NextDnsApp
 import com.example.R
 import com.example.data.model.DiagnosticTestResult
+import com.example.data.model.DnsLogEntry
+import com.example.data.model.DeviceMetric
 import com.example.data.model.NextDnsProfile
+import com.example.data.repository.LogsPaginationState
 import com.example.i18n.AppStrings
 import com.example.i18n.LocalePreferences
 import com.example.ui.screens.AllowlistScreen
 import com.example.ui.screens.ConnectionStatusBanner
 import com.example.ui.screens.DenylistScreen
 import com.example.ui.screens.EndpointsSection
+import com.example.ui.screens.LogsHeaderControls
+import com.example.ui.screens.LogItemRow
+import com.example.ui.screens.LogsPaginationFooter
 import com.example.data.api.SetupDto
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NextDnsViewModel
@@ -111,6 +117,66 @@ class UiAuditTest : AuditFixture() {
     rule.onNodeWithText(expected).performClick()
     val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
     org.junit.Assert.assertEquals(expected, clipboard.primaryClip!!.getItemAt(0).text.toString())
+  }
+
+  @Test fun logDeviceOptionsReturnTheNextDnsDeviceId() {
+    english()
+    var selected: String? = null
+    rule.setContent {
+      AppTheme {
+        LogsHeaderControls(
+          selectedDeviceFilter = null,
+          detectedDevices = listOf(
+            DeviceMetric(id = "device-a", name = "Annem"),
+            DeviceMetric(id = "__UNIDENTIFIED__", name = AppStrings.get(R.string.logs_unidentified_device))
+          ),
+          showDeviceMenu = true,
+          onToggleDeviceMenu = {},
+          onSelectDevice = { selected = it },
+          isLiveStreaming = false,
+          onToggleLiveStream = {},
+          showLiveStreamInfo = false,
+          onToggleLiveStreamInfo = {},
+          onRefreshLogs = {}
+        )
+      }
+    }
+
+    rule.onNodeWithTag("logs_device_option_device-a").performClick()
+    rule.runOnIdle { org.junit.Assert.assertEquals("device-a", selected) }
+  }
+
+  @Test fun olderLogActionIsVisibleAndLoadsTheNextPage() {
+    var requested = false
+    rule.setContent {
+      AppTheme {
+        LogsPaginationFooter(
+          state = LogsPaginationState(hasMore = true),
+          onLoadMore = { requested = true }
+        )
+      }
+    }
+
+    rule.onNodeWithTag("logs_load_older").performClick()
+    rule.runOnIdle { org.junit.Assert.assertTrue(requested) }
+  }
+
+  @Test fun logRowsShowLocalDomainIconsForBrowsingHistory() {
+    english()
+    rule.setContent {
+      AppTheme {
+        LogItemRow(
+          log = DnsLogEntry(domain = "private-query.synthetic.example"),
+          isExpanded = false,
+          onToggleExpand = {},
+          onAddToAllowlist = {},
+          onAddToDenylist = {}
+        )
+      }
+    }
+
+    rule.onNodeWithTag("logs_local_domain_icon").assertExists()
+    rule.onAllNodesWithTag("remote_favicon_image").assertCountEquals(0)
   }
 
   @Test fun successfulAllowlistSubmissionClearsOnlyTheConfirmedText() { checkSuccessfulInput(true, false) }

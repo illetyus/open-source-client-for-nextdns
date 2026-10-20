@@ -15,6 +15,7 @@ import com.example.data.repository.PrivacyFlag
 import com.example.data.repository.SecurityFlag
 import com.example.data.repository.SettingsPerformanceFlag
 import com.example.data.repository.SectionSyncState
+import com.example.data.repository.FullSyncStatus
 import com.example.data.repository.SyncPolicy
 import com.example.data.repository.SyncSection
 import com.example.ui.theme.ThemeMode
@@ -22,6 +23,7 @@ import com.example.data.repository.exportToDocument
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -38,7 +40,7 @@ enum class NavTab(val titleResource: Int, val iconName: String) {
   ANALYTICS(R.string.ui_34db704cad, "insights"),
   LOGS(R.string.ui_a007acc25e, "format_list_bulleted"),
   SETTINGS(R.string.ui_80ad54ad05, "settings"),
-  ACCOUNT(R.string.ui_1c56ac8f2d, "account_circle");
+  ACCOUNT(R.string.nav_connection, "account_circle");
 
   val title: String get() = AppStrings.get(titleResource)
 }
@@ -51,8 +53,7 @@ private fun NavTab.toSyncSection(): SyncSection? = when (this) {
   NavTab.DENYLIST -> SyncSection.DENYLIST
   NavTab.ALLOWLIST -> SyncSection.ALLOWLIST
   NavTab.SETTINGS -> SyncSection.SETTINGS
-  NavTab.ACCOUNT -> SyncSection.ACCOUNT
-  NavTab.ANALYTICS, NavTab.LOGS -> null
+  NavTab.ACCOUNT, NavTab.ANALYTICS, NavTab.LOGS -> null
 }
 
 data class UiMessage(
@@ -102,6 +103,11 @@ class NextDnsViewModel(
   val denylist = repository.denylist
   val allowlist = repository.allowlist
   val logs = repository.logs
+  val logsPaginationState = repository.logsPaginationState
+  val logsDeviceFilter = repository.logsDeviceFilter
+  val logsStatusFilter = repository.logsStatusFilter
+  val logsSearchFilter = repository.logsSearchFilter
+  val logDevices = repository.logDevices
   val analytics = repository.analytics
   val analyticsLastSuccessAt = repository.analyticsLastSuccessAt
   val analyticsErrorMessage = repository.analyticsErrorMessage
@@ -111,13 +117,14 @@ class NextDnsViewModel(
   val isLiveStreaming = repository.isLiveStreaming
   val isSyncing = repository.isSyncing
   val sectionSyncStates = repository.sectionSyncStates
+  private val _fullSyncStatus = MutableStateFlow<FullSyncStatus?>(null)
+  val fullSyncStatus = _fullSyncStatus.asStateFlow()
 
   val availableBlocklistsCatalog = repository.availableBlocklistsCatalog
   val availableNativesCatalog = repository.availableNativesCatalog
   val availableParentalServicesCatalog = repository.availableParentalServicesCatalog
   val availableParentalCategoriesCatalog = repository.availableParentalCategoriesCatalog
   val availableTldsCatalog = repository.availableTldsCatalog
-  val accountInfo = repository.accountInfo
   val profileSetup = repository.profileSetup
 
   private val _isAnalyticsLoading = MutableStateFlow(false)
@@ -176,29 +183,49 @@ class NextDnsViewModel(
 
   fun syncAllData() {
     viewModelScope.launch {
-      repository.loadActiveProfileDataFromApi(repository.apiKey.value, activeProfileId.value)
-
-      val requiredSections = listOf(
-        SyncSection.SECURITY,
-        SyncSection.PRIVACY,
-        SyncSection.PARENTAL,
-        SyncSection.DENYLIST,
-        SyncSection.ALLOWLIST,
-        SyncSection.SETTINGS
-      )
-      val states = sectionSyncStates.value
-      val failedSections = requiredSections.filter { section ->
-        states[section]?.errorMessage != null ||
-          states[section]?.lastSuccessAt == null
+      if (isSyncing.value || _fullSyncStatus.value == FullSyncStatus.Running) return@launch
+      val key = repository.apiKey.value
+      val profileId = activeProfileId.value
+      if (key.isBlank()) {
+        _fullSyncStatus.value = FullSyncStatus.ApiKeyRequired
+        showMessage(AppStrings.get(R.string.sync_api_key_required), isError = true)
+        return@launch
+      }
+      if (profileId.isBlank()) {
+        _fullSyncStatus.value = FullSyncStatus.ProfileRequired
+        showMessage(AppStrings.get(R.string.sync_profile_required), isError = true)
+        return@launch
       }
 
-      if (failedSections.isEmpty()) {
-        showMessage(AppStrings.get(R.string.ui_7138c8cfd5))
-      } else {
-        showMessage(
-          AppStrings.get(R.string.ui_4aae2f5c53),
-          isError = true
-        )
+      _fullSyncStatus.value = FullSyncStatus.Running
+      try {
+        val outcomes = repository.loadActiveProfileDataFromApi(key, profileId)
+        if (outcomes.isEmpty()) {
+          _fullSyncStatus.value = FullSyncStatus.Failed
+          showMessage(AppStrings.get(R.string.ui_4aae2f5c53), isError = true)
+          return@launch
+        }
+
+        _fullSyncStatus.value = FullSyncStatus.Completed(outcomes)
+        val failedSections = outcomes.filterValues { !it }.keys
+        if (failedSections.isEmpty() && outcomes.size == SyncSection.values().size) {
+          showMessage(AppStrings.get(R.string.sync_all_success))
+        } else {
+          val labels = failedSections.joinToString { section ->
+            NavTab.valueOf(section.name).title
+          }
+          showMessage(
+            if (labels.isBlank()) AppStrings.get(R.string.ui_4aae2f5c53)
+            else AppStrings.get(R.string.sync_failed_sections, labels),
+            isError = true
+          )
+        }
+      } catch (error: CancellationException) {
+        _fullSyncStatus.value = FullSyncStatus.Failed
+        throw error
+      } catch (_: Exception) {
+        _fullSyncStatus.value = FullSyncStatus.Failed
+        showMessage(AppStrings.get(R.string.ui_4aae2f5c53), isError = true)
       }
     }
   }
@@ -579,6 +606,22 @@ class NextDnsViewModel(
         }
       }
     }
+  }
+
+  fun loadMoreLogs() {
+    viewModelScope.launch { repository.loadMoreLogsFromApi() }
+  }
+
+  fun setLogsDeviceFilter(deviceId: String?) {
+    viewModelScope.launch { repository.setLogsDeviceFilter(deviceId) }
+  }
+
+  fun setLogsStatusFilter(status: String?) {
+    viewModelScope.launch { repository.setLogsStatusFilter(status) }
+  }
+
+  fun setLogsSearchFilter(search: String?) {
+    viewModelScope.launch { repository.setLogsSearchFilter(search) }
   }
 
   fun refreshAnalytics(device: String?, time: String?) {

@@ -1,0 +1,15 @@
+Offline world-map geometry
+
+The bundled maps/world-countries.tsv file contains simplified country-boundary
+geometry derived from Natural Earth, 1:110m Cultural Vectors, Admin 0 –
+Countries dataset.
+
+Dataset source:
+https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/
+
+Natural Earth terms of use:
+https://www.naturalearthdata.com/about/terms-of-use/
+
+Natural Earth states that its data are public domain. The geometry is simplified
+and transformed for this application's offline traffic-destination map. It is
+not a navigational or boundary-authority dataset.

@@ -58,18 +58,6 @@ data class NextDnsMutationResponse(
   val meta: ApiMeta? = null
 )
 
-data class AccountSubscriptionDto(
-  val status: String? = null,
-  val period: String? = null
-)
-
-data class AccountDto(
-  val email: String? = null,
-  val name: String? = null,
-  val plan: String? = null,
-  val subscription: AccountSubscriptionDto? = null
-)
-
 data class ProfileDto(
   val id: String,
   val name: String,
@@ -176,6 +164,7 @@ data class DeviceDto(
 )
 
 data class DnsLogDto(
+  val id: String? = null,
   val timestamp: Any? = null,
   val domain: String? = null,
   val root: String? = null,
@@ -385,12 +374,6 @@ data class SettingsBlockPageUpdateRequest(
 // ==========================================
 
 interface NextDnsApiService {
-
-  // Account
-  @GET("account")
-  suspend fun getAccount(
-    @Header("X-Api-Key") apiKey: String
-  ): Response<NextDnsApiResponse<AccountDto>>
 
   // Profiles
   @GET("profiles")
@@ -681,7 +664,10 @@ interface NextDnsApiService {
   suspend fun getLogsStream(
     @Header("X-Api-Key") apiKey: String,
     @Path("profileId") profileId: String,
-    @Query("search") search: String? = null
+    @Query("search") search: String? = null,
+    @Query("device") device: String? = null,
+    @Query("status") status: String? = null,
+    @Query("raw") raw: Int? = 1
   ): retrofit2.Response<okhttp3.ResponseBody>
 
   @GET("profiles/{profileId}/logs")
@@ -759,14 +745,6 @@ interface NextDnsApiService {
     @Query("cursor") cursor: String? = null
   ): Response<NextDnsApiResponse<List<AnalyticsReasonItem>>>
 
-
-  @GET("profiles/{profileId}/analytics/companies")
-  suspend fun getAnalyticsCompanies(
-    @Header("X-Api-Key") apiKey: String,
-    @Path("profileId") profileId: String,
-    @Query("device") device: String? = null,
-    @Query("from") from: String? = null
-  ): Response<NextDnsApiResponse<List<AnalyticsItemDto>>>
 
   @GET("profiles/{profileId}/analytics/destinations")
   suspend fun getAnalyticsDestinations(

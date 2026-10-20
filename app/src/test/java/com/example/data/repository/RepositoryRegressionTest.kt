@@ -68,7 +68,8 @@ class RepositoryRegressionTest {
     server = MockWebServer()
     server.dispatcher = object : Dispatcher() {
       override fun dispatch(request: RecordedRequest): MockResponse {
-        requests.add("${request.method} ${request.requestUrl?.encodedPath}")
+        val url = request.requestUrl
+        requests.add("${request.method} ${url?.encodedPath.orEmpty()}${url?.encodedQuery?.let { "?$it" }.orEmpty()}")
         return response(request)
       }
     }
@@ -123,6 +124,223 @@ class RepositoryRegressionTest {
     release.countDown()
     assertCancelled(pending)
     assertTrue(repository.logs.value.isEmpty())
+  }
+
+  @Test fun olderLogPagesUseTheNextCursorAndAppendWithoutDuplicates() = runBlocking {
+    response = { request ->
+      if (request.requestUrl?.queryParameter("cursor") == "cursor-older") {
+        json("""{"data":[{"domain":"newer.example","timestamp":"2026-10-20T00:00:00Z","device":{"id":"device-a","name":"Annem"},"status":"default"},{"domain":"older.example","timestamp":"2026-10-19T23:00:00Z","device":{"id":"device-a","name":"Annem"},"status":"default"}],"meta":{"pagination":{"cursor":null}}}""")
+      } else {
+        json("""{"data":[{"domain":"newer.example","timestamp":"2026-10-20T00:00:00Z","device":{"id":"device-a","name":"Annem"},"status":"default"}],"meta":{"pagination":{"cursor":"cursor-older"},"stream":{"id":"stream-current"}}}""")
+      }
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    val loaded = repository.loadMoreLogsFromApi()
+    assertTrue("The older page should load", loaded)
+    assertEquals(listOf("newer.example", "older.example"), repository.logs.value.map { it.domain })
+    assertEquals("Duplicate records across cursor pages must be removed", 2, repository.logs.value.map { it.id }.distinct().size)
+    assertTrue(requests.any { it.contains("cursor=cursor-older") })
+    assertFalse(repository.logsPaginationState.value.hasMore)
+  }
+
+  @Test fun refreshingLogsPreservesPreviouslyLoadedOlderPages() = runBlocking {
+    response = { request ->
+      if (request.requestUrl?.queryParameter("cursor") == "cursor-older") {
+        json("""{"data":[{"domain":"older.example","timestamp":"2026-10-19T23:00:00Z","status":"default"}],"meta":{"pagination":{"cursor":null}}}""")
+      } else {
+        json("""{"data":[{"domain":"newer.example","timestamp":"2026-10-20T00:00:00Z","status":"default"}],"meta":{"pagination":{"cursor":"cursor-older"}}}""")
+      }
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    assertTrue(repository.loadMoreLogsFromApi())
+    assertTrue(repository.refreshLogsFromApi())
+
+    assertEquals(listOf("newer.example", "older.example"), repository.logs.value.map { it.domain })
+  }
+
+  @Test fun deviceLogFilterUsesTheNextDnsDeviceIdAndUnidentifiedSentinel() = runBlocking {
+    response = { request ->
+      val query = request.requestUrl?.queryParameter("device")
+      val row = if (query == "__UNIDENTIFIED__") {
+        """{"domain":"unidentified.example","timestamp":"2026-10-20T00:00:00Z","status":"default"}"""
+      } else {
+        """{"domain":"Annem.example","timestamp":"2026-10-20T00:00:00Z","device":{"id":"device-a","name":"Annem"},"status":"default"}"""
+      }
+      json("""{"data":[$row],"meta":{"pagination":{"cursor":null}}}""")
+    }
+
+    assertTrue(repository.setLogsDeviceFilter("device-a"))
+    assertTrue(requests.last().contains("device=device-a"))
+    assertEquals("device-a", repository.logs.value.single().deviceId)
+    assertTrue(repository.logDevices.value.any { it.id == "device-a" && it.name == "Annem" })
+
+    assertTrue(repository.setLogsDeviceFilter("__UNIDENTIFIED__"))
+    assertTrue(requests.last().contains("device=__UNIDENTIFIED__"))
+    assertEquals("unidentified.example", repository.logs.value.single().domain)
+    assertNull(repository.logs.value.single().deviceId)
+  }
+
+  @Test fun logStatusesAndApiReasonsRemainFaithfulToTheResponse() = runBlocking {
+    response = {
+      json("""{"data":[
+        {"domain":"blocked.example","status":"blocked","reasons":[{"id":"blocklist:test","name":"Example blocklist"}]},
+        {"domain":"allowed.example","status":"allowed"},
+        {"domain":"default.example","status":"default"},
+        {"domain":"error.example","status":"error"}
+      ]}""")
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    val byDomain = repository.logs.value.associateBy { it.domain }
+    assertEquals("blocked", byDomain.getValue("blocked.example").status)
+    assertEquals("Example blocklist", byDomain.getValue("blocked.example").blockReason)
+    assertTrue(byDomain.getValue("blocked.example").blocked)
+    assertEquals("allowed", byDomain.getValue("allowed.example").status)
+    assertEquals("default", byDomain.getValue("default.example").status)
+    assertEquals("error", byDomain.getValue("error.example").status)
+    assertFalse(byDomain.getValue("error.example").blocked)
+  }
+
+  @Test fun unknownLogReasonKeepsTheExactApiValueInsteadOfInventingALabel() {
+    assertEquals("Vendor:Future-Rule", repository.formatBlockReason("Vendor:Future-Rule", null))
+    assertEquals("Future server reason", repository.formatBlockReason("vendor:future-rule", "Future server reason"))
+  }
+
+  @Test fun statusFilterUsesDocumentedValuesAndRequestsANewFirstPage() = runBlocking {
+    response = { request ->
+      val status = request.requestUrl?.queryParameter("status")
+      val cursor = request.requestUrl?.queryParameter("cursor")
+      when {
+        cursor == "blocked-next" -> json("""{"data":[{"domain":"blocked-older.example","status":"blocked"}],"meta":{"pagination":{"cursor":null}}}""")
+        status == "blocked" -> json("""{"data":[{"domain":"blocked.example","status":"blocked"}],"meta":{"pagination":{"cursor":"blocked-next"}}}""")
+        status == "allowed" -> json("""{"data":[{"domain":"allowed.example","status":"allowed"}],"meta":{"pagination":{"cursor":null}}}""")
+        else -> json("""{"data":[{"domain":"default.example","status":"default"}],"meta":{"pagination":{"cursor":"all-next"}}}""")
+      }
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    assertTrue(repository.setLogsStatusFilter("blocked"))
+    assertTrue(requests.last().contains("status=blocked"))
+    assertEquals(listOf("blocked.example"), repository.logs.value.map { it.domain })
+    assertTrue(repository.loadMoreLogsFromApi())
+    assertTrue(requests.last().contains("status=blocked") && requests.last().contains("cursor=blocked-next"))
+    assertEquals(listOf("blocked.example", "blocked-older.example"), repository.logs.value.map { it.domain })
+
+    assertTrue(repository.setLogsStatusFilter("allowed"))
+    assertTrue(requests.last().contains("status=allowed"))
+    assertFalse("Changing status must start at page one", requests.last().contains("cursor="))
+    assertEquals(listOf("allowed.example"), repository.logs.value.map { it.domain })
+  }
+
+  @Test fun searchFilterUsesDocumentedServerQueryAndStartsAtFirstPage() = runBlocking {
+    response = { request ->
+      val search = request.requestUrl?.queryParameter("search")
+      val cursor = request.requestUrl?.queryParameter("cursor")
+      when {
+        cursor == "search-next" -> json("""{"data":[{"domain":"annem-old.example","status":"default"}]}""")
+        search == "annem" -> json("""{"data":[{"domain":"annem.example","status":"default"}],"meta":{"pagination":{"cursor":"search-next"}}}""")
+        else -> json("""{"data":[{"domain":"other.example","status":"default"}],"meta":{"pagination":{"cursor":"all-next"}}}""")
+      }
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    assertTrue(repository.loadMoreLogsFromApi())
+    assertTrue(repository.setLogsSearchFilter(" annem "))
+    assertTrue(requests.last().contains("search=annem"))
+    assertFalse("Changing search must discard the old cursor", requests.last().contains("cursor="))
+    assertEquals(listOf("annem.example"), repository.logs.value.map { it.domain })
+    assertTrue(repository.loadMoreLogsFromApi())
+    assertTrue(requests.last().contains("search=annem") && requests.last().contains("cursor=search-next"))
+    assertEquals(listOf("annem.example", "annem-old.example"), repository.logs.value.map { it.domain })
+  }
+
+  @Test fun changingSearchFilterRejectsAnOlderInFlightPage() = runBlocking {
+    val entered = gate(); val release = gate()
+    response = { request ->
+      when {
+        request.requestUrl?.queryParameter("cursor") == "stale-search-next" -> {
+          entered.countDown()
+          await(release)
+          json("""{"data":[{"domain":"stale.example","status":"default"}]}""")
+        }
+        request.requestUrl?.queryParameter("search") == "annem" ->
+          json("""{"data":[{"domain":"annem.example","status":"default"}]}""")
+        else ->
+          json("""{"data":[{"domain":"current.example","status":"default"}],"meta":{"pagination":{"cursor":"stale-search-next"}}}""")
+      }
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    val pendingOlderPage = async(Dispatchers.IO) { repository.loadMoreLogsFromApi() }
+    await(entered)
+    assertTrue(repository.setLogsSearchFilter("annem"))
+    release.countDown()
+
+    assertFalse("A page for the previous search must be discarded", pendingOlderPage.await())
+    assertEquals(listOf("annem.example"), repository.logs.value.map { it.domain })
+  }
+
+  @Test fun changingStatusFilterRejectsAnOlderInFlightPage() = runBlocking {
+    val entered = gate(); val release = gate()
+    response = { request ->
+      when {
+        request.requestUrl?.queryParameter("cursor") == "stale-next" -> {
+          entered.countDown()
+          await(release)
+          json("""{"data":[{"domain":"stale.example","status":"default"}]}""")
+        }
+        request.requestUrl?.queryParameter("status") == "blocked" ->
+          json("""{"data":[{"domain":"blocked.example","status":"blocked"}],"meta":{"pagination":{"cursor":null}}}""")
+        else ->
+          json("""{"data":[{"domain":"current.example","status":"default"}],"meta":{"pagination":{"cursor":"stale-next"}}}""")
+      }
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    val pendingOlderPage = async(Dispatchers.IO) { repository.loadMoreLogsFromApi() }
+    await(entered)
+    assertTrue(repository.setLogsStatusFilter("blocked"))
+    release.countDown()
+
+    assertFalse("A page for the previous status must be discarded", pendingOlderPage.await())
+    assertEquals(listOf("blocked.example"), repository.logs.value.map { it.domain })
+  }
+
+  @Test fun fullSyncDoesNotRequestAnAccountEndpointThatIsNotInThePublicApi() = runBlocking {
+    response = { json("""{"data":[]}""") }
+
+    val sectionResults = repository.loadActiveProfileDataFromApi()
+
+    assertFalse("Full sync must not call the undocumented /account route", requests.any { it.contains("/account") })
+    assertEquals("Every sync result must correspond to a supported profile section", SyncSection.values().toSet(), sectionResults.keys)
+    assertFalse("Account connection state is local app state, not an API sync section", sectionResults.keys.any { it.name == "ACCOUNT" })
+  }
+
+  @Test fun changingDeviceFilterRejectsAnOlderInFlightPage() = runBlocking {
+    val entered = gate(); val release = gate()
+    response = { request ->
+      if (request.requestUrl?.queryParameter("cursor") == "cursor-older") {
+        entered.countDown()
+        await(release)
+        json("""{"data":[{"domain":"stale.example","timestamp":"2026-10-19T00:00:00Z","device":{"id":"device-a","name":"Annem"}}]}""")
+      } else if (request.requestUrl?.queryParameter("device") == "device-b") {
+        json("""{"data":[{"domain":"current.example","timestamp":"2026-10-20T00:00:00Z","device":{"id":"device-b","name":"Phone"}}],"meta":{"pagination":{"cursor":"cursor-b"}}}""")
+      } else {
+        json("""{"data":[{"domain":"latest.example","timestamp":"2026-10-20T01:00:00Z","device":{"id":"device-a","name":"Annem"}}],"meta":{"pagination":{"cursor":"cursor-older"}}}""")
+      }
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    val pendingOlderPage = async(Dispatchers.IO) { repository.loadMoreLogsFromApi() }
+    await(entered)
+    assertTrue(repository.setLogsDeviceFilter("device-b"))
+    release.countDown()
+
+    assertFalse("A page for the previous filter must be discarded", pendingOlderPage.await())
+    assertEquals(listOf("current.example"), repository.logs.value.map { it.domain })
+    assertTrue(repository.logs.value.all { it.deviceId == "device-b" })
   }
 
   @Test fun lateCreatedProfileCannotRestorePreferencesAfterLogout() = runBlocking {
@@ -374,6 +592,36 @@ class RepositoryRegressionTest {
     await(released)
     assertTrue(activeCall.get().isCanceled())
     assertFalse(repository.isLiveStreaming.value)
+  }
+
+  @Test fun liveLogStreamRetainsOnlyTheMostRecentThousandEntries() = runBlocking {
+    val streamBodyEnded = CountDownLatch(1)
+    val client = OkHttpClient.Builder()
+      .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().url(server.url("/stream")).build()) }
+      .eventListener(object : EventListener() {
+        override fun responseBodyEnd(call: Call, byteCount: Long) {
+          if (call.request().header("Accept") == "text/event-stream") streamBodyEnded.countDown()
+        }
+      }).build()
+    repository = NextDnsRepository(preferences, apiService = api, diagnosticService = testApi,
+      diagnosticProbe = { null }, streamClient = client, backgroundWorkEnabled = false)
+    val streamBody = buildString {
+      repeat(1_100) { index ->
+        val seconds = (index % 60).toString().padStart(2, '0')
+        append("id: stream-$index\n")
+        append("data: {\"timestamp\":\"2026-10-20T00:00:$seconds.$indexZ\",\"domain\":\"host-$index.example\",\"status\":\"default\"}\n\n")
+      }
+    }
+    response = { request ->
+      if (request.requestUrl!!.encodedPath == "/stream") MockResponse().setBody(streamBody)
+      else json("""{"data":[],"meta":{"stream":{"id":"fixture-stream"}}}""")
+    }
+
+    repository.startLogsStream()
+    assertTrue("SSE response should finish", streamBodyEnded.await(10, TimeUnit.SECONDS))
+    assertEquals(1_000, repository.logs.value.size)
+    assertTrue(repository.logsPaginationState.value.retentionLimitReached)
+    repository.stopLogsStream()
   }
 
   companion object {

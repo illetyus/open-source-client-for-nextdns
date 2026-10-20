@@ -117,13 +117,15 @@ class RepositoryAuditTest : AuditFixture() {
     assertTrue(repository.logs.value.isEmpty())
   }
 
-  @Test fun failedAnalyticsPanelsMustNotBeReportedAsFreshCompleteSuccess() = runBlocking {
+  @Test fun successfulAnalyticsPanelsRemainAvailableWhenOtherPanelsFail() = runBlocking {
     response = { req -> if (req.requestUrl!!.encodedPath.endsWith("/status"))
       json("""{"data":[{"status":"default","queries":100}]}""")
       else json("""{"errors":[{"code":"serverError"}]}""", 500) }
     val success = repository.fetchAnalytics(preferences.apiKey, "aaaaaa")
     assertEquals(14, requests.size)
-    assertFalse("One successful status panel cannot conceal failures in the other 13 panels", success)
+    assertTrue("One successful panel should allow available analytics to be shown", success)
+    assertEquals(100L, repository.analytics.value.totalQueries)
+    assertNotNull(repository.analyticsLastSuccessAt.value)
     assertNotNull(repository.analyticsErrorMessage.value)
   }
 
@@ -201,24 +203,62 @@ class RepositoryAuditTest : AuditFixture() {
     assertEquals("*.example.com", repository.denylist.value.single().domain)
   }
 
-  @Test fun everyFailedAnalyticsPanelPreservesTheLastCompleteSnapshotAndTimestamp() = runBlocking {
+  @Test fun eachFailedAnalyticsPanelIsReportedAsPartialWhileSuccessfulPanelsAdvance() = runBlocking {
     response = { req -> if (req.requestUrl!!.encodedPath.endsWith("/status"))
       json("""{"data":[{"status":"default","queries":123}]}""") else json("""{"data":[]}""") }
     assertTrue(repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
-    val previous = repository.analytics.value
-    val successTime = repository.analyticsLastSuccessAt.value
+    assertEquals(123L, repository.analytics.value.totalQueries)
     for (failedIndex in 0 until 14) {
       var call = 0
       response = { if (call++ == failedIndex) json("{}", 500) else json("""{"data":[]}""") }
-      assertFalse("Failed panel $failedIndex", repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
-      assertEquals(previous, repository.analytics.value)
-      assertEquals(successTime, repository.analyticsLastSuccessAt.value)
+      assertTrue("Available panels should still be committed when panel $failedIndex fails",
+        repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
+      assertNotNull(repository.analyticsLastSuccessAt.value)
       assertNotNull(repository.analyticsErrorMessage.value)
     }
+
+    val previous = repository.analytics.value
+    val successTime = repository.analyticsLastSuccessAt.value
+    response = { json("{}", 500) }
+    assertFalse("A fully failed refresh must not count as success", repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
+    assertEquals(previous, repository.analytics.value)
+    assertEquals(successTime, repository.analyticsLastSuccessAt.value)
+    assertNotNull(repository.analyticsErrorMessage.value)
+
     response = { json("""{"data":[]}""") }
     assertTrue(repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
     assertEquals(0L, repository.analytics.value.totalQueries)
     assertNull(repository.analyticsErrorMessage.value)
+  }
+
+  @Test fun failedCountryPanelRetainsItsLastSuccessfulSnapshot() = runBlocking {
+    response = { request ->
+      when {
+        request.requestUrl?.encodedPath.orEmpty().endsWith("/analytics/status") ->
+          json("""{"data":[{"status":"default","queries":100}]}""")
+        request.requestUrl?.encodedPath.orEmpty().endsWith("/analytics/destinations") ->
+          json("""{"data":[{"code":"US","queries":42,"domains":["dns.example"]}]}""")
+        else -> json("""{"data":[]}""")
+      }
+    }
+    assertTrue(repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
+    val previousCountries = repository.analytics.value.topCountries
+    assertEquals(listOf("US"), previousCountries.map { it.code })
+
+    response = { request ->
+      when {
+        request.requestUrl?.encodedPath.orEmpty().endsWith("/analytics/status") ->
+          json("""{"data":[{"status":"default","queries":200}]}""")
+        request.requestUrl?.encodedPath.orEmpty().endsWith("/analytics/destinations") -> json("{}", 500)
+        request.requestUrl?.encodedPath.orEmpty().contains("/analytics/") -> json("""{"data":[]}""")
+        else -> json("{}", 500)
+      }
+    }
+    assertTrue(repository.fetchAnalytics(preferences.apiKey, "aaaaaa"))
+    assertEquals(200L, repository.analytics.value.totalQueries)
+    assertEquals("A failed country request should retain the last usable map data",
+      previousCountries, repository.analytics.value.topCountries)
+    assertNotNull(repository.analyticsErrorMessage.value)
   }
 
   @Test fun malformedOrSemanticAnalyticsFailureDoesNotLookSuccessful() = runBlocking {

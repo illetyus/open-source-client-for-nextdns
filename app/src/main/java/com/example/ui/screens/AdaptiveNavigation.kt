@@ -44,9 +44,5 @@ val nextDnsNavigationGroups: List<NavigationGroup> = listOf(
   NavigationGroup(
     titleResource = R.string.ui_80ad54ad05,
     tabs = listOf(NavTab.SETTINGS)
-  ),
-  NavigationGroup(
-    titleResource = R.string.ui_1c56ac8f2d,
-    tabs = listOf(NavTab.ACCOUNT)
   )
 )

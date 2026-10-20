@@ -66,65 +66,84 @@ fun LegalWelcomeScreen(
     val readerHeight = (maxHeight * 0.45f).coerceIn(160.dp, 420.dp)
     Column(
       modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).testTag("welcome_page"),
-      verticalArrangement = Arrangement.spacedBy(12.dp)
+      verticalArrangement = Arrangement.spacedBy(12.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      LanguagePicker(Modifier.fillMaxWidth())
-      Text(labels.title, style = MaterialTheme.typography.headlineSmall)
-      Text(labels.explanation, style = MaterialTheme.typography.bodyMedium)
-
-      Text(
-        AppStrings.get(R.string.ui_6e7946fdc3),
-        color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.labelMedium
-      )
-
-      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        OutlinedButton(onClick = { selectedTerms = true }, modifier = Modifier.fillMaxWidth().testTag("welcome_terms")) {
-          Text(labels.terms)
-        }
-        OutlinedButton(onClick = { selectedTerms = false }, modifier = Modifier.fillMaxWidth().testTag("welcome_privacy")) {
-          Text(labels.privacy)
-        }
-      }
-
       Surface(
-        modifier = Modifier.height(readerHeight).fillMaxWidth().testTag("welcome_document_viewport"),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant
+        modifier = Modifier.fillMaxWidth().testTag("welcome_legal_group"),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp
       ) {
-        key(selectedTerms, language) {
-          Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
-          ) {
-            SelectionContainer {
-              Text(
-                if (selectedTerms) terms ?: labels.error else privacy ?: labels.error,
-                modifier = Modifier.testTag("welcome_document_text"),
-                style = MaterialTheme.typography.bodyMedium
-              )
+        Column(
+          modifier = Modifier.fillMaxWidth().padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          LanguagePicker(Modifier.fillMaxWidth())
+          Text(labels.title, style = MaterialTheme.typography.headlineSmall)
+          Text(labels.explanation, style = MaterialTheme.typography.bodyMedium)
+
+          Text(
+            AppStrings.get(R.string.ui_6e7946fdc3),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.labelMedium
+          )
+
+          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+              onClick = { selectedTerms = true },
+              modifier = Modifier.weight(1f).testTag("welcome_terms")
+            ) {
+              Text(labels.terms)
+            }
+            OutlinedButton(
+              onClick = { selectedTerms = false },
+              modifier = Modifier.weight(1f).testTag("welcome_privacy")
+            ) {
+              Text(labels.privacy)
             }
           }
-        }
-      }
 
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(
-          modifier = Modifier.testTag("welcome_accept_checkbox"),
-          checked = checked,
-          onCheckedChange = { checked = it; storageError = false },
-          enabled = terms != null && privacy != null
-        )
-        Text(labels.accept, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-      }
-      if (storageError) {
-        Text(labels.error, color = MaterialTheme.colorScheme.error)
-      }
-      Button(
-        onClick = { if (!onAccept()) storageError = true },
-        enabled = checked && terms != null && privacy != null,
-        modifier = Modifier.fillMaxWidth().testTag("welcome_continue")
-      ) {
-        Text(labels.continueLabel)
+          Surface(
+            modifier = Modifier.height(readerHeight).fillMaxWidth().testTag("welcome_document_viewport"),
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surfaceVariant
+          ) {
+            key(selectedTerms, language) {
+              Column(
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
+              ) {
+                SelectionContainer {
+                  Text(
+                    if (selectedTerms) terms ?: labels.error else privacy ?: labels.error,
+                    modifier = Modifier.testTag("welcome_document_text"),
+                    style = MaterialTheme.typography.bodyMedium
+                  )
+                }
+              }
+            }
+          }
+
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+              modifier = Modifier.testTag("welcome_accept_checkbox"),
+              checked = checked,
+              onCheckedChange = { checked = it; storageError = false },
+              enabled = terms != null && privacy != null
+            )
+            Text(labels.accept, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+          }
+          if (storageError) {
+            Text(labels.error, color = MaterialTheme.colorScheme.error)
+          }
+          Button(
+            onClick = { if (!onAccept()) storageError = true },
+            enabled = checked && terms != null && privacy != null,
+            modifier = Modifier.fillMaxWidth().testTag("welcome_continue")
+          ) {
+            Text(labels.continueLabel)
+          }
+        }
       }
     }
   }
