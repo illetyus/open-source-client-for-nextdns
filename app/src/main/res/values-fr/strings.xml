@@ -635,7 +635,7 @@
     <string name="speed_test_privacy_url">URL de la politique de confidentialité du serveur</string>
     <string name="speed_test_open_privacy">Ouvrir la politique de confidentialité</string>
     <string name="speed_test_authorization">J’exploite ce serveur ou j’ai l’autorisation de l’utiliser pour des tests de débit.</string>
-    <string name="speed_test_metered_consent">J’accepte d’utiliser jusqu’à 10 Mo de données mobiles. Le test d’envoi facultatif utilise 1 Mo supplémentaire.</string>
+    <string name="speed_test_transfer_consent">J’accepte de télécharger jusqu’à 10 Mo pour ce test. Sur les réseaux facturés, cela peut utiliser des données mobiles ; l’envoi facultatif de 1 Mo demande une confirmation séparée.</string>
     <string name="speed_test_data_usage">Le test télécharge jusqu’à 10 Mo et effectue trois requêtes HTTP pour mesurer la latence. L’envoi séparé transmet jusqu’à 1 Mo après confirmation. La latence est le temps aller-retour HTTP, pas ICMP. L’application n’enregistre pas les résultats.</string>
     <string name="speed_test_invalid_server">Saisissez une URL de base valide, sans identifiants, requête ni fragment.</string>
     <string name="speed_test_https_required">Le serveur doit utiliser HTTPS.</string>
