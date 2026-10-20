@@ -3,6 +3,17 @@ Total output lines: 403
 
 # Hata defteri — yayın öncesi kod incelemesi
 
+## 20 Ekim 2026 — PR #27 CI #319 kapanışı ve doğrulama düzeltmeleri
+
+[CI #319](https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39443973201) (`39443973201`) `90ea34ab87c353e07ee097a2321b863d6678a258` commit'inde başarılı tamamlandı. 205 JVM/Compose testi 0 başarısız ve 0 atlanan sonuçla, 12 ekran görüntüsü ve 588 coverage sınıfıyla üretildi. Android Lint; taslak metadata, 61 Retrofit rotası/API matrisi, beş dil ve hukuki DRAFT kapıları; debug ve unsigned release derlemesi; Macrobenchmark hedefi derlemesi; bağımlılık/SDK, NOTICE ve DEX kontrolleri geçti. Snyk High kapısı 0 bulgu verdi. Release payload emülatör paketi 12 testte 0 başarısız/atlanan sonuç verdi; canary logcat'te bulunmadı ve imzalı/unsigned payload girdileri eşleşti. `Snyk Monitor Main` PR koşusunda beklenen şekilde atlandı.
+
+| Kayıt | Öncelik | Bulgu | Düzeltme / doğrulama |
+|---|---|---|---|
+| NDNS-056 | P2 | GitHub CI Java 17 ile çalışırken Robolectric varsayılan SDK 36 seçimi test sürecinde Java 21 gereksinimi nedeniyle duruyordu. | Favicon ağ testine proje/test zinciriyle uyumlu `@Config(sdk = [35])` sabitlendi; CI #319 JVM test kapısı geçti. |
+| NDNS-057 | P2 | Robolectric `ShadowBitmapFactory`, geçersiz görüntü baytları için sentetik bitmap üretebildiğinden yalnız decode sonucuna dayalı bozuk PNG testi güvenilir değildi. | PNG uç noktası için decode öncesi PNG imza baytları doğrulandı; bozuk veri regresyonu CI #319'da geçti. |
+| NDNS-058 | P2 | StrictMode ihlal dinleyicisi ana döngüye ertelenirken test politikayı aynı döngü çağrısı içinde geri yüklediği için dinleyici bildirimi kaybolabiliyordu. | Test, disk/ağ negatif kontrollerinin latch bildirimi gelene kadar politikayı etkin tutuyor ve ardından önceki politikayı geri yüklüyor. CI #319 release-emülatör kapısında 12 testle geçti. |
+
+Macrobenchmark hedefinin CI'da derlenmesi fiziksel cihaz ölçümü anlamına gelmiyor. BrowserStack/gerçek telefon, aynı cihazda taban-aday kıyası, Perfetto/yeniden bileşim incelemesi ve kimlik doğrulamalı günlük/analiz akışları açık. Hız testi için sunucu/koşul seçilmedi. Yaş doğrulama ve erken erişim yazma alanları doğrulanmış API sözleşmesi/yanıtı olmadığından eklenmedi. PR #27 taslak ve birleştirilmemiş durumda.
 ## 20 Ekim 2026 — PR #27 Macrobenchmark CI derleme zinciri
 
 CI #308 (`39420610554`) `:macrobenchmark:assembleBenchmark` görevini bulamadı; test modülüne açık `benchmark` varyantı eklendi. CI #309 (`39422084551`) lint, 196 test, test kanıtı ve debug derlemesini geçti; Macrobenchmark derlemesi `androidx.compose.runtime:runtime-tracing:1.7.0` sürümünü çözemedi. Sürümü BOM'a bırakma denemesi de projenin Compose BOM `2024.09.00` sürümünde bu bağımlılık için yönetilen bir sürüm bulunmadığını gösterdi (`runtime-tracing:`). Katalog, AndroidX'in yayımladığı Compose Runtime Tracing `1.7.0-rc01` sürümüne sabitlendi.
@@ -11,7 +22,7 @@ CI #308 (`39420610554`) `:macrobenchmark:assembleBenchmark` görevini bulamadı;
 |---|---|---|
 | NDNS-053 | Macrobenchmark CI hedefi önce varyant olmadığı için bulunamadı; varyant eklenince de yayımlanmamış `1.7.0` veya BOM'da bulunmayan sürümsüz bağımlılık istendi. | `benchmark` test varyantı eklendi; `runtime-tracing` `1.7.0-rc01` olarak sabitlendi. CI #310 (`39423174547`, commit `e442a8c`) geçti: lint, 196 JVM/Compose testi (0 başarısız/atlanan), 12 ekran görüntüsü, 585 coverage sınıfı, tüm 20 kusur regresyonu ve 67 zorunlu vaka, debug ve unsigned release, Macrobenchmark APK derlemesi, SDK/NOTICE/DEX kanıtı, Snyk High kapısı (0 bulgu) ve imzalı release payload emülatör güvenlik testi. `Snyk Monitor Main` yalnız PR koşusu olduğu için atlandı. |
 
-CI yalnızca benchmark hedefinin derlenmesini doğruladı; Macrobenchmark fiziksel cihazda çalıştırılmadı ve süre/akış ölçümü üretmedi. Aynı cihazda `main`/aday performans kıyası, authenticated ana ekran-günlük-analiz senaryoları ve StrictMode denetimi açık kalıyor. PR #27 taslak ve birleştirilmemiş durumda.
+CI #319 Macrobenchmark hedefinin derlendiğini ve release-emülatör StrictMode denetiminin geçtiğini doğruladı; Macrobenchmark fiziksel cihazda çalıştırılmadı ve süre/akış ölçümü üretmedi. Aynı cihazda `main`/aday performans kıyası ile authenticated ana ekran-günlük-analiz senaryoları açık kalıyor. PR #27 taslak ve birleştirilmemiş durumda.
 
 ## 20 Ekim 2026 — API kenar durumları ve liste simgeleri
 
