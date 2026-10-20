@@ -2,7 +2,6 @@ package com.example.ui.screens
 
 import android.content.Context
 import android.content.Intent
-import android.net.ConnectivityManager
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -62,8 +62,7 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
   var privacyUrl by remember(saved?.privacyPolicyUrl) { mutableStateOf(saved?.privacyPolicyUrl.orEmpty()) }
   var backendPath by remember(saved?.backendPath) { mutableStateOf(saved?.backendPath ?: "backend") }
   var authorizationConfirmed by remember { mutableStateOf(false) }
-  val isMetered = remember(context) { context.isActiveNetworkMetered() }
-  var meteredConfirmed by remember { mutableStateOf(!isMetered) }
+  var meteredConfirmed by remember { mutableStateOf(false) }
   var running by remember { mutableStateOf(false) }
   var progress by remember { mutableStateOf(0f) }
   var pingText by remember { mutableStateOf<String?>(null) }
@@ -93,7 +92,7 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
     properties = DialogProperties(usePlatformDefaultWidth = false)
   ) {
     Surface(
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).heightIn(max = 760.dp),
+      modifier = Modifier.fillMaxWidth().widthIn(max = 600.dp).padding(horizontal = 20.dp).heightIn(max = 760.dp),
       shape = MaterialTheme.shapes.large,
       color = MaterialTheme.colorScheme.surface
     ) {
@@ -145,14 +144,12 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
           text = AppStrings.get(R.string.speed_test_authorization),
           modifier = Modifier.testTag("speed_test_authorization")
         )
-        if (isMetered) {
-          ConsentRow(
-            checked = meteredConfirmed,
-            onCheckedChange = { meteredConfirmed = it },
-            text = AppStrings.get(R.string.speed_test_metered_consent),
-            modifier = Modifier.testTag("speed_test_metered_consent")
-          )
-        }
+        ConsentRow(
+          checked = meteredConfirmed,
+          onCheckedChange = { meteredConfirmed = it },
+          text = AppStrings.get(R.string.speed_test_transfer_consent),
+          modifier = Modifier.testTag("speed_test_transfer_consent")
+        )
 
         Text(
           AppStrings.get(R.string.speed_test_data_usage),
@@ -194,7 +191,8 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
               downloadResult = null
               uploadResult = null
             },
-            enabled = !running && (serverUrl.isNotBlank() || privacyUrl.isNotBlank())
+            enabled = !running && (serverUrl.isNotBlank() || privacyUrl.isNotBlank()),
+            modifier = Modifier.weight(1f)
           ) {
             Text(AppStrings.get(R.string.speed_test_clear_server))
           }
@@ -211,7 +209,8 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
                 error = null
               } ?: run { error = validation.error ?: SpeedTestConfigError.INVALID_SERVER_URL }
             },
-            enabled = !running && validation.server != null
+            enabled = !running && validation.server != null,
+            modifier = Modifier.weight(1f)
           ) {
             Text(AppStrings.get(R.string.speed_test_save_server))
           }
@@ -220,6 +219,7 @@ internal fun SpeedTestDialog(onDismiss: () -> Unit) {
           Button(
             onClick = {
               val configured = validation.server ?: return@Button
+              if (!meteredConfirmed) return@Button
               store.save(
                 SavedSpeedTestServer(
                   configured.baseUrl.toString(),
@@ -335,9 +335,6 @@ private fun ConsentRow(
     Text(text, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
   }
 }
-
-private fun Context.isActiveNetworkMetered(): Boolean =
-  (getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager)?.isActiveNetworkMetered == true
 
 private fun Context.openExternalUrl(url: String) {
   runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
