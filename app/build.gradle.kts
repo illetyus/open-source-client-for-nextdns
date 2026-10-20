@@ -54,6 +54,12 @@ android {
       // Release packaging is tested unsigned when CI has no signing secrets.
       if (signingRequested) signingConfig = signingConfigs.getByName("release")
     }
+    create("benchmark") {
+      initWith(getByName("release"))
+      signingConfig = signingConfigs.getByName("debug")
+      isDebuggable = false
+      matchingFallbacks += listOf("release")
+    }
     debug {
       enableUnitTestCoverage = true
       // Use Android Gradle Plugin's standard auto-generated debug keystore.
@@ -135,6 +141,7 @@ dependencies {
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.androidx.navigation.compose)
+  implementation(libs.androidx.profileinstaller)
   implementation(libs.androidx.work.runtime.ktx)
   implementation(libs.converter.moshi)
   implementation(libs.kotlinx.coroutines.android)
@@ -162,5 +169,6 @@ dependencies {
   androidTestImplementation("com.squareup.okhttp3:okhttp-tls:4.10.0")
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
+  add("benchmarkImplementation", libs.androidx.compose.runtime.tracing)
   "ksp"(libs.moshi.kotlin.codegen)
 }

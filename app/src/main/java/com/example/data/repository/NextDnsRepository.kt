@@ -565,6 +565,8 @@ class NextDnsRepository(
           TldCatalogLoadState.AVAILABLE
         }
       }
+    } catch (cancel: CancellationException) {
+      throw cancel
     } catch (e: Exception) {
       _tldCatalogLoadState.value = TldCatalogLoadState.UNAVAILABLE
       if (BuildConfig.DEBUG) Log.e(TAG, "Error loading live catalogs: ${e.message}", e)

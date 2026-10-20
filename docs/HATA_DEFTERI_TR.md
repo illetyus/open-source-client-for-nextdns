@@ -2,7 +2,7 @@
 
 ## 20 Ekim 2026 — API kenar durumları ve liste simgeleri
 
-Canlı `main` tabanı `c7db8d9d04d2022741ccc1564877940f45fe485a` üzerinde açılan [PR #27](https://github.com/illetyus/open-source-client-for-nextdns/pull/27) için kullanıcı onaylı API/performans planı kapsamında ek arayüz boşlukları kaydedildi. CI #303 lint ve metadata kapılarını geçti; 194 testten yalnızca TLD dialog Compose testi beklenen “yüklenemedi” durumunu ararken başlangıç “yükleniyor” durumunu doğrulamadığı için başarısız oldu. Yeni durum modeli ve regresyon düzeltmesi dalda hazır; yeni CI bekleniyor.
+Canlı `main` tabanı `c7db8d9d04d2022741ccc1564877940f45fe485a` üzerinde açılan [PR #27](https://github.com/illetyus/open-source-client-for-nextdns/pull/27) için kullanıcı onaylı API/performans planı kapsamında ek arayüz boşlukları kaydedildi. CI #303'te yalnızca TLD dialog Compose regresyonu, #304'te ise XML kaynak derleme kapısı başarısız oldu. Her iki bulgu düzeltildi; Macrobenchmark iskeleti de eklendi ve yeni CI bekleniyor.
 
 | Kayıt | Öncelik | Bulgu | Düzeltme / durum |
 |---|---|---|---|
@@ -10,8 +10,9 @@ Canlı `main` tabanı `c7db8d9d04d2022741ccc1564877940f45fe485a` üzerinde açı
 | NDNS-049 | P2 | `test.nextdns.io` yanıtı bölge/şehir alanı sağlamadığı halde tanı ekranı bu bilginin yokluğunu açıkça belirtmiyordu. | Dönen sunucu/çözümleyici/Anycast değerleri korunuyor; bölge bilgisinin tanı yanıtında bulunmadığı beş dilde gösteriliyor. CI bekliyor. |
 | NDNS-050 | P3 | İzin/engel listesi favicon'ları 16 dp idi; kullanıcının belirttiği görsel hiyerarşide fazla büyük kalıyordu. | Görsel 12 dp'ye indirildi; satır ve etkileşim alanlarının ölçüsü değiştirilmedi. CI bekliyor. |
 | NDNS-051 | P2 | TLD dialog regresyonu Compose saatini etkileşim öncesi dondurdu ve başlangıçtaki yükleme UI'ını “yüklenemedi” ile karıştırdı; CI #303'te tek başarısız test olarak görüldü. | Dialog açıldıktan sonra test saati bir kare ilerletiliyor; test başlangıçta yükleniyor durumunu ve tahmini TLD'lerin bulunmadığını doğruluyor. Yükleme, boş katalog ve hata için ayrı durum modeli eklendi; yeni CI bekleniyor. |
+| NDNS-052 | P2 | CI #304, Türkçe `security_tld_catalog_loading` kaynağındaki ASCII kesme işaretini AAPT'nin kaçışsız metin olarak kabul etmemesi nedeniyle kaynak birleştirme aşamasında durdu. | Kesme işareti Android kaynak sözdizimine uygun biçimde kaçırıldı. Yeni CI bekleniyor. |
 
-İlk test-only commit PR'da üç regresyon beklentisini tanımladı: 12 dp ikon, sunucu kataloğu olmadan tahmini TLD göstermeme ve tanı bölgesini kullanılamaz gösterme. CI #303'te tek Compose testi başarısız oldu; beklenen durum hatası ile yükleme durumunun aynı kabul edildiği ortaya çıktı. Katalog durumu şimdi yükleniyor/boş/erişilemiyor/var olarak ayrıldı ve test saati tıklama sonrası ilerletiliyor. Yeni commit için kabul kanıtı PR CI olacaktır. `test.nextdns.io` gerçek bölge alanı sunmadığından herhangi bir şehir/IP/Anycast eşlemesi yapılmadı.
+İlk test-only commit PR'da üç regresyon beklentisini tanımladı: 12 dp ikon, sunucu kataloğu olmadan tahmini TLD göstermeme ve tanı bölgesini kullanılamaz gösterme. CI #303'te tek Compose testi başarısız oldu; beklenen durum hatası ile yükleme durumunun aynı kabul edildiği ortaya çıktı. Katalog durumu şimdi yükleniyor/boş/erişilemiyor/var olarak ayrıldı ve test saati tıklama sonrası ilerletiliyor. CI #304 ayrıca Türkçe kaynak kaçış sorununu gösterdi; kaynak düzeltildi. Yeni commit için kabul kanıtı PR CI olacaktır. `test.nextdns.io` gerçek bölge alanı sunmadığından herhangi bir şehir/IP/Anycast eşlemesi yapılmadı.
 
 **Kalan doğrulama:** Düzeltme dalında PR CI, BrowserStack/gerçek cihaz ve performans ölçümü henüz tamamlanmadı. Hız testi sunucusu ve koşulları kullanıcı seçimi beklediğinden aktarım motoru eklenmedi. Yaş doğrulama ve erken erişim alanları yayımlanmış API sözleşmesi veya sanitize edilmiş yanıtla doğrulanmadığı için yazma/anahtar tahmini eklenmedi.
 

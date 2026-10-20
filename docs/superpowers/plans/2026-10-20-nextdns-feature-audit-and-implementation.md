@@ -35,7 +35,7 @@
 | Req. | Priority | Primary code paths | Verification path | Starting status |
 |---|---|---|---|---|
 | 1. Age-verification option | P1 research gate | `app/src/main/java/com/example/data/api/NextDnsApiService.kt`, `app/src/main/java/com/example/ui/screens/SecurityScreen.kt` | `app/src/test/java/com/example/data/api/NextDnsApiContractTest.kt`; official schema and sanitized response evidence | No exact field or read/write contract in published schema; no speculative UI |
-| 2. Compose/UI performance | P1 | `app/build.gradle.kts`, `settings.gradle.kts`, new `benchmark/` module, `.github/workflows/ci.yml` | AndroidX Macrobenchmark, Compose trace, StrictMode instrumentation; same-device before/after report under `docs/performance/` | No benchmark module or physical-device baseline |
+| 2. Compose/UI performance | P1 | `app/build.gradle.kts`, `settings.gradle.kts`, `macrobenchmark/`, `.github/workflows/ci.yml` | AndroidX Macrobenchmark, Compose trace, StrictMode instrumentation; same-device before/after report under `docs/performance/` | Harness is in PR; no physical-device baseline |
 | 3. DNS server/location | P1 | `NextDnsApiService.kt`, `app/src/main/java/com/example/data/model/NextDnsModels.kt`, `app/src/main/java/com/example/data/repository/NextDnsRepository.kt`, `app/src/main/java/com/example/ui/screens/AccountScreen.kt`, localized `strings.xml` | `app/src/test/java/com/example/data/api/NextDnsApiContractTest.kt`, repository and diagnostic Compose tests | `server`, `resolver`, `anycast` DTO fields exist; UI mapping/fallback must be checked |
 | 4. Open-source speed test | P1 privacy/security gate | new `app/src/main/java/com/example/data/diagnostics/SpeedTestEngine.kt`, `app/src/main/java/com/example/ui/screens/SpeedTestScreen.kt`, `app/src/main/res/values*/strings.xml`, `app/src/main/assets/licenses/`, `app/build.gradle.kts` | new deterministic speed-test engine and screen tests; HTTPS endpoint and license/NOTICE audit | No engine or disclosed destination; candidates have different licensing/server requirements |
 | 5. Device-name fallback | P2 | `NextDnsModels.kt`, `NextDnsRepository.kt`, `AnalyticsScreen.kt`, `LogsScreen.kt` | new device-label unit tests and `UiAuditTest.kt` | Placeholder-name risk; API IDs must remain separate from display labels |
@@ -76,12 +76,13 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - At the verified live-main base, logs already use documented status/device/search parameters, cursor pagination, stale-response rejection and raw-reason fallback; date/sort controls remain a documented UI gap.
 - At the verified live-main base, the interactive country map and six-segment GAFAM chart already exist. They will be validated through PR CI rather than reimplemented.
 - `FaviconImage` uses HTTPS `favicons.nextdns.io`, bounded network reads, and a generic fallback. The route is not in the published API reference and the cache is process-memory only.
-- No speed-test or Macrobenchmark module is present. The local ADB server currently fails to start, so a live-device measurement is not yet available.
+- No speed-test endpoint has been accepted. The PR adds a profileable, release-like Macrobenchmark target with cold-start and initial-screen frame metrics plus benchmark-only Compose composition tracing. No physical-device baseline is available; authenticated home/logs/analytics journeys still need a reproducible profile fixture.
 
 ### Execution update — 20 October 2026
 
 - PR #27 red-phase runs `39410235278`, `39411101417`, and `39411876774` passed lint, metadata, localization, and legal-draft checks. Their targeted assertions failed on the missing diagnostic region row and 16 dp list icons; the TLD test first exposed Compose/Espresso cursor-animation timing. Run `39412587641` then failed all three targeted assertions for the expected old behavior, including the missing unavailable-catalog label, across 194 tests.
-- CI `39414065197` (`ff533ecef89e0105cb6f3eccd61c34688846b05b`) passed Android Lint, metadata, five-language and legal-draft gates; 193 of 194 tests passed. The only failure was the TLD dialog regression assertion. The UI test had frozen Compose time before triggering the dialog, and the UI treated the initial empty list as unavailable. The implementation now distinguishes loading, available, empty, and unavailable; the test advances one frame after the click and verifies the loading state and absence of guessed TLDs. These changes are awaiting a new CI run.
+- CI `39414065197` passed Android Lint, metadata, five-language and legal-draft gates; 193 of 194 tests passed. The only failure was the TLD dialog assertion. The UI test had frozen Compose time before triggering the dialog, and the UI treated the initial empty list as unavailable. CI `39415807258` then stopped at XML resource merge because the new Turkish loading string did not escape its ASCII apostrophe. Both corrections are in the current working tree; CI must validate them.
+- The performance harness uses the official AndroidX `com.android.test` Macrobenchmark setup, `StartupTimingMetric`, `FrameTimingMetric`, release-like non-debuggable/profileable app variant, the already bundled ProfileInstaller 1.4.0, and benchmark-only Compose tracing. AndroidX documents that Macrobenchmark is intended for Compose UI measurement and reports startup and frame percentiles; emulator results are not representative of phone performance ([Macrobenchmark setup](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview), [metric definitions](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)).
 - Local Gradle tests could not start because the configured wrapper-cache lock returned access denied. No local build, lint, unit test or APK result is claimed; GitHub CI remains the executable validation path.
 - BrowserStack credentials are not configured in the current process or Windows user/machine environment, and no device is attached. Physical-device performance values, recomposition traces and BrowserStack results therefore remain unverified.
 - The speed-test service choice is still awaiting the user. No public M-Lab endpoint or associated AUP/privacy obligations will be accepted by default; a configurable owned LibreSpeed endpoint remains the recommended direction.
@@ -119,7 +120,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 2. Performance and UI-fluidity measurements
 
-**Current status:** The world-map asset read was moved off the main thread and loading/error UI was added. StrictMode auditing, Macrobenchmark instrumentation, Perfetto traces, recomposition measurements, and same-device baseline/candidate results remain incomplete.
+**Current status:** The world-map asset read was moved off the main thread and loading/error UI was added. A release-like Macrobenchmark module now measures cold startup and initial-screen frame timing and enables Compose tracing. StrictMode auditing, authenticated home/logs/analytics journeys, collected Perfetto traces, recomposition analysis, and same-device baseline/candidate results remain incomplete.
 
 **Root Cause Analysis:** The repository has no repeatable performance baseline for Compose recompositions, UI frame timing/jank, startup, or main-thread I/O. Source inspection and passing UI tests do not quantify these properties.
 
@@ -127,8 +128,8 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 **Implementation Steps:**
 - [ ] Add a test-only StrictMode audit for disk/network work on the main thread and document known false positives.
-- [ ] Add AndroidX Macrobenchmark cases using `StartupTimingMetric` and `FrameTimingMetric`; collect release-like builds and Perfetto traces.
-- [ ] Enable Compose runtime tracing only in the profiling configuration and record recomposition/layout observations for the same named scenarios.
+- [x] Add an AndroidX Macrobenchmark cold-start and initial-screen scroll case using `StartupTimingMetric` and `FrameTimingMetric`, with a release-like non-debuggable/profileable app variant.
+- [x] Enable Compose runtime tracing only in the benchmark variant and configure Macrobenchmark full tracing; authenticated home/logs/analytics journeys and recorded trace analysis remain pending.
 - [ ] Capture baseline from the current `main` commit and candidate from the feature branch on the same device/runtime; store raw benchmark output and a concise comparison report.
 - [ ] If local device access remains unavailable, run supported CI/BrowserStack checks and mark any emulator/cloud timing as non-equivalent to a physical-device baseline.
 

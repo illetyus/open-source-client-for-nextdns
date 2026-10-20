@@ -552,7 +552,7 @@
     <string name="diagnostic_server_information_unavailable">Sunucu ve çözümleyici bilgisi alınamıyor.</string>
     <string name="diagnostic_region_unavailable">Bu tanı yanıtı bölge bilgisini içermiyor.</string>
     <string name="security_tld_catalog_unavailable">Kullanılabilir TLD listesi yüklenemedi. Daha sonra tekrar deneyin.</string>
-    <string name="security_tld_catalog_loading">Kullanılabilir TLD'ler yükleniyor…</string>
+    <string name="security_tld_catalog_loading">Kullanılabilir TLD\'ler yükleniyor…</string>
     <string name="security_tld_catalog_empty">Sunucu kataloğunda kullanılabilir TLD yok.</string>
     <string name="diagnostic_anycast_enabled">Anycast: açık</string>
     <string name="diagnostic_anycast_disabled">Anycast: kapalı</string>

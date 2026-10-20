@@ -87,6 +87,10 @@ jobs:
         run: ./gradlew :app:assembleDebug --no-daemon
         shell: bash
 
+      - name: Compile release-like Macrobenchmark harness
+        run: ./gradlew :app:assembleBenchmark :macrobenchmark:assembleBenchmark --no-daemon
+        shell: bash
+
       - name: Upload UI branding screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
