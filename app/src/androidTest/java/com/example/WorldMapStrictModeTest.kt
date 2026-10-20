@@ -43,22 +43,24 @@ class WorldMapStrictModeTest {
     val networkReported = CountDownLatch(1)
     val previousPolicy = AtomicReference<StrictMode.ThreadPolicy>()
 
-    instrumentation.runOnMainSync {
-      previousPolicy.set(StrictMode.getThreadPolicy())
-      StrictMode.setThreadPolicy(policy(violations, diskReadReported, networkReported))
-      try {
+    try {
+      instrumentation.runOnMainSync {
+        previousPolicy.set(StrictMode.getThreadPolicy())
+        StrictMode.setThreadPolicy(policy(violations, diskReadReported, networkReported))
         probeFile.inputStream().use { it.read() }
         runCatching { Socket().use { it.connect(InetSocketAddress("127.0.0.1", 1), 250) } }
-      } finally {
+      }
+
+      assertTrue("StrictMode disk-read callback was not delivered", diskReadReported.await(2, TimeUnit.SECONDS))
+      assertTrue("StrictMode network callback was not delivered", networkReported.await(2, TimeUnit.SECONDS))
+      assertTrue("The policy must detect disk reads: $violations", violations.any { it.contains("DiskRead") })
+      assertTrue("The policy must detect network work: $violations", violations.any { it.contains("Network") })
+    } finally {
+      instrumentation.runOnMainSync {
         StrictMode.setThreadPolicy(previousPolicy.get())
       }
+      probeFile.delete()
     }
-
-    assertTrue("StrictMode disk-read callback was not delivered", diskReadReported.await(2, TimeUnit.SECONDS))
-    assertTrue("StrictMode network callback was not delivered", networkReported.await(2, TimeUnit.SECONDS))
-    assertTrue("The policy must detect disk reads: $violations", violations.any { it.contains("DiskRead") })
-    assertTrue("The policy must detect network work: $violations", violations.any { it.contains("Network") })
-    assertTrue(probeFile.delete() || !probeFile.exists())
   }
 
   @Test fun bundledWorldMapLoadsWithoutMainThreadDiskOrNetworkViolations() = runBlocking {
