@@ -636,7 +636,7 @@
     <string name="speed_test_privacy_url">Server privacy policy URL</string>
     <string name="speed_test_open_privacy">Open privacy policy</string>
     <string name="speed_test_authorization">I operate this server or have permission to use it for speed tests.</string>
-    <string name="speed_test_metered_consent">I agree to use up to 10 MB of mobile data for this test. The optional upload test uses another 1 MB.</string>
+    <string name="speed_test_transfer_consent">I agree to download up to 10 MB for this test. On metered networks this may use mobile data; the optional 1 MB upload needs separate confirmation.</string>
     <string name="speed_test_data_usage">The test downloads up to 10 MB to measure speed and makes three HTTP requests for latency. Upload sends up to 1 MB after separate confirmation. Latency is HTTP round-trip time, not ICMP. The app does not save results.</string>
     <string name="speed_test_invalid_server">Enter a valid server base URL without credentials, query, or fragment.</string>
     <string name="speed_test_https_required">The server must use HTTPS.</string>
