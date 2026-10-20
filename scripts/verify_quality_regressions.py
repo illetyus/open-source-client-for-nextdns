@@ -1,4 +1,4 @@
-"""Require executed regression cases for NDNS-001..019 and NDNS-047; emit JVM evidence."""
+"""Require executed regression cases for tracked API/UI defects and favicon handling; emit JVM evidence."""
 from pathlib import Path
 import hashlib
 import json
@@ -16,6 +16,7 @@ AUDIT_REPOSITORY = "com.example.audit.RepositoryAuditTest"
 AUDIT_UI = "com.example.audit.UiAuditTest"
 IDENTITY = "com.example.audit.InputAndIdentityTest"
 ACCOUNT = "com.example.audit.AccountSettingsFlowTest"
+FAVICON = "com.example.ui.screens.NextDnsFaviconNetworkTest"
 
 REQUIRED = {
     "NDNS-001": [(REPOSITORY, name) for name in (
@@ -83,7 +84,15 @@ REQUIRED = {
         [(IDENTITY, name) for name in (
             "internationalDomainsAndWildcardRulesNormalizeToAscii",
             "invalidLabelsUrlsIpsAndOversizedRulesAreRejected")],
-    "NDNS-047": [(ACCOUNT, "fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels")],
+"NDNS-047": [(ACCOUNT, "fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels")],
+"NDNS-054": [(FAVICON, name) for name in (
+    "validImageLoadsAndIsCachedInMemory",
+    "redirectIsRejectedWithoutRequestingItsTarget",
+    "nonImageMimeTypeIsRejected",
+    "oversizedChunkedBodyIsRejectedEvenWithoutContentLength",
+    "malformedImageBytesAreRejected",
+    "wholeCallTimeoutReturnsFallbackResult",
+    "cancellingLoadCancelsTheUnderlyingOkHttpCall")],
 }
 
 
@@ -170,3 +179,4 @@ def verify(root=ROOT):
 
 if __name__ == "__main__":
     verify()
+

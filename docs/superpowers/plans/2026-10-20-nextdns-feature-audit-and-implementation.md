@@ -91,6 +91,8 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ---
 
+**Current patch:** Extends PR #27 with OkHttp cancellation coverage, a release-emulator StrictMode audit, and a CI check that keeps the 61-route inventory aligned with Retrofit. Local Gradle execution is blocked by a loopback-connection error; the updated PR CI is the required code-verification gate.
+
 ## Numbered work items
 
 ### 1. Age-verification bypass: verify API existence and gate implementation
@@ -121,20 +123,20 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 2. Performance and UI-fluidity measurements
 
-**Current status:** The world-map asset read was moved off the main thread and loading/error UI was added. A release-like Macrobenchmark module now measures cold startup and initial-screen frame timing and enables Compose tracing. StrictMode auditing, authenticated home/logs/analytics journeys, collected Perfetto traces, recomposition analysis, and same-device baseline/candidate results remain incomplete.
+**Current status:** The world-map asset read is dispatched to `Dispatchers.IO`; a release-only StrictMode audit now checks that this path causes no main-thread disk/network violations and first proves that the policy detects deliberate violations. A release-like Macrobenchmark target compiles and measures cold startup/initial-screen frames with Compose tracing. The new StrictMode source/test changes await PR CI. Authenticated home/logs/analytics benchmark journeys, collected Perfetto traces, recomposition analysis, and same-device baseline/candidate results remain incomplete: the local ADB server would not start, and this shell exposes no BrowserStack credentials.
 
 **Root Cause Analysis:** The repository has no repeatable performance baseline for Compose recompositions, UI frame timing/jank, startup, or main-thread I/O. Source inspection and passing UI tests do not quantify these properties.
 
 **Scope of Change:** Add a reproducible measurement harness and report before/after values for startup and representative home, logs, and analytics interactions on a named API/device configuration.
 
 **Implementation Steps:**
-- [ ] Add a test-only StrictMode audit for disk/network work on the main thread and document known false positives.
+- [x] Add a test-only StrictMode audit for disk/network work on the main thread; verify deliberate disk/network probes are detected and the production map asset load is clean.
 - [x] Add an AndroidX Macrobenchmark cold-start and initial-screen scroll case using `StartupTimingMetric` and `FrameTimingMetric`, with a release-like non-debuggable/profileable app variant.
 - [x] Enable Compose runtime tracing only in the benchmark variant and configure Macrobenchmark full tracing; authenticated home/logs/analytics journeys and recorded trace analysis remain pending.
 - [ ] Capture baseline from the current `main` commit and candidate from the feature branch on the same device/runtime; store raw benchmark output and a concise comparison report.
 - [ ] If local device access remains unavailable, run supported CI/BrowserStack checks and mark any emulator/cloud timing as non-equivalent to a physical-device baseline.
 
-**Testing Strategy:** Benchmark configuration smoke test; Macrobenchmark startup and scroll/navigation scenarios; StrictMode test fails on intentional main-thread network/disk fixtures; repeat runs to report median and percentile rather than a single result.
+**Testing Strategy:** Benchmark configuration smoke test; Macrobenchmark startup and scroll/navigation scenarios; release-emulator StrictMode probe plus world-map asset check; repeat device runs to report median and percentile rather than a single result.
 
 **Acceptance Criteria:** A versioned report identifies commit, device, Android version, build type, iterations, startup and frame timing/jank values, trace locations, main-thread I/O outcome, and recomposition inspection method. No unsupported “smoothness” claim is made.
 
@@ -148,7 +150,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 3. DNS resolver/server identity and location wording
 
-**Current status:** Implemented in source and covered by Compose tests: the screen shows only the returned server/resolver/Anycast values, identifies `test.nextdns.io` and the local check time, and uses an explicit unavailable label. CI/runtime verification remains pending.
+**Current status:** Implemented in source and covered by Compose tests: the screen shows only the returned server/resolver/Anycast values, identifies `test.nextdns.io` and the local check time, and uses an explicit unavailable label. The previous full PR CI passed; the current patch adds no location inference or protocol changes.
 
 **Root Cause Analysis:** The diagnostic response can provide server/resolver identifiers and an Anycast flag, but these values do not by themselves prove a city or country.
 
@@ -199,7 +201,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 5. Device analysis name fallback
 
-**Current status:** Implemented in repository, analytics, and logs source with API-ID filtering; unit and Compose regressions are present. CI verification remains pending.
+**Current status:** Implemented in repository, analytics, and logs source with API-ID filtering; unit and Compose regressions passed in the previous full PR CI.
 
 **Root Cause Analysis:** API analytics can omit device name/model or return placeholder text; rendering a nullable field directly can produce “undefined” or an empty label.
 
@@ -224,7 +226,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 6. DNS logs: status categories, reasons, and history
 
-**Current status:** API status/device/search filtering, cursor resets, stale-page rejection, exact unknown-reason fallback, and pagination/stream integration are implemented with repository/UI regressions. Date and sort controls remain absent from the screen; existing retention limits are documented. Tests have not been executed in this environment.
+**Current status:** API status/device/search filtering, cursor resets, stale-page rejection, exact unknown-reason fallback, and pagination/stream integration are implemented with repository/UI regressions; the previous full PR CI passed. Date and sort controls remain absent from the screen; existing retention limits are documented.
 
 **Root Cause Analysis:** The API supports `status`, `device`, date, search, `raw`, `limit`, and `cursor`; first-page-only behavior or client-only filtering can hide historical/device-specific records and misstate why an event was blocked.
 
@@ -276,7 +278,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 8. GAFAM analytics chart correctness and accessibility
 
-**Current status:** Six-segment count-based model, accessibility description, API slug normalization, and light/dark colors are implemented with unit and Compose regressions. CI verification remains pending.
+**Current status:** Six-segment count-based model, accessibility description, API slug normalization, and light/dark colors are implemented with unit and Compose regressions; the previous full PR CI passed.
 
 **Root Cause Analysis:** The current legend includes Google, Facebook, Microsoft, Apple, Amazon, and Other, but the donut renderer draws only the first three companies plus Other. Apple and Amazon query counts are excluded from the plotted arcs, so visual segments and labels disagree.
 
@@ -302,7 +304,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 9. Comprehensive API capability inventory
 
-**Current status:** `docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md` maps published endpoints to this client, distinguishes local/diagnostic/undocumented data, and records the API beta caveat. Repository invariants already have regression tests. Scripted consistency execution and Gradle verification remain pending.
+**Current status:** `docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md` maps published endpoints to this client, distinguishes local/diagnostic/undocumented data, and records the API beta caveat. A checked inventory now lists all 61 Retrofit routes; `scripts/verify_api_capability_matrix.py` passes locally and is added to CI. Previous PR CI passed repository invariant tests; the new CI step awaits the next run.
 
 **Root Cause Analysis:** Existing API calls are distributed across Retrofit declarations, repository methods, and screens; there is no single audited mapping of supported/read-only/writable/missing/unsupported options.
 
@@ -313,6 +315,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - [x] Cross-map each field to `NextDnsApiService`, DTOs, repository reads/writes, UI, and tests.
 - [x] Classify each row `SUPPORTED_READ_WRITE`, `SUPPORTED_READ_ONLY`, `PARTIAL`, `MISSING`, or `UNVERIFIED`; include evidence link and limitations.
 - [x] Add and retain repository/UI regression tests for critical endpoint/request invariants, including absence of `/account` and no mutation of app-local preferences.
+- [x] Add a CI inventory check that requires the matrix's explicit method/path list to equal the Retrofit annotations.
 
 **Testing Strategy:** Scripted inventory consistency check against Retrofit annotations and selected API contract tests; manual review of every row against the official documentation.
 
@@ -328,7 +331,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 10. NextDNS favicon quality, cache, and provenance
 
-**Current status:** Synthetic HTTPS GET confirmed 200 `image/png` for github.com/google.com and 404 for example.com on 20 October 2026. The observed route remains best-effort; redirect/MIME/size/timeout behavior is bounded in code, including a shared eight-second deadline. DNS log rows use local icons so browsing-history domains are not sent to the favicon host. Full network-path tests and a provider guarantee are unavailable. Memory-only cache and local fallback are retained.
+**Current status:** Synthetic HTTPS GET confirmed 200 `image/png` for github.com/google.com and 404 for example.com on 20 October 2026. The route remains best-effort. The current patch adds bounded network-path tests for redirect, MIME, chunked size, timeout, malformed image, cache, and coroutine cancellation; it also connects cancellation to the underlying OkHttp call. DNS log rows use local icons so browsing-history domains are not sent to the favicon host. New tests await PR CI; no provider guarantee is claimed. Memory-only cache and local fallback are retained.
 
 **Root Cause Analysis:** Current code uses a high-resolution route on `favicons.nextdns.io`, but the route is absent from the published API contract and the cache is memory-only; provider response quality and reuse terms are not guaranteed.
 
@@ -337,7 +340,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 **Implementation Steps:**
 - [x] Verify live HTTPS response behavior for representative synthetic hostnames and document that the route is unofficial/unsupported by the public API specification.
 - [x] Review NextDNS Help Center guidance and repository/community usage evidence; do not treat third-party code as an API guarantee.
-- [ ] Test redirects, MIME mismatch, oversized bodies, timeouts, malformed images, IDN inputs, local/private hostnames, and cancellation.
+- [x] Add network-path tests for redirects, MIME mismatch, oversized chunked bodies, timeouts, malformed images, valid/cache behavior, and cancellation; retain URL unit tests for IDN and local/private hostnames. Run them in PR CI before closing this item.
 - [x] Evaluate disk caching against user data deletion, expiry, size cap, and privacy documentation before implementation; retain memory-only cache and local fallback.
 - [x] Record source/provenance and attribution requirements for locally bundled visual assets.
 - [x] Keep browsing-history domains off the remote favicon request path; use a local icon in DNS log rows and state this boundary in the DRAFT privacy notice.

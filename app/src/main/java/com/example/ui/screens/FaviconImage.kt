@@ -15,12 +15,17 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.net.IDN
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -74,16 +79,21 @@ internal object NextDnsFaviconHttp {
     .build()
 }
 
-private object NextDnsFaviconLoader {
+internal class NextDnsFaviconLoader(
+  private val client: OkHttpClient = NextDnsFaviconHttp.client,
+  private val urlForDomain: (String) -> String? = ::nextDnsFaviconUrl,
+  private val allowedHost: String = FAVICON_HOST,
+  private val allowHttpForTests: Boolean = false
+) {
   private val cache = object : LinkedHashMap<String, Bitmap>(MAX_CACHED_FAVICONS, 0.75f, true) {
     override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean =
       size > MAX_CACHED_FAVICONS
   }
 
   suspend fun load(domain: String): Bitmap? {
-    val url = nextDnsFaviconUrl(domain) ?: return null
+    val url = urlForDomain(domain) ?: return null
     synchronized(cache) { cache[url] }?.let { return it }
-    val downloaded = withContext(Dispatchers.IO) { download(url) } ?: return null
+    val downloaded = download(url) ?: return null
     synchronized(cache) {
       cache[url]?.let { return it }
       cache[url] = downloaded
@@ -91,64 +101,98 @@ private object NextDnsFaviconLoader {
     return downloaded
   }
 
-  private fun download(url: String): Bitmap? {
-    val request = Request.Builder()
-      .url(url)
-      .header("Accept", "image/png,image/*;q=0.8")
-      .get()
-      .build()
-    try {
-      NextDnsFaviconHttp.client.newCall(request).execute().use { response ->
-        if (response.request.url.host != FAVICON_HOST || !response.isSuccessful) return null
-        val body = response.body ?: return null
-        val contentType = body.contentType()?.type?.lowercase(Locale.ROOT)
-        if (contentType != null && contentType != "image") return null
-        if (body.contentLength() > MAX_FAVICON_BYTES) return null
+  private suspend fun download(url: String): Bitmap? {
+    val bytes = requestBytes(url) ?: return null
+    return withContext(Dispatchers.IO) { decode(bytes) }
+  }
 
-        val bytes = body.byteStream().use { input ->
-          val output = ByteArrayOutputStream()
-          val buffer = ByteArray(8 * 1024)
-          var total = 0
-          while (true) {
-            val read = input.read(buffer)
-            if (read < 0) break
-            total += read
-            if (total > MAX_FAVICON_BYTES) return null
-            output.write(buffer, 0, read)
-          }
-          output.toByteArray()
-        }
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0 ||
-          bounds.outWidth > MAX_FAVICON_DIMENSION || bounds.outHeight > MAX_FAVICON_DIMENSION) return null
+  private suspend fun requestBytes(url: String): ByteArray? = suspendCancellableCoroutine { continuation ->
+    val request = runCatching {
+      Request.Builder()
+        .url(url)
+        .header("Accept", "image/png,image/*;q=0.8")
+        .get()
+        .build()
+    }.getOrNull()
+    if (request == null || request.url.host != allowedHost ||
+      (!allowHttpForTests && !request.url.isHttps)) {
+      continuation.resume(null)
+      return@suspendCancellableCoroutine
+    }
 
-        val sampleSize = (maxOf(bounds.outWidth, bounds.outHeight) / CACHED_FAVICON_DIMENSION)
-          .coerceAtLeast(1)
-        val decoded = BitmapFactory.decodeByteArray(
-          bytes,
-          0,
-          bytes.size,
-          BitmapFactory.Options().apply { inSampleSize = sampleSize; inPreferredConfig = Bitmap.Config.ARGB_8888 }
-        ) ?: return null
-        val largestDimension = maxOf(decoded.width, decoded.height)
-        if (largestDimension <= CACHED_FAVICON_DIMENSION) return decoded
-
-        val scale = CACHED_FAVICON_DIMENSION.toFloat() / largestDimension
-        val scaled = Bitmap.createScaledBitmap(
-          decoded,
-          (decoded.width * scale).toInt().coerceAtLeast(1),
-          (decoded.height * scale).toInt().coerceAtLeast(1),
-          true
-        )
-        if (scaled !== decoded) decoded.recycle()
-        return scaled
+    val call = client.newCall(request)
+    continuation.invokeOnCancellation { call.cancel() }
+    call.enqueue(object : Callback {
+      override fun onFailure(call: Call, e: IOException) {
+        if (continuation.isActive) continuation.resume(null)
       }
+
+      override fun onResponse(call: Call, response: okhttp3.Response) {
+        val bytes = try {
+          response.use {
+            if (response.priorResponse != null || response.request.url.host != allowedHost ||
+              (!allowHttpForTests && !response.request.url.isHttps) || !response.isSuccessful) return@use null
+            val body = response.body ?: return@use null
+            val contentType = body.contentType()?.type?.lowercase(Locale.ROOT)
+            if (contentType != null && contentType != "image") return@use null
+            if (body.contentLength() > MAX_FAVICON_BYTES) return@use null
+
+            body.byteStream().use { input ->
+              val output = ByteArrayOutputStream()
+              val buffer = ByteArray(8 * 1024)
+              var total = 0
+              while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                total += read
+                if (total > MAX_FAVICON_BYTES) return@use null
+                output.write(buffer, 0, read)
+              }
+              output.toByteArray()
+            }
+          }
+        } catch (_: Exception) {
+          null
+        }
+        if (continuation.isActive) continuation.resume(bytes)
+      }
+    })
+  }
+
+  private fun decode(bytes: ByteArray): Bitmap? {
+    try {
+      val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+      BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+      if (bounds.outWidth <= 0 || bounds.outHeight <= 0 ||
+        bounds.outWidth > MAX_FAVICON_DIMENSION || bounds.outHeight > MAX_FAVICON_DIMENSION) return null
+
+      val sampleSize = (maxOf(bounds.outWidth, bounds.outHeight) / CACHED_FAVICON_DIMENSION)
+        .coerceAtLeast(1)
+      val decoded = BitmapFactory.decodeByteArray(
+        bytes,
+        0,
+        bytes.size,
+        BitmapFactory.Options().apply { inSampleSize = sampleSize; inPreferredConfig = Bitmap.Config.ARGB_8888 }
+      ) ?: return null
+      val largestDimension = maxOf(decoded.width, decoded.height)
+      if (largestDimension <= CACHED_FAVICON_DIMENSION) return decoded
+
+      val scale = CACHED_FAVICON_DIMENSION.toFloat() / largestDimension
+      val scaled = Bitmap.createScaledBitmap(
+        decoded,
+        (decoded.width * scale).toInt().coerceAtLeast(1),
+        (decoded.height * scale).toInt().coerceAtLeast(1),
+        true
+      )
+      if (scaled !== decoded) decoded.recycle()
+      return scaled
     } catch (_: Exception) {
       return null
     }
   }
 }
+
+private val defaultNextDnsFaviconLoader = NextDnsFaviconLoader()
 
 @Composable
 fun FaviconImage(
@@ -157,7 +201,7 @@ fun FaviconImage(
 ) {
   val appContext = LocalContext.current.applicationContext
   val bitmap = produceState<Bitmap?>(initialValue = null, key1 = appContext, key2 = domain) {
-    value = NextDnsFaviconLoader.load(domain)
+    value = defaultNextDnsFaviconLoader.load(domain)
   }.value
 
   if (bitmap == null) {
@@ -176,3 +220,4 @@ fun FaviconImage(
     )
   }
 }
+

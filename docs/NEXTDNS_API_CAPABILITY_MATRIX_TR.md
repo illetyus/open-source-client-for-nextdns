@@ -22,6 +22,76 @@ Bu belge uygulamanın NextDNS tarafından onaylandığı veya desteklendiği anl
 | Günlükler: `GET /profiles/{id}/logs`, `GET /logs/stream`, `GET /logs/download`, `DELETE /logs` | `NextDnsApiService`, repository, Günlükler ekranı | Sayfalama, `cursor`, API `search`, `device`, `status`, `raw=1` ve SSE birleştirmesi uygulanır; durumlar `default/error/blocked/allowed` olarak korunur. Arama ve cihaz/durum değişimleri cursor'ı sıfırlar; eski yanıtlar reddedilir. İndir/sil repository yolları mevcuttur. Tarih (`from/to`) ve sıralama (`sort`) parametreleri servis imzasında var, ancak ekran filtresi yok (`PARTIAL`). Geçmiş, hesabın NextDNS log saklama ayarları ve API'nin döndürdüğü cursor sayfalarıyla sınırlıdır; istemci daha eski verinin varlığını garanti etmez. |
 | Analitik: `status`, `devices`, `domains`, `reasons`, `destinations`, `dnssec`, `encryption`, `protocols`, `ips`, `queryTypes`, `ipVersions` | Aynı adlı Retrofit metotları, DTO'lar, `NextDnsRepository.fetchAnalytics`, Analiz ekranı | Okuma `SUPPORTED_READ_ONLY`. Uygulama `destinations?type=countries` ile etkileşimli yerel dünya haritasını; `destinations?type=gafam` ile altı parçalı grafiği besler. Ortak parametreler `device/from/to/limit/cursor`; `domains` ayrıca `status/root`, `destinations` `type` kullanır. API `__UNIDENTIFIED__` cihaz filtresini tanımlar ve istemci filtrede API ID'sini korur. `;series` uçları `MISSING`. |
 
+## Retrofit endpoint envanteri
+
+Bu liste kod içindeki HTTP metotlarını ve servis-relative yolları aynen kaydeder. CI, listenin `NextDnsApiService` anotasyonlarıyla birebir eşleştiğini ve satır tekrarlarının olmadığını denetler. Son satır `https://test.nextdns.io/` tanı servisine aittir; `api.nextdns.io` profili API'si değildir.
+
+<!-- API_ROUTE_INVENTORY_START -->
+| Method | Service-relative route |
+|---|---|
+| `GET` | `/profiles` |
+| `POST` | `/profiles` |
+| `GET` | `/profiles/{profileId}` |
+| `DELETE` | `/profiles/{profileId}` |
+| `PATCH` | `/profiles/{profileId}` |
+| `GET` | `/profiles/{profileId}/setup` |
+| `POST` | `/profiles/{profileId}/setup/linkedIp` |
+| `GET` | `/profiles/{profileId}/security` |
+| `GET` | `/security/tlds` |
+| `PATCH` | `/profiles/{profileId}/security` |
+| `POST` | `/profiles/{profileId}/security/tlds` |
+| `DELETE` | `/profiles/{profileId}/security/tlds/{tld}` |
+| `GET` | `/profiles/{profileId}/privacy` |
+| `GET` | `/profiles/{profileId}/privacy/blocklists` |
+| `GET` | `/profiles/{profileId}/privacy/natives` |
+| `GET` | `/privacy/blocklists` |
+| `GET` | `/privacy/natives` |
+| `PATCH` | `/profiles/{profileId}/privacy` |
+| `POST` | `/profiles/{profileId}/privacy/blocklists` |
+| `DELETE` | `/profiles/{profileId}/privacy/blocklists/{blocklistId}` |
+| `POST` | `/profiles/{profileId}/privacy/natives` |
+| `DELETE` | `/profiles/{profileId}/privacy/natives/{nativeId}` |
+| `GET` | `/parentalControl/services` |
+| `GET` | `/parentalControl/categories` |
+| `GET` | `/profiles/{profileId}/parentalControl` |
+| `PATCH` | `/profiles/{profileId}/parentalControl` |
+| `POST` | `/profiles/{profileId}/parentalControl/categories` |
+| `PATCH` | `/profiles/{profileId}/parentalControl/categories/{categoryId}` |
+| `DELETE` | `/profiles/{profileId}/parentalControl/categories/{categoryId}` |
+| `POST` | `/profiles/{profileId}/parentalControl/services` |
+| `PATCH` | `/profiles/{profileId}/parentalControl/services/{serviceId}` |
+| `DELETE` | `/profiles/{profileId}/parentalControl/services/{serviceId}` |
+| `GET` | `/profiles/{profileId}/denylist` |
+| `POST` | `/profiles/{profileId}/denylist` |
+| `PATCH` | `/profiles/{profileId}/denylist/{domain}` |
+| `DELETE` | `/profiles/{profileId}/denylist/{domain}` |
+| `GET` | `/profiles/{profileId}/allowlist` |
+| `POST` | `/profiles/{profileId}/allowlist` |
+| `PATCH` | `/profiles/{profileId}/allowlist/{domain}` |
+| `DELETE` | `/profiles/{profileId}/allowlist/{domain}` |
+| `GET` | `/profiles/{profileId}/logs/stream` |
+| `GET` | `/profiles/{profileId}/logs` |
+| `GET` | `/profiles/{profileId}/logs/download` |
+| `DELETE` | `/profiles/{profileId}/logs` |
+| `GET` | `/profiles/{profileId}/analytics/status` |
+| `GET` | `/profiles/{profileId}/analytics/devices` |
+| `GET` | `/profiles/{profileId}/analytics/domains` |
+| `GET` | `/profiles/{profileId}/analytics/reasons` |
+| `GET` | `/profiles/{profileId}/analytics/destinations` |
+| `GET` | `/profiles/{profileId}/analytics/dnssec` |
+| `GET` | `/profiles/{profileId}/analytics/encryption` |
+| `GET` | `/profiles/{profileId}/analytics/protocols` |
+| `GET` | `/profiles/{profileId}/analytics/ips` |
+| `GET` | `/profiles/{profileId}/analytics/queryTypes` |
+| `GET` | `/profiles/{profileId}/analytics/ipVersions` |
+| `GET` | `/profiles/{profileId}/settings` |
+| `PATCH` | `/profiles/{profileId}/settings` |
+| `PATCH` | `/profiles/{profileId}/settings/performance` |
+| `PATCH` | `/profiles/{profileId}/settings/logs` |
+| `PATCH` | `/profiles/{profileId}/settings/blockPage` |
+| `GET` | `/` |
+<!-- API_ROUTE_INVENTORY_END -->
+
 ## API dışı ve doğrulanmamış veriler
 
 | Veri/özellik | Kaynak ve uygulamadaki davranış | Durum |
@@ -31,7 +101,7 @@ Bu belge uygulamanın NextDNS tarafından onaylandığı veya desteklendiği anl
 | Yaş doğrulama atlama | Yayımlanmış profil güvenlik/ayar şemasında böyle adlandırılmış alan veya okuma-yazma sözleşmesi belgelenmiyor. [NextDNS Help Center başlığında](https://help.nextdns.io/t/q6yp92t/bypass-age-verification-not-visible-in-dashboard) bir kullanıcı özelliğin Ayarlar'da bulunduğunu, NextDNS hesabı ise yanlış dağıtımda kaldırıldığını yanıtlıyor; gönderi API alanı veya PATCH sözleşmesi vermiyor. `parentalControl.blockBypass` ayrı bir özelliktir. Sanitize edilmiş gerçek API yanıtı kanıtı bulunmuyor. | Hizmet arayüzünde varlığına dair birinci taraf topluluk yanıtı var; API eşlemesi `UNVERIFIED / NOT IMPLEMENTED`. Alan adı uydurulmaz, API isteği ve senkronizasyon payload'ı eklenmez. |
 | Erken erişim/belgelenmemiş güvenlik alanları | DTO yalnızca belgelenmiş alanları tanımlar; kullanıcı tarafından yetkilendirilmiş sanitize gerçek yanıt veya PATCH/read-back kanıtı yok. | `UNVERIFIED / NOT IMPLEMENTED`; alan keşfi ya da yazma iddiası yok. |
 | Trafik haritası geometrisi | Uygulamayla birlikte gelen Natural Earth dünya ülke geometrisi ve lisans bildirimi; sorgu/sayı/ülke verisi NextDNS analitiğinden gelir. Harita çevrimdışı da çizilebilir. | Yerel statik varlık + `destinations?type=countries` okuması. |
-| Alan adı favicon'ları | `favicons.nextdns.io` için gözlenmiş HTTPS yolu; resmi API şemasında yok. 20 Ekim 2026 salt GET sentetik probe'unda `github.com` ve `google.com` 200 `image/png`, `example.com` 404 döndürdü; 404, bir alan adında favicon bulunmadığında normal fallback yoludur. İzin/engel listeleri ile Native Tracking ve ebeveyn denetimi hizmet kataloglarında gösterilen domainler istenir; günlük satırlarında yerel ikon kullanılır. Kimlik bilgisi eklenmez; bellek önbelleği, boyut sınırı ve toplam istek süresi sınırı uygulanır. | En iyi çaba/garantisiz; örnek alan adları doğrulandı ama hizmet API/SLA'sı veya her domain için ikon garantisi yok. Disk önbelleği yok. |
+| Alan adı favicon'ları | `favicons.nextdns.io` için gözlenmiş HTTPS yolu; resmi API şemasında yok. 20 Ekim 2026 salt GET sentetik probe'unda `github.com` ve `google.com` 200 `image/png`, `example.com` 404 döndürdü; 404, bir alan adında favicon bulunmadığında normal fallback yoludur. İzin/engel listeleri ile Native Tracking ve ebeveyn denetimi hizmet kataloglarında gösterilen domainler istenir; günlük satırlarında yerel ikon kullanılır. Kimlik bilgisi eklenmez; bellek önbelleği, boyut sınırı ve toplam istek süresi sınırı ve coroutine iptali OkHttp çağrısını kapatır. | En iyi çaba/garantisiz; örnek alan adları doğrulandı ama hizmet API/SLA'sı veya her domain için ikon garantisi yok. Disk önbelleği yok. |
 | Bağlantı hızı ölçümü | İstemcide motor veya onaylı ölçüm sunucusu yok. MIT istemci lisansı tek başına test sunucusunu kullanma izni sağlamaz; aday sunucu/TLS/kullanım koşulları doğrulanmadı. | Uygulanmadı; güvenli sunucu ve kullanım koşulları olmadan veri aktarımı başlatılmaz. |
 
 ## Günlük parametreleri ve cursor davranışı
