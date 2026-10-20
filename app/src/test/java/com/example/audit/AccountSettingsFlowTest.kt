@@ -20,6 +20,7 @@ import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.PrivacyScreen
 import com.example.ui.screens.SettingsScreen
+import com.example.ui.screens.SecurityScreen
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NavTab
 import com.example.ui.viewmodel.NextDnsViewModel
@@ -178,11 +179,26 @@ class AccountSettingsFlowTest : AuditFixture() {
       }
     }
 
-    rule.onNodeWithTag("allowlist_domain_icon").assertWidthIsEqualTo(16.dp)
-    rule.onNodeWithTag("allowlist_domain_icon").assertHeightIsEqualTo(16.dp)
+    rule.onNodeWithTag("allowlist_domain_icon").assertWidthIsEqualTo(12.dp)
+    rule.onNodeWithTag("allowlist_domain_icon").assertHeightIsEqualTo(12.dp)
     rule.runOnIdle { showAllowlist.value = false }
-    rule.onNodeWithTag("denylist_domain_icon").assertWidthIsEqualTo(16.dp)
-    rule.onNodeWithTag("denylist_domain_icon").assertHeightIsEqualTo(16.dp)
+    rule.onNodeWithTag("denylist_domain_icon").assertWidthIsEqualTo(12.dp)
+    rule.onNodeWithTag("denylist_domain_icon").assertHeightIsEqualTo(12.dp)
+  }
+
+  @Test fun tldDialogShowsUnavailableInsteadOfAHandPickedFallbackWhenCatalogIsEmpty() {
+    english()
+    response = { json("{}", 500) }
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SecurityScreen(model) } }
+
+    rule.onNodeWithText(AppStrings.get(R.string.ui_2e2a1e330e))
+      .performScrollTo()
+      .performClick()
+
+    rule.onNodeWithTag("security_tld_catalog_unavailable").assertIsDisplayed()
+    rule.onNodeWithText(".work").assertDoesNotExist()
+    rule.onNodeWithText(".zip").assertDoesNotExist()
   }
 
   @Test fun destinationsMapShowsCountryDataWhenAnotherAnalyticsRequestFails() {
@@ -343,6 +359,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithText("Anycast: enabled").assertIsDisplayed()
     rule.onNodeWithTag("diagnostic_source").assertTextEquals(AppStrings.get(R.string.diagnostic_source))
     rule.onNodeWithTag("diagnostic_checked_at").assertIsDisplayed()
+    rule.onNodeWithTag("diagnostic_region_unavailable").assertIsDisplayed()
     rule.onNodeWithText("New York", substring = true).assertDoesNotExist()
     rule.onNodeWithText("United States", substring = true).assertDoesNotExist()
   }
