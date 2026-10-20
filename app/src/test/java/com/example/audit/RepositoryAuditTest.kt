@@ -1,7 +1,7 @@
 package com.example.audit
 
 import android.content.Context
-import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
@@ -39,7 +39,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class AuditMainDispatcherRule : TestRule {
+class AuditMainDispatcherRule : TestRule {
   override fun apply(base: Statement, description: Description): Statement =
     object : Statement() {
       override fun evaluate() {
@@ -53,9 +53,9 @@ internal class AuditMainDispatcherRule : TestRule {
     }
 }
 
-internal class AuditComposeTestRule(
-  private val composeRule: ComposeTestRule = createComposeRule()
-) : ComposeTestRule by composeRule {
+class AuditComposeTestRule(
+  private val composeRule: ComposeContentTestRule = createComposeRule()
+) : TestRule, ComposeContentTestRule by composeRule {
   override fun apply(base: Statement, description: Description): Statement =
     RuleChain.outerRule(AuditMainDispatcherRule())
       .around(composeRule)
