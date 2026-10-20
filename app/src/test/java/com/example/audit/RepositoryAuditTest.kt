@@ -55,7 +55,7 @@ internal class AuditMainDispatcherRule : TestRule {
 
 internal class AuditComposeTestRule(
   private val composeRule: ComposeTestRule = createComposeRule()
-) : TestRule, ComposeTestRule by composeRule {
+) : ComposeTestRule by composeRule {
   override fun apply(base: Statement, description: Description): Statement =
     RuleChain.outerRule(AuditMainDispatcherRule())
       .around(composeRule)
