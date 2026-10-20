@@ -552,6 +552,8 @@
     <string name="diagnostic_server_information_unavailable">Les informations du serveur et du résolveur sont indisponibles.</string>
     <string name="diagnostic_region_unavailable">Ce diagnostic ne fournit aucune information sur la région.</string>
     <string name="security_tld_catalog_unavailable">Impossible de charger les TLD disponibles. Réessayez plus tard.</string>
+    <string name="security_tld_catalog_loading">Chargement des TLD disponibles…</string>
+    <string name="security_tld_catalog_empty">Aucun TLD n’est disponible dans le catalogue du serveur.</string>
     <string name="diagnostic_anycast_enabled">Anycast : activé</string>
     <string name="diagnostic_anycast_disabled">Anycast : désactivé</string>
     <string name="diagnostic_source">Source du diagnostic : test.nextdns.io</string>

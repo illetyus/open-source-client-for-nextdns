@@ -9,6 +9,7 @@ import com.example.R
 import com.example.data.model.AllowDenyItem
 import com.example.data.model.NativeTrackingEntry
 import com.example.data.model.PrivacySettings
+import com.example.data.repository.TldCatalogLoadState
 import com.example.i18n.AppStrings
 import com.example.i18n.LocalePreferences
 import com.example.ui.screens.AccountScreen
@@ -186,7 +187,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("denylist_domain_icon").assertHeightIsEqualTo(12.dp)
   }
 
-  @Test fun tldDialogShowsUnavailableInsteadOfAHandPickedFallbackWhenCatalogIsEmpty() {
+  @Test fun tldDialogShowsLoadingInsteadOfAHandPickedFallbackBeforeCatalogLoads() {
     english()
     response = { json("{}", 500) }
     val model = NextDnsViewModel(repository)
@@ -199,10 +200,33 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.mainClock.autoAdvance = false
     rule.onNodeWithText(AppStrings.get(R.string.ui_2e2a1e330e))
       .performClick()
+    rule.mainClock.advanceTimeBy(16L)
 
-    rule.onNodeWithTag("security_tld_catalog_unavailable").assertIsDisplayed()
+    rule.onNodeWithTag("security_tld_catalog_loading").assertIsDisplayed()
     rule.onNodeWithText(".work").assertDoesNotExist()
     rule.onNodeWithText(".zip").assertDoesNotExist()
+  }
+
+  @Test fun successfulEmptyTldCatalogIsNotReportedAsANetworkFailure() = runBlocking {
+    response = { json("""{"data":[]}""") }
+    repository.loadAllLiveCatalogs()
+
+    assertEquals(TldCatalogLoadState.EMPTY, repository.tldCatalogLoadState.value)
+    assertTrue(repository.availableTldsCatalog.value.isEmpty())
+  }
+
+  @Test fun loadedTldCatalogUsesOnlyServerProvidedEntries() = runBlocking {
+    response = { request ->
+      if (request.requestUrl?.encodedPath == "/security/tlds") {
+        json("""{"data":[{"id":"zip","spamhaus":0}]}""")
+      } else {
+        json("""{"data":[]}""")
+      }
+    }
+    repository.loadAllLiveCatalogs()
+
+    assertEquals(TldCatalogLoadState.AVAILABLE, repository.tldCatalogLoadState.value)
+    assertEquals(listOf("zip"), repository.availableTldsCatalog.value.map { it.id })
   }
 
   @Test fun destinationsMapShowsCountryDataWhenAnotherAnalyticsRequestFails() {

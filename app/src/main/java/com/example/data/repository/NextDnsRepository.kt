@@ -424,6 +424,8 @@ class NextDnsRepository(
 
   private val _availableTldsCatalog = MutableStateFlow<List<SecurityTldCatalogDto>>(emptyList())
   val availableTldsCatalog = _availableTldsCatalog.asStateFlow()
+  private val _tldCatalogLoadState = MutableStateFlow(TldCatalogLoadState.LOADING)
+  val tldCatalogLoadState = _tldCatalogLoadState.asStateFlow()
 
   private val _profileSetup = MutableStateFlow(SetupDto())
   val profileSetup = _profileSetup.asStateFlow()
@@ -502,6 +504,7 @@ class NextDnsRepository(
   }
 
   suspend fun loadAllLiveCatalogs() = withContext(Dispatchers.IO) {
+    _tldCatalogLoadState.value = TldCatalogLoadState.LOADING
     try {
       // 1. Blocklists Catalog
       val blocklistDtos = fetchAllPages("availableBlocklists") { cursor ->
@@ -552,10 +555,18 @@ class NextDnsRepository(
       val tlds = fetchAllPages("availableTlds") { cursor ->
         apiService.getAvailableTlds(cursor = cursor)
       } ?: NextDnsNetworkClient.fetchAvailableTldsDirect()
-      if (tlds != null && tlds.isNotEmpty()) {
+      if (tlds == null) {
+        _tldCatalogLoadState.value = TldCatalogLoadState.UNAVAILABLE
+      } else {
         _availableTldsCatalog.value = tlds
+        _tldCatalogLoadState.value = if (tlds.isEmpty()) {
+          TldCatalogLoadState.EMPTY
+        } else {
+          TldCatalogLoadState.AVAILABLE
+        }
       }
     } catch (e: Exception) {
+      _tldCatalogLoadState.value = TldCatalogLoadState.UNAVAILABLE
       if (BuildConfig.DEBUG) Log.e(TAG, "Error loading live catalogs: ${e.message}", e)
     }
   }

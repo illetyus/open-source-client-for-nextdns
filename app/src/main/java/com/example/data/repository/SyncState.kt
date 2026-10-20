@@ -11,6 +11,14 @@ enum class SyncSection {
   SETTINGS
 }
 
+/** Load outcome for the server-provided TLD selection catalog. */
+enum class TldCatalogLoadState {
+  LOADING,
+  AVAILABLE,
+  EMPTY,
+  UNAVAILABLE
+}
+
 data class SectionSyncState(
   val isRefreshing: Boolean = false,
   val isSaving: Boolean = false,

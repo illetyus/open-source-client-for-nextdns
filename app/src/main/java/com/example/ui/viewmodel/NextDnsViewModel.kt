@@ -125,6 +125,7 @@ class NextDnsViewModel(
   val availableParentalServicesCatalog = repository.availableParentalServicesCatalog
   val availableParentalCategoriesCatalog = repository.availableParentalCategoriesCatalog
   val availableTldsCatalog = repository.availableTldsCatalog
+  val tldCatalogLoadState = repository.tldCatalogLoadState
   val profileSetup = repository.profileSetup
 
   private val _isAnalyticsLoading = MutableStateFlow(false)

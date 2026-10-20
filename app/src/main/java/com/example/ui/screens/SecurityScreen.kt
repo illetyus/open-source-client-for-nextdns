@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.NextDnsViewModel
+import com.example.data.repository.TldCatalogLoadState
 
 @Composable
 fun SecurityScreen(
@@ -227,6 +228,7 @@ fun SecurityScreen(
   // TLD Ekle Dialog
   if (showAddTldDialog) {
     val liveTldCatalog by viewModel.availableTldsCatalog.collectAsStateWithLifecycle()
+    val tldCatalogLoadState by viewModel.tldCatalogLoadState.collectAsStateWithLifecycle()
     var tldSearchQuery by remember { mutableStateOf("") }
 
     val availableTlds = liveTldCatalog
@@ -261,26 +263,27 @@ fun SecurityScreen(
             onValueChange = { tldSearchQuery = it },
             placeholder = { Text(AppStrings.get(R.string.ui_d812357041), fontSize = 12.sp) },
             singleLine = true,
-            enabled = liveTldCatalog.isNotEmpty(),
+            enabled = tldCatalogLoadState == TldCatalogLoadState.AVAILABLE,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp)
           )
         }
       },
       text = {
-        if (liveTldCatalog.isEmpty()) {
-          Box(
-            modifier = Modifier.fillMaxWidth().height(180.dp),
-            contentAlignment = Alignment.Center
-          ) {
-            Text(
-              text = AppStrings.get(R.string.security_tld_catalog_unavailable),
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-              modifier = Modifier.testTag("security_tld_catalog_unavailable")
-            )
-          }
-        } else {
-          LazyColumn(
+        when (tldCatalogLoadState) {
+          TldCatalogLoadState.LOADING -> CatalogMessage(
+            text = AppStrings.get(R.string.security_tld_catalog_loading),
+            tag = "security_tld_catalog_loading"
+          )
+          TldCatalogLoadState.UNAVAILABLE -> CatalogMessage(
+            text = AppStrings.get(R.string.security_tld_catalog_unavailable),
+            tag = "security_tld_catalog_unavailable"
+          )
+          TldCatalogLoadState.EMPTY -> CatalogMessage(
+            text = AppStrings.get(R.string.security_tld_catalog_empty),
+            tag = "security_tld_catalog_empty"
+          )
+          TldCatalogLoadState.AVAILABLE -> LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(0.dp)
           ) {
@@ -311,6 +314,20 @@ fun SecurityScreen(
       },
       confirmButton = {},
       dismissButton = {}
+    )
+  }
+}
+
+@Composable
+private fun CatalogMessage(text: String, tag: String) {
+  Box(
+    modifier = Modifier.fillMaxWidth().height(180.dp),
+    contentAlignment = Alignment.Center
+  ) {
+    Text(
+      text = text,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      modifier = Modifier.testTag(tag)
     )
   }
 }
