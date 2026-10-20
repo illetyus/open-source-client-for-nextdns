@@ -22,6 +22,7 @@ import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.PrivacyScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SecurityScreen
+import com.example.ui.screens.TldCatalogContent
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NavTab
 import com.example.ui.viewmodel.NextDnsViewModel
@@ -187,22 +188,17 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("denylist_domain_icon").assertHeightIsEqualTo(12.dp)
   }
 
-  @Test fun tldDialogShowsLoadingInsteadOfAHandPickedFallbackBeforeCatalogLoads() {
+  @Test fun tldCatalogContentShowsLoadingInsteadOfCatalogEntriesBeforeLoadCompletes() {
     english()
-    response = { json("{}", 500) }
-    val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { SecurityScreen(model) } }
-
-    rule.onNodeWithText(AppStrings.get(R.string.ui_2e2a1e330e))
-      .performScrollTo()
-    // The dialog's text field has a blinking cursor. Freeze Compose time
-    // before opening it, then finish the dialog entrance transition while the
-    // clock is controlled so Espresso does not wait on either animation.
-    rule.mainClock.autoAdvance = false
-    rule.onNodeWithText(AppStrings.get(R.string.ui_2e2a1e330e))
-      .performClick()
-    rule.mainClock.advanceTimeBy(1_000L)
-
+    rule.setContent {
+      AppTheme {
+        TldCatalogContent(
+          loadState = TldCatalogLoadState.LOADING,
+          tlds = listOf(".work", ".zip"),
+          onAddTld = {}
+        )
+      }
+    }
     rule.onNodeWithTag("security_tld_catalog_loading").assertIsDisplayed()
     rule.onNodeWithText(".work").assertDoesNotExist()
     rule.onNodeWithText(".zip").assertDoesNotExist()

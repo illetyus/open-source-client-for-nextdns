@@ -270,51 +270,64 @@ fun SecurityScreen(
         }
       },
       text = {
-        when (tldCatalogLoadState) {
-          TldCatalogLoadState.LOADING -> CatalogMessage(
-            text = AppStrings.get(R.string.security_tld_catalog_loading),
-            tag = "security_tld_catalog_loading"
-          )
-          TldCatalogLoadState.UNAVAILABLE -> CatalogMessage(
-            text = AppStrings.get(R.string.security_tld_catalog_unavailable),
-            tag = "security_tld_catalog_unavailable"
-          )
-          TldCatalogLoadState.EMPTY -> CatalogMessage(
-            text = AppStrings.get(R.string.security_tld_catalog_empty),
-            tag = "security_tld_catalog_empty"
-          )
-          TldCatalogLoadState.AVAILABLE -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
-          ) {
-            items(availableTlds) { tld ->
-              Row(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .background(MaterialTheme.colorScheme.surfaceVariant)
-                  .padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-              ) {
-                Text(tld, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                Button(
-                  onClick = { viewModel.addBlockedTld(tld.removePrefix(".")) },
-                  colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                  shape = RoundedCornerShape(6.dp),
-                  contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                  modifier = Modifier.height(28.dp)
-                ) {
-                  Text(AppStrings.get(R.string.add), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-              }
-              HorizontalDivider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(horizontal = 16.dp))
-            }
-          }
-        }
+        TldCatalogContent(
+          loadState = tldCatalogLoadState,
+          tlds = availableTlds,
+          onAddTld = { viewModel.addBlockedTld(it) }
+        )
       },
       confirmButton = {},
       dismissButton = {}
     )
+  }
+}
+
+@Composable
+internal fun TldCatalogContent(
+  loadState: TldCatalogLoadState,
+  tlds: List<String>,
+  onAddTld: (String) -> Unit
+) {
+  when (loadState) {
+    TldCatalogLoadState.LOADING -> CatalogMessage(
+      text = AppStrings.get(R.string.security_tld_catalog_loading),
+      tag = "security_tld_catalog_loading"
+    )
+    TldCatalogLoadState.UNAVAILABLE -> CatalogMessage(
+      text = AppStrings.get(R.string.security_tld_catalog_unavailable),
+      tag = "security_tld_catalog_unavailable"
+    )
+    TldCatalogLoadState.EMPTY -> CatalogMessage(
+      text = AppStrings.get(R.string.security_tld_catalog_empty),
+      tag = "security_tld_catalog_empty"
+    )
+    TldCatalogLoadState.AVAILABLE -> LazyColumn(
+      modifier = Modifier.fillMaxSize(),
+      verticalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
+      items(tlds) { tld ->
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(tld, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+          Button(
+            onClick = { onAddTld(tld.removePrefix(".")) },
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            shape = RoundedCornerShape(6.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.height(28.dp)
+          ) {
+            Text(AppStrings.get(R.string.add), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+          }
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(horizontal = 16.dp))
+      }
+    }
   }
 }
 
@@ -331,3 +344,4 @@ private fun CatalogMessage(text: String, tag: String) {
     )
   }
 }
+
