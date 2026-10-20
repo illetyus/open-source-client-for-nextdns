@@ -37,7 +37,7 @@
 | 1. Age-verification option | P1 research gate | `app/src/main/java/com/example/data/api/NextDnsApiService.kt`, `app/src/main/java/com/example/ui/screens/SecurityScreen.kt` | `app/src/test/java/com/example/data/api/NextDnsApiContractTest.kt`; official schema and sanitized response evidence | No exact field or read/write contract in published schema; no speculative UI |
 | 2. Compose/UI performance | P1 | `app/build.gradle.kts`, `settings.gradle.kts`, `macrobenchmark/`, `.github/workflows/ci.yml` | AndroidX Macrobenchmark, Compose trace, StrictMode instrumentation; same-device before/after report under `docs/performance/` | Harness and release-emulator StrictMode audit pass CI; no physical-device baseline |
 | 3. DNS server/location | P1 | `NextDnsApiService.kt`, `app/src/main/java/com/example/data/model/NextDnsModels.kt`, `app/src/main/java/com/example/data/repository/NextDnsRepository.kt`, `app/src/main/java/com/example/ui/screens/AccountScreen.kt`, localized `strings.xml` | `app/src/test/java/com/example/data/api/NextDnsApiContractTest.kt`, repository and diagnostic Compose tests | `server`, `resolver`, `anycast` DTO fields exist; UI mapping/fallback must be checked |
-| 4. Open-source speed test | P1 privacy/security gate | new `app/src/main/java/com/example/data/diagnostics/SpeedTestEngine.kt`, `app/src/main/java/com/example/ui/screens/SpeedTestScreen.kt`, `app/src/main/res/values*/strings.xml`, `app/src/main/assets/licenses/`, `app/build.gradle.kts` | new deterministic speed-test engine and screen tests; HTTPS endpoint and license/NOTICE audit | No engine or disclosed destination; candidates have different licensing/server requirements |
+| 4. Open-source speed test | P1 privacy/security gate | `LibreSpeedClient.kt`, `SpeedTestSettingsStore.kt`, `SpeedTestDialog.kt`, five-language strings, contract/Compose tests, research record | MockWebServer and Compose tests; live authorized HTTPS endpoint check remains open | No public endpoint default; bounded traffic and explicit user/operator consent |
 | 5. Device-name fallback | P2 | `NextDnsModels.kt`, `NextDnsRepository.kt`, `AnalyticsScreen.kt`, `LogsScreen.kt` | new device-label unit tests and `UiAuditTest.kt` | Placeholder-name risk; API IDs must remain separate from display labels |
 | 6. Logs categories/reasons/history | P1 | `NextDnsApiService.kt`, `NextDnsModels.kt`, `NextDnsRepository.kt`, `NextDnsViewModel.kt`, `LogsScreen.kt`, localized `strings.xml` | `NextDnsApiContractTest.kt`, `RepositoryRegressionTest.kt`, `UiAuditTest.kt` | Cursor pagination/device filtering exist in local diff; status UI and exact reason coverage are not yet proven |
 | 7. Early-access security | P1 | `NextDnsApiService.kt`, `NextDnsRepository.kt`, `ConfigSnapshotHasher.kt`, `SecurityScreen.kt` | API parser, PATCH/read-back, snapshot, and UI tests | Known fields are typed; unknown response keys are currently discarded |
@@ -86,7 +86,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - The performance harness uses the official AndroidX `com.android.test` Macrobenchmark setup, `StartupTimingMetric`, `FrameTimingMetric`, release-like non-debuggable/profileable app variant, the already bundled ProfileInstaller 1.4.0, and benchmark-only Compose tracing. AndroidX documents that Macrobenchmark is intended for Compose UI measurement and reports startup and frame percentiles; emulator results are not representative of phone performance ([Macrobenchmark setup](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview), [metric definitions](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)).
 - Local Gradle tests could not start because the configured wrapper-cache lock returned access denied. No local build, lint, unit test or APK result is claimed; GitHub CI remains the executable validation path.
 - BrowserStack credentials are not configured in the current process or Windows user/machine environment, and no device is attached. Physical-device performance values, recomposition traces and BrowserStack results therefore remain unverified.
-- The user explicitly deferred the speed-test feature on 20 October 2026. No public M-Lab endpoint, configurable server, or transfer code was added; retain it as deferred until the user reopens it.
+- The full audit reopened the speed-test task. Implement a user-configured, authorized HTTPS LibreSpeed endpoint with no public default; live server permissions and behavior remain a release gate.
 - Keep age-verification and early-access settings unsupported until a documented API field or sanitized response proves them; do not guess names or send speculative writes. The current API matrix and error ledger record these boundaries.
 
 - CI #322 (`39451553055`) exposed a concurrent `Dispatchers.Main` access during Compose teardown because fixture `@After` reset Main before the Compose rule had closed. The fix moves Main setup/reset into an outer JUnit RuleChain; repository tests use a standalone Main rule. CI #326 (`39454569461`) caught the first wrapper's incorrect Compose rule interface and internal visibility; corrected to public `ComposeContentTestRule`. CI #327 (`39455562687`, code head `6096f584ffef25bcf3d151f6924b8c443880e5de`) passed all gates: 205 JVM/Compose tests, 12 screenshots, 588 coverage classes, Lint, debug/unsigned release, Macrobenchmark compilation, dependency/NOTICE/DEX, Snyk High (50 dependencies, 0 findings), and 12 release-payload emulator tests (no canary, signed/unsigned payload parity).
@@ -176,21 +176,23 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 4. User-controlled open-source internet speed test
 
-**Current status:** Kullanıcı 20 Ekim 2026'da hız testi özelliğini erteledi. Sunucu, aktarım motoru, test UI'ı veya varsayılan uç nokta eklenmedi. Yeniden ele alınması için açıkça yeniden başlatılması ve sunucu/lisans/gizlilik kapılarının geçilmesi gerekir.
+**Current status:** A native, user-configured LibreSpeed-compatible client and localized UI are implemented in PR work. No public test server is selected or bundled. Live-device measurement remains pending until an operator-approved HTTPS endpoint is supplied and its policy is reviewed.
 
-**Root Cause Analysis:** No speed-test engine exists. A library license alone does not grant permission to use a third-party test server, and the candidate JSpeedTest project documents legacy HTTP/FTP endpoints as examples.
+**Root Cause Analysis:** A library license alone does not authorize use of a third-party test server. M-Lab's current AUP requires a published privacy policy for third-party clients, and its public test page says that test data, including client IP addresses, is published indefinitely. The LibreSpeed server documentation provides configurable PHP endpoints, so the client can implement that contract without choosing a public host.
 
-**Scope of Change:** Work is deferred per user decision. No engine, server, or runtime UI is in scope unless the user explicitly reopens this feature; any future implementation must first verify license, maintenance/dependency risks, HTTPS support, ping/upload behavior, and the selected server’s terms.
+**Scope of Change:** Implement a small native OkHttp adapter for the documented LibreSpeed PHP backend paths. Require an HTTPS base URL, HTTPS privacy-policy URL, and per-test confirmation that the user owns or is authorized to use the server. Keep speed-test settings local and separate from NextDNS account synchronization.
 
 **Implementation Steps:**
 - [x] Compare the MIT JSpeedTest client with the LGPL-3.0 LibreSpeed Android template; inspect source, dependency freshness, TLS behavior, server configuration, and NOTICE obligations.
-- [ ] Deferred: verify an endpoint/server only if the user explicitly reopens this feature; then confirm HTTPS and permission for user-initiated test traffic.
-- [ ] Deferred: implement no transfer flow until the feature is explicitly reopened and a suitable server is approved.
-- [ ] If reopened, keep test traffic, IP information, and results out of analytics/logs and complete the license/NOTICE and five-language privacy copy before implementation.
+- [x] Keep the endpoint blank by default; save only the user-entered server URL, privacy-policy URL, and relative backend path in an app-local preferences file.
+- [x] Implement a foreground, user-started flow with HTTPS validation, data-use disclosure, metered-network consent, a 10,000,000-byte download cap, separate confirmation for the default 1,000,000-byte upload, progress, cancellation, and no result persistence.
+- [x] Use only the documented `empty.php` ping/upload and `garbage.php?ckSize=` download routes; disable redirects, cookies, retries, telemetry, IP/ISP lookup, and cross-host requests. No upstream client code or binary is bundled.
+- [x] Add deterministic local contract tests and five-language UI copy.
+- [ ] Run a live-device test against an operator-approved HTTPS LibreSpeed-compatible server and verify the endpoint's actual privacy policy and capacity before release.
 
-**Testing Strategy:** Deterministic local HTTP(S) test server for ping, download, upload, rate calculation, timeout, TLS failure, cancellation, and metered-network prompts; license inventory and release dependency scan.
+**Testing Strategy:** MockWebServer contract coverage for configured routes, HTTPS policy, authorization, bounded streaming, transfer rates, upload size, redirects, and data headers; Compose coverage for blank defaults and disabled actions. Device TLS/cancellation/performance validation against a real authorized endpoint remains a release gate.
 
-**Acceptance Criteria:** Download/upload Mbps and ping are measured against the disclosed HTTPS server; cancellation closes sockets promptly; no transfer starts before user action; no telemetry or result persistence occurs unless separately enabled and explained.
+**Acceptance Criteria:** No test runs before explicit user action and authorization. The configured HTTPS server and policy are visible before the test; upload has a separate confirmation; cancellation closes the active OkHttp call; traffic is capped; the app does not run telemetry/IP lookup or persist results.
 
 **Backward Compatibility Considerations:** New feature is additive, does not change NextDNS DNS transport, API credentials, or default app startup network traffic.
 
@@ -198,7 +200,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 **Design System & UI Adjustments:** Put it under explicit diagnostics/tools; show destination, data-use estimate, and separate download/upload controls in accessible localized UI.
 
-**Phased PR Plan:** PR 4 only after engine, endpoint, licensing, and privacy review pass; otherwise publish the verified blocker and do not ship a misleading button.
+**Phased PR Plan:** Native client/UI changes are included in the current draft audit PR. A live endpoint test and any final legal/server-operator review must pass before removing the release gate.
 
 ### 5. Device analysis name fallback
 
@@ -365,7 +367,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 2. **PR 1 — data and chart correctness:** device labels, diagnostic wording, log filters/reasons/history, GAFAM chart; run API/repository/Compose tests and lint.
 3. **PR 2 — capability transparency:** API field inventory and age-setting status; dynamic security fields only after parser/PATCH evidence; run contract and compatibility tests.
 4. **PR 3 — performance:** benchmark harness, StrictMode audit, same-device baseline/candidate report; run CI and device measurements.
-5. **PR 4 — speed test:** only after the chosen open-source engine and HTTPS test server pass licensing, maintenance, privacy, and security review.
+5. **PR 4 — speed test:** native client/UI are included in draft PR #27; verify the authorized HTTPS server and its policy before release.
 6. **PR 5 — favicon lifecycle:** verify current first-party route, cache/provenance policy, and any retention disclosure before changing runtime behavior.
 7. **Review and deployment readiness:** security diff review, full test/lint/build, CI status, BrowserStack or named-device evidence, API matrix, error ledger, and a release-readiness decision. Open PRs but do not imply public release or merge without the project’s approved release gate.
 
