@@ -33,7 +33,7 @@ class AnalyticsSeriesContractTest {
 
   @Test fun missingBucketIsNotZero() {
     val rows = AnalyticsSeriesMapper.parse(
-      query(),
+      query(metric = SeriesMetric.STATUS),
       ApiSeriesMeta(times = listOf("2026-10-20T00:00:00Z", "2026-10-20T01:00:00Z"), interval = 3_600L),
       listOf(AnalyticsSeriesDto(status = "blocked", queries = listOf(0L, null)))
     )

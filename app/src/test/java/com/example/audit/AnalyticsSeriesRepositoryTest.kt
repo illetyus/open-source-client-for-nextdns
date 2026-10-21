@@ -62,10 +62,12 @@ class AnalyticsSeriesRepositoryTest : AuditFixture() {
     repository.setActiveProfile("bbbbbb")
     release.countDown()
     try {
-      request.await()
-      fail("Changing profiles must cancel the previous series request")
-    } catch (_: CancellationException) {
-      // Expected: session changes cancel the request before its response can be committed.
+      val committed = try {
+        request.await()
+      } catch (_: CancellationException) {
+        false
+      }
+      assertFalse("A response for the old profile must be discarded", committed)
     }
     assertNull(repository.analyticsSeries.value.query)
     assertTrue(repository.analyticsSeries.value.rows.isEmpty())

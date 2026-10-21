@@ -51,8 +51,8 @@ class AnalyticsSeriesChartTest {
       key = "blocked",
       label = "Blocked",
       points = listOf(
-        SeriesPoint(Instant.parse("2026-10-20T00:00:00Z"), 0L),
-        SeriesPoint(Instant.parse("2026-10-20T01:00:00Z"), null)
+        SeriesPoint(Instant.parse("2026-10-20T00:00:00Z"), null),
+        SeriesPoint(Instant.parse("2026-10-20T01:00:00Z"), 0L)
       )
     )
     rule.setContent {
@@ -67,6 +67,7 @@ class AnalyticsSeriesChartTest {
 
     rule.onNodeWithTag("analytics_series_line_chart").assertExists()
     rule.onNodeWithText(AppStrings.get(R.string.analytics_series_no_value)).assertIsDisplayed()
+    rule.onNodeWithText("0", substring = true).assertIsDisplayed()
     rule.onNodeWithTag("analytics_series_selected_point").assertExists()
     rule.onNodeWithTag("analytics_series_rows").assertExists()
   }

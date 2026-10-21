@@ -164,18 +164,6 @@ fun AnalyticsScreen(
       )
     }
 
-    item {
-      AnalyticsSeriesChart(
-        state = analyticsSeries,
-        selectedMetric = selectedSeriesMetric,
-        domainStatus = selectedDomainStatus,
-        rootGrouped = rootGrouped,
-        onMetricSelected = { selectedSeriesMetric = it },
-        onDomainStatusSelected = { selectedDomainStatus = it },
-        onRootGroupedChanged = { rootGrouped = it }
-      )
-    }
-
     if (analyticsLastSuccessAt != null && !analyticsErrorMessage.isNullOrBlank()) {
       item {
         Row(
@@ -322,6 +310,18 @@ fun AnalyticsScreen(
           analytics = analytics
         )
       }
+    }
+
+    item {
+      AnalyticsSeriesChart(
+        state = analyticsSeries,
+        selectedMetric = selectedSeriesMetric,
+        domainStatus = selectedDomainStatus,
+        rootGrouped = rootGrouped,
+        onMetricSelected = { selectedSeriesMetric = it },
+        onDomainStatusSelected = { selectedDomainStatus = it },
+        onRootGroupedChanged = { rootGrouped = it }
+      )
     }
 
     }
