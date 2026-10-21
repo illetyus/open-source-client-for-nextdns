@@ -636,4 +636,15 @@
     <string name="setup_detected_public_ip">Erkannte öffentliche IP</string>
     <string name="setup_open_dashboard">Verknüpfte IP bei NextDNS verwalten</string>
     <string name="setup_ipv4_dashboard_note">Profilspezifische IPv4-DNS-Adressen werden im NextDNS-Dashboard angezeigt.</string>
+    <string name="logs_history_all">Verfügbarer Verlauf</string>
+    <string name="logs_history_last_24_hours">Letzte 24 Stunden</string>
+    <string name="logs_history_last_7_days">Letzte 7 Tage</string>
+    <string name="logs_history_custom">Benutzerdefinierter Zeitraum</string>
+    <string name="logs_history_selected_range">%1$s – %2$s</string>
+    <string name="logs_history_choose_range">Datumsbereich auswählen</string>
+    <string name="logs_history_apply">Anwenden</string>
+    <string name="logs_history_cancel">Abbrechen</string>
+    <string name="logs_history_live_unavailable">Live-Updates sind nur in der ungefilterten Protokollansicht mit neuesten Einträgen zuerst verfügbar.</string>
+    <string name="logs_sort_newest">Neueste zuerst</string>
+    <string name="logs_sort_oldest">Älteste zuerst</string>
 </resources>

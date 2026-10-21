@@ -3,6 +3,7 @@ package com.example.ui.screens
 import com.example.i18n.UiLabels
 import com.example.R
 import com.example.i18n.AppStrings
+import com.example.i18n.LocalePreferences
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
@@ -37,6 +38,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.DeviceMetric
 import com.example.data.model.DeviceLabelResolver
 import com.example.data.model.DnsLogEntry
+import com.example.data.model.LogsHistoryFilter
+import com.example.data.model.LogsHistoryPreset
+import com.example.data.model.LogsSort
+import com.example.data.model.LogsTimeWindow
 import com.example.data.model.NEXTDNS_UNIDENTIFIED_DEVICE_ID
 import com.example.data.repository.LogsPaginationState
 import com.example.ui.components.*
@@ -44,6 +49,12 @@ import com.example.ui.theme.*
 import com.example.ui.viewmodel.NextDnsViewModel
 import kotlinx.coroutines.delay
 import java.time.Instant
+import java.time.Duration
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.util.Locale
 
 fun formatRelativeTime(timestampStr: String): String {
   try {
@@ -95,6 +106,7 @@ fun LogsScreen(
   val selectedDeviceFilter by viewModel.logsDeviceFilter.collectAsStateWithLifecycle()
   val selectedStatusFilter by viewModel.logsStatusFilter.collectAsStateWithLifecycle()
   val selectedSearchFilter by viewModel.logsSearchFilter.collectAsStateWithLifecycle()
+  val selectedHistoryFilter by viewModel.logsHistoryFilter.collectAsStateWithLifecycle()
   val paginationState by viewModel.logsPaginationState.collectAsStateWithLifecycle()
   val lifecycleOwner = LocalLifecycleOwner.current
   LaunchedEffect(activeProfile?.id) {
@@ -196,6 +208,19 @@ fun LogsScreen(
         searchQuery = searchQuery,
         onQueryChange = { searchQuery = it }
       )
+
+      LogsHistoryControls(
+        selectedFilter = selectedHistoryFilter,
+        onSelectFilter = viewModel::setLogsHistoryFilter
+      )
+
+      if (!selectedHistoryFilter.supportsLiveStreaming) {
+        Text(
+          text = AppStrings.get(R.string.logs_history_live_unavailable),
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          style = MaterialTheme.typography.bodySmall
+        )
+      }
 
       LogsStatusFilterRow(
         selectedStatusFilter = selectedStatusFilter,
@@ -413,6 +438,153 @@ internal fun LogsHeaderControls(
         contentDescription = AppStrings.get(R.string.ui_63cd725787),
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.size(20.dp)
+      )
+    }
+  }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+internal fun LogsHistoryControls(
+  selectedFilter: LogsHistoryFilter,
+  onSelectFilter: (LogsHistoryFilter) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  var showRangeMenu by remember { mutableStateOf(false) }
+  var showRangePicker by remember { mutableStateOf(false) }
+  val pickerState = rememberDateRangePickerState()
+  val appContext = LocalContext.current
+  val displayedPreset = if (
+    selectedFilter.preset == LogsHistoryPreset.AVAILABLE && selectedFilter.window != LogsTimeWindow()
+  ) LogsHistoryPreset.CUSTOM else selectedFilter.preset
+  val rangeLabel = when (displayedPreset) {
+    LogsHistoryPreset.AVAILABLE -> R.string.logs_history_all
+    LogsHistoryPreset.LAST_24_HOURS -> R.string.logs_history_last_24_hours
+    LogsHistoryPreset.LAST_7_DAYS -> R.string.logs_history_last_7_days
+    LogsHistoryPreset.CUSTOM -> R.string.logs_history_custom
+  }
+  val rangeLabelText = if (
+    displayedPreset == LogsHistoryPreset.CUSTOM &&
+    selectedFilter.window.fromInclusive != null && selectedFilter.window.toExclusive != null
+  ) {
+    val zone = ZoneId.systemDefault()
+    val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+      .withLocale(Locale.forLanguageTag(LocalePreferences.resolvedLanguage(appContext)))
+    val start = formatter.format(selectedFilter.window.fromInclusive.atZone(zone).toLocalDate())
+    val end = formatter.format(selectedFilter.window.toExclusive.minusNanos(1).atZone(zone).toLocalDate())
+    AppStrings.get(R.string.logs_history_selected_range, start, end)
+  } else {
+    AppStrings.get(rangeLabel)
+  }
+
+  Row(
+    modifier = modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Box(modifier = Modifier.weight(1f)) {
+      OutlinedButton(
+        onClick = { showRangeMenu = true },
+        modifier = Modifier.fillMaxWidth().testTag("logs_history_range_button")
+      ) {
+        Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(
+          text = rangeLabelText,
+          maxLines = 1,
+          overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
+        Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
+      }
+      DropdownMenu(expanded = showRangeMenu, onDismissRequest = { showRangeMenu = false }) {
+        fun choose(preset: LogsHistoryPreset, window: LogsTimeWindow) {
+          onSelectFilter(selectedFilter.copy(window = window, preset = preset))
+          showRangeMenu = false
+        }
+        DropdownMenuItem(
+          modifier = Modifier.testTag("logs_history_option_all"),
+          text = { Text(AppStrings.get(R.string.logs_history_all)) },
+          onClick = { choose(LogsHistoryPreset.AVAILABLE, LogsTimeWindow()) }
+        )
+        DropdownMenuItem(
+          modifier = Modifier.testTag("logs_history_option_24h"),
+          text = { Text(AppStrings.get(R.string.logs_history_last_24_hours)) },
+          onClick = {
+            val now = Instant.now()
+            choose(LogsHistoryPreset.LAST_24_HOURS, LogsTimeWindow(now.minus(Duration.ofHours(24)), now))
+          }
+        )
+        DropdownMenuItem(
+          modifier = Modifier.testTag("logs_history_option_7d"),
+          text = { Text(AppStrings.get(R.string.logs_history_last_7_days)) },
+          onClick = {
+            val now = Instant.now()
+            choose(LogsHistoryPreset.LAST_7_DAYS, LogsTimeWindow(now.minus(Duration.ofDays(7)), now))
+          }
+        )
+        DropdownMenuItem(
+          modifier = Modifier.testTag("logs_history_option_custom"),
+          text = { Text(AppStrings.get(R.string.logs_history_custom)) },
+          onClick = {
+            showRangeMenu = false
+            showRangePicker = true
+          }
+        )
+      }
+    }
+
+    val nextSort = if (selectedFilter.sort == LogsSort.NEWEST_FIRST) LogsSort.OLDEST_FIRST else LogsSort.NEWEST_FIRST
+    OutlinedButton(
+      onClick = { onSelectFilter(selectedFilter.copy(sort = nextSort)) },
+      modifier = Modifier.testTag("logs_history_sort_toggle")
+    ) {
+      Icon(
+        imageVector = if (selectedFilter.sort == LogsSort.NEWEST_FIRST) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.primary
+      )
+      Spacer(Modifier.width(6.dp))
+      Text(
+        text = AppStrings.get(
+          if (selectedFilter.sort == LogsSort.NEWEST_FIRST) R.string.logs_sort_newest
+          else R.string.logs_sort_oldest
+        ),
+        maxLines = 1,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+      )
+    }
+  }
+
+  if (showRangePicker) {
+    val startMillis = pickerState.selectedStartDateMillis
+    val endMillis = pickerState.selectedEndDateMillis
+    DatePickerDialog(
+      onDismissRequest = { showRangePicker = false },
+      confirmButton = {
+        TextButton(
+          enabled = startMillis != null && endMillis != null,
+          onClick = {
+            val startDate = startMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
+            val endDate = endMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
+            val window = LogsTimeWindow.fromLocalDates(startDate, endDate, ZoneId.systemDefault())
+            if (window != null) {
+              onSelectFilter(selectedFilter.copy(window = window, preset = LogsHistoryPreset.CUSTOM))
+              showRangePicker = false
+            }
+          }
+        ) { Text(AppStrings.get(R.string.logs_history_apply)) }
+      },
+      dismissButton = {
+        TextButton(onClick = { showRangePicker = false }) {
+          Text(AppStrings.get(R.string.logs_history_cancel))
+        }
+      }
+    ) {
+      DateRangePicker(
+        state = pickerState,
+        modifier = Modifier.heightIn(max = 520.dp),
+        title = { Text(AppStrings.get(R.string.logs_history_choose_range)) },
+        showModeToggle = false
       )
     }
   }

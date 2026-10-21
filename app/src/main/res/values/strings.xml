@@ -637,5 +637,16 @@
     <string name="setup_detected_public_ip">Detected public IP</string>
     <string name="setup_open_dashboard">Manage linked IP in NextDNS</string>
     <string name="setup_ipv4_dashboard_note">Profile-specific IPv4 DNS addresses are shown in the NextDNS dashboard.</string>
+    <string name="logs_history_all">Available history</string>
+    <string name="logs_history_last_24_hours">Last 24 hours</string>
+    <string name="logs_history_last_7_days">Last 7 days</string>
+    <string name="logs_history_custom">Custom date range</string>
+    <string name="logs_history_selected_range">%1$s – %2$s</string>
+    <string name="logs_history_choose_range">Choose a date range</string>
+    <string name="logs_history_apply">Apply</string>
+    <string name="logs_history_cancel">Cancel</string>
+    <string name="logs_history_live_unavailable">Live updates are available only for the unfiltered, newest-first log view.</string>
+    <string name="logs_sort_newest">Newest first</string>
+    <string name="logs_sort_oldest">Oldest first</string>
 </resources>
 <!-- Locale-only presentation; API privacy fields remain unchanged. -->

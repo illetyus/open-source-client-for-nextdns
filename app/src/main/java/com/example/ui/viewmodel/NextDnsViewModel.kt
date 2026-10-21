@@ -108,6 +108,7 @@ class NextDnsViewModel(
   val logsDeviceFilter = repository.logsDeviceFilter
   val logsStatusFilter = repository.logsStatusFilter
   val logsSearchFilter = repository.logsSearchFilter
+  val logsHistoryFilter = repository.logsHistoryFilter
   val logDevices = repository.logDevices
   val analytics = repository.analytics
   val analyticsLastSuccessAt = repository.analyticsLastSuccessAt
@@ -626,6 +627,10 @@ class NextDnsViewModel(
 
   fun setLogsSearchFilter(search: String?) {
     viewModelScope.launch { repository.setLogsSearchFilter(search) }
+  }
+
+  fun setLogsHistoryFilter(filter: LogsHistoryFilter) {
+    viewModelScope.launch { repository.setLogsHistoryFilter(filter) }
   }
 
   fun refreshAnalytics(device: String?, time: String?) {

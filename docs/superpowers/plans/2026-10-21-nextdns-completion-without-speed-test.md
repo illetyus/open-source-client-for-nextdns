@@ -133,13 +133,16 @@ data class LogsHistoryFilter(val window: LogsTimeWindow = LogsTimeWindow(), val 
 // ViewModel: fun setLogsHistoryFilter(filter: LogsHistoryFilter)
 ~~~
 
-- [ ] Failing testler: rangeUsesInclusiveFromExclusiveTo; localDateRangeSurvivesDst; historyFilterResetsCursorAndRejectsLatePage; ascendingHistoryDoesNotMixLiveSse.
-- [ ] Son 24 saat, son 7 gün, mevcut saklanan geçmiş ve özel tarih aralığı kontrollerini tasarla; başlangıç varsayılanı mevcut tüm saklanan/yeniye göre davranışı korusun.
-- [ ] Özel bitiş günü seçimini kullanıcının ZoneId değerinde ertesi gün başlangıcına çevir; API'ye UTC Instant gönder. Europe/Berlin 2026-03-29 için 23 saat, 2026-10-25 için 25 saatlik gün testleri; from >= to reddedilsin ve ağ isteği çıkmasın.
-- [ ] refresh/loadMore aynı profil, cihaz, durum, search, raw, from/to/sort anlık görüntüsünü kullansın. Her değişiklik cursor/generation'ı sıfırlasın; eski sayfa/SSE yeni seçime yazılmasın.
-- [ ] Sonu belirli aralıkta ve asc sıralamada canlı akışı durdur; açıklamasını göster. Canlı görünüme dönüşte tek stream aç; tarihsel listede otomatik prepend ile sıralamayı bozma.
-- [ ] Önbellek sınırı, son sayfa, tekrar cursor, boş yanıt ve saklama sınırı metni testlensin. Serviste olmayan eski geçmişin varlığı iddia edilmesin; API cihaz ID'si/ham bilinmeyen neden korunur.
-- [ ] Hedefli testler → tam test/lint/localization → ayrı PR/CI/inceleme/main entegrasyonu.
+- [x] Regresyonlar eklendi: `rangeUsesInclusiveFromExclusiveTo`, `localDateRangeSurvivesDst`, `historyFilterResetsCursorAndRejectsLatePage`, `ascendingHistoryDoesNotMixLiveSse`, `previouslyActiveLiveStreamResumesWhenReturningToNewestAvailableHistory`.
+- [x] Son 24 saat, son 7 gün, kullanılabilir saklanan geçmiş ve özel tarih aralığı kontrolleri eklendi; varsayılan davranış mevcut saklanan geçmişi kullanır.
+- [x] Özel bitiş günü kullanıcının ZoneId değerinde ertesi gün başlangıcına çevrilir ve UTC Instant gönderilir. Berlin'de 23/25 saatlik günler ile ters aralık ve isteksiz reddetme testleri eklendi.
+- [x] refresh/loadMore profil, cihaz, durum, arama, raw, from/to/sort anlık görüntüsünü doğrular. Filtre değişikliği cursor/generation'ı sıfırlar ve eski sayfa yanıtları reddedilir.
+- [x] Tarih aralığı/asc sıralamada canlı akış kapanır ve açıklama görünür; daha önce açıksa uyumlu varsayılan görünüme dönüşte yeniden açılır.
+- [x] Var olan saklama sınırı/boş yanıt davranışı korundu; cihaz geçmişi filtrelemesinde ham API ID'leri ve `__UNIDENTIFIED__` korunur.
+- [x] `/analytics/devices` `limit=500` ve cursor ile en çok 10 sayfaya kadar okunur. Tekrarlanan cursor ve sayfa sınırında son tam envanter korunur; bu yollar için regresyon eklendi.
+- [ ] Hedefli Android testleri ve tam CI, lint/localization; ayrı PR incelemesi ve main entegrasyonu.
+
+**Durum:** Uygulama ve test kodu hazır; yerel Android test raporu üretilemediği için PR CI doğrulaması bekleniyor. Statik API/lokalizasyon/yayın taslağı kapıları geçti.
 
 ### P04 — Analitik zaman serileri
 

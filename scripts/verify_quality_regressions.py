@@ -112,6 +112,9 @@ REQUIRED = {
     "wholeCallTimeoutReturnsFallbackResult",
     "cancellingLoadCancelsTheUnderlyingOkHttpCall")],
     "NDNS-065": [(REPOSITORY, "unknownLogStorageLocationDoesNotMasqueradeAsThePreviousLocalValue")],
+    "NDNS-073": [(AUDIT_REPOSITORY, "analyticsDevicePaginationIncludesEveryFilterableDevice"),
+        (AUDIT_REPOSITORY, "repeatedAnalyticsDeviceCursorKeepsTheLastCompleteInventory"),
+        (AUDIT_REPOSITORY, "analyticsDevicePageLimitKeepsTheLastCompleteInventory")],
 }
 
 
