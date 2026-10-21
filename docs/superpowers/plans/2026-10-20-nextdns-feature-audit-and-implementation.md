@@ -1,5 +1,7 @@
 # NextDNS API, Performance, Logs and Analytics Implementation Plan
 
+**Scope update — 21 October 2026:** The user canceled speed testing for the current release. The earlier speed-test design, implementation, and research below are retained as historical records; the approved [completion plan](2026-10-21-nextdns-completion-without-speed-test.md) supersedes those active steps and removes the feature from the current application.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Audit the existing independent NextDNS Android client against the ten requested API, diagnostics, performance, logs, analytics, and icon requirements; implement only behavior supported by a documented or observed contract and validate it through tests and GitHub CI.

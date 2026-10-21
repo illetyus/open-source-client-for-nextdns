@@ -10,10 +10,12 @@ Bu belge uygulamanın NextDNS tarafından onaylandığı veya desteklendiği anl
 
 `SUPPORTED_READ_WRITE` mevcut istemcide okuyup değiştirebilen; `SUPPORTED_READ_ONLY` yalnızca okuyabilen; `PARTIAL` sözleşmenin veya UI akışının yalnızca bir kısmının mevcut olduğu; `MISSING` yayımlanmış yüzey olup istemciye eklenmemiş; `UNVERIFIED` yayımlanmış belgede bulunmayan veya gerçek yanıtla doğrulanmamış özellik demektir.
 
+Rota kanıt sınıfı ayrıca tutulur: `DOCUMENTED` yol veya kullandığı genel API kuralı [S1]'de açıklanır; `OBSERVED` redakte edilmiş gerçek servis yanıtı/koşusuyla gözlenmiştir; `DECLARED_ONLY` yalnızca istemci kaynak kodunda tanımlıdır. MockWebServer ve sentetik fixture'lar servis gözlemi sayılmaz. Bu sınıflar bir rotaya yeni yazma yetkisi vermez.
+
 | Yüzey ve sözleşme | Kod eşlemesi | Durum ve sınır |
 |---|---|---|
 | Profiller: `GET /profiles`, `GET /profiles/{id}`, `POST /profiles`, `PATCH /profiles/{id}`, `DELETE /profiles/{id}` | `NextDnsApiService`; `NextDnsRepository`; profil seçimi ve yönetim ekranları | `SUPPORTED_READ_WRITE`. Liste sayfaları cursor kullanır; oluşturma, yeniden adlandırma ve silme kullanıcı eylemiyle yapılır. |
-| Profil kurulumu: `GET /profiles/{id}/setup`; `POST /profiles/{id}/setup/linkedIp` | `getProfileSetup` repository tarafından çağrılır; `updateLinkedIp` Retrofit'te tanımlı ancak repository/UI çağrısı yok | Okuma `SUPPORTED_READ_ONLY`; linked-IP yazma `PARTIAL`, uygulama akışı bulunmuyor. |
+| Profil kurulumu: `GET /profiles/{id}/setup`; `POST /profiles/{id}/setup/linkedIp` | `getProfileSetup` repository tarafından çağrılır; `updateLinkedIp` Retrofit'te kullanılmayan bir deklarasyondur. Ekrandaki linked-IP işlemi ayrı `link-ip.nextdns.io` hostuna gider. | Her iki API rotası yayımlanmış belgede yok (`DECLARED_ONLY`). Okuma ve bağlı IP yazma sözleşmesi doğrulanmış hizmet desteği olarak sunulamaz; HTTP 2xx tek başına bağlamayı kanıtlamaz. |
 | Güvenlik: `GET/PATCH /profiles/{id}/security`; `/security/tlds` kataloğu ve profil TLD ekleme/silme uçları | Sınırlı Moshi `SecurityDto` adaptörü ve `SecurityUpdateRequest`; `NextDnsRepository`; güvenlik ekranı | Belgelenen alanlar ve TLD'ler `SUPPORTED_READ_WRITE`. Güvenlik yanıtı 512 KiB ile sınırlıdır. Yayımlanmamış en fazla 32 üst düzey alan bellek içi DTO'da yakalanır; en fazla 24 güvenli anahtar adı/tür gösterilir, yalnız Boolean değeri görünür. Diğer ham değerler arayüze, kalıcı depoya veya API isteğine girmez. Taşan alanlar sayı ve SHA-256 özetiyle eşitleme anlık görüntüsüne katılır. Bilinmeyen alanların anlamı/yazılabilirliği ve yaş doğrulama alanı `UNVERIFIED`; hiçbir dinamik PATCH yapılmaz. |
 | Gizlilik: `GET/PATCH /profiles/{id}/privacy`; blocklist/native katalog ve profil alt kaynakları | `PrivacyDto`, mutasyon DTO'ları, `NextDnsRepository`, Gizlilik ekranı | `SUPPORTED_READ_WRITE`; kataloglar cursor ile okunur, ekleme ve silme profil alt kaynaklarından yapılır. |
 | Ebeveyn denetimi: `/parentalControl/services`, `/parentalControl/categories`; profil için `GET/PATCH /parentalControl`, kategori/hizmet alt kaynakları | `ParentalControlDto`, katalog DTO'ları, `NextDnsRepository`, ekran | `SUPPORTED_READ_WRITE`. `blockBypass` yayımlanmış ebeveyn denetimi alanıdır; yaş doğrulamasını atlama ayarı olarak yorumlanmaz. |
@@ -141,6 +143,77 @@ Bu liste kod içindeki HTTP metotlarını ve servis-relative yolları aynen kayd
 | `PATCH` | `/profiles/{profileId}/settings/blockPage` |
 | `GET` | `/` |
 <!-- API_ROUTE_INVENTORY_END -->
+
+
+### Rota kanıt sınıflandırması
+
+[S1] resmî API belgesi rotaları ve genel nested-object/array işlemlerini açıklar. Aşağıdaki `DECLARED_ONLY` satırları için mock testler yalnızca istemci isteğini sınar; gerçek NextDNS yanıtı veya destek garantisi değildir. `OBSERVED` olarak işaretlenmiş rota yoktur.
+
+<!-- API_ROUTE_EVIDENCE_START -->
+| Method | Service-relative route | Evidence class | Source or fixture |
+|---|---|---|---|
+| `GET` | `/profiles` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
+| `POST` | `/profiles` | `DOCUMENTED` | [S1: Profiles; create a profile] |
+| `GET` | `/profiles/{profileId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `DELETE` | `/profiles/{profileId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `PATCH` | `/profiles/{profileId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/profiles/{profileId}/setup` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
+| `POST` | `/profiles/{profileId}/setup/linkedIp` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
+| `GET` | `/profiles/{profileId}/security` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/security/tlds` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
+| `PATCH` | `/profiles/{profileId}/security` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `POST` | `/profiles/{profileId}/security/tlds` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `DELETE` | `/profiles/{profileId}/security/tlds/{tld}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/profiles/{profileId}/privacy` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/profiles/{profileId}/privacy/blocklists` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/profiles/{profileId}/privacy/natives` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/privacy/blocklists` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
+| `GET` | `/privacy/natives` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
+| `PATCH` | `/profiles/{profileId}/privacy` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `POST` | `/profiles/{profileId}/privacy/blocklists` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `DELETE` | `/profiles/{profileId}/privacy/blocklists/{blocklistId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `POST` | `/profiles/{profileId}/privacy/natives` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `DELETE` | `/profiles/{profileId}/privacy/natives/{nativeId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/parentalControl/services` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
+| `GET` | `/parentalControl/categories` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
+| `GET` | `/profiles/{profileId}/parentalControl` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `PATCH` | `/profiles/{profileId}/parentalControl` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `POST` | `/profiles/{profileId}/parentalControl/categories` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `PATCH` | `/profiles/{profileId}/parentalControl/categories/{categoryId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `DELETE` | `/profiles/{profileId}/parentalControl/categories/{categoryId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `POST` | `/profiles/{profileId}/parentalControl/services` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `PATCH` | `/profiles/{profileId}/parentalControl/services/{serviceId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `DELETE` | `/profiles/{profileId}/parentalControl/services/{serviceId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/profiles/{profileId}/denylist` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `POST` | `/profiles/{profileId}/denylist` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `PATCH` | `/profiles/{profileId}/denylist/{domain}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `DELETE` | `/profiles/{profileId}/denylist/{domain}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/profiles/{profileId}/allowlist` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `POST` | `/profiles/{profileId}/allowlist` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `PATCH` | `/profiles/{profileId}/allowlist/{domain}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `DELETE` | `/profiles/{profileId}/allowlist/{domain}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/profiles/{profileId}/logs/stream` | `DOCUMENTED` | [S1: Logs; streaming, download, clear] |
+| `GET` | `/profiles/{profileId}/logs` | `DOCUMENTED` | [S1: Logs; streaming, download, clear] |
+| `GET` | `/profiles/{profileId}/logs/download` | `DOCUMENTED` | [S1: Logs; streaming, download, clear] |
+| `DELETE` | `/profiles/{profileId}/logs` | `DOCUMENTED` | [S1: Logs; streaming, download, clear] |
+| `GET` | `/profiles/{profileId}/analytics/status` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/devices` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/domains` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/reasons` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/destinations` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/dnssec` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/encryption` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/protocols` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/ips` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/queryTypes` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/analytics/ipVersions` | `DOCUMENTED` | [S1: Analytics endpoints and query parameters] |
+| `GET` | `/profiles/{profileId}/settings` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `PATCH` | `/profiles/{profileId}/settings` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `PATCH` | `/profiles/{profileId}/settings/performance` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `PATCH` | `/profiles/{profileId}/settings/logs` | `DOCUMENTED` | [S1: Logs; streaming, download, clear] |
+| `PATCH` | `/profiles/{profileId}/settings/blockPage` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
+| `GET` | `/` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
+<!-- API_ROUTE_EVIDENCE_END -->
 
 ## API dışı ve doğrulanmamış veriler
 

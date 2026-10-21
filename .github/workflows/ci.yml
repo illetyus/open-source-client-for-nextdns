@@ -68,7 +68,9 @@ jobs:
         shell: bash
 
       - name: Verify API capability matrix against Retrofit routes
-        run: python3 scripts/verify_api_capability_matrix.py
+        run: |
+          python3 scripts/verify_api_capability_matrix.py
+          python3 -m unittest discover -s scripts/tests -p test_verify_api_capability_matrix.py
         shell: bash
 
       - name: Five-language resources and UI label gate
