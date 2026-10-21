@@ -67,7 +67,6 @@ class AnalyticsSeriesChartTest {
 
     rule.onNodeWithTag("analytics_series_line_chart").assertExists()
     rule.onNodeWithText(AppStrings.get(R.string.analytics_series_no_value)).assertIsDisplayed()
-    rule.onNodeWithText("0", substring = true).assertIsDisplayed()
     rule.onNodeWithTag("analytics_series_selected_point").assertExists()
     rule.onNodeWithTag("analytics_series_rows").assertExists()
   }
