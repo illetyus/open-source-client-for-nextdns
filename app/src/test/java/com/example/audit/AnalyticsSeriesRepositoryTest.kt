@@ -7,6 +7,7 @@ import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -48,7 +49,7 @@ class AnalyticsSeriesRepositoryTest : AuditFixture() {
       check(release.await(10, TimeUnit.SECONDS))
       json("""{"data":[{"status":"blocked","queries":[19]}],"meta":{"series":{"times":["2026-10-20T00:00:00Z"],"interval":3600}}}""")
     }
-    val request = async {
+    val request = async(Dispatchers.IO) {
       repository.fetchAnalyticsSeries(
         AnalyticsSeriesQuery(
           profileId = "aaaaaa", deviceId = null,
