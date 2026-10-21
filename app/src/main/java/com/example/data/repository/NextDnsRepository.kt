@@ -162,15 +162,18 @@ class NextDnsRepository(
   }
 
   private fun rememberLogDevice(deviceId: String?, deviceName: String?, deviceModel: String? = null) {
-    val id = deviceId?.takeIf { it.isNotBlank() && it != NEXTDNS_UNIDENTIFIED_DEVICE_ID } ?: return
+    val id = deviceId?.takeIf { it.isNotBlank() } ?: return
+    val isUnidentified = id == NEXTDNS_UNIDENTIFIED_DEVICE_ID
     val name = DeviceLabelResolver.resolve(
       deviceName,
       deviceModel,
       id,
       AppStrings.get(R.string.device_unidentified)
     )
-    _knownDeviceNameToId[name] = id
-    _knownDeviceIdToName[id] = name
+    if (!isUnidentified) {
+      _knownDeviceNameToId[name] = id
+      _knownDeviceIdToName[id] = name
+    }
     _logDevices.update { current ->
       (current.filterNot { it.id == id } + DeviceMetric(id = id, name = name, model = deviceModel.orEmpty()))
         .sortedBy { it.name.lowercase(Locale.ROOT) }
@@ -2466,7 +2469,6 @@ class NextDnsRepository(
       val name = DeviceLabelResolver.resolve(
         it.name, it.model, id, AppStrings.get(R.string.device_unidentified)
       )
-      rememberLogDevice(id, name, it.model)
       DeviceMetric(id = id, name = name, queries = it.queries ?: 0L, model = it.model.orEmpty())
     } ?: _analytics.value.topDevices
     updateKnownDevices(devices.map { it.name })

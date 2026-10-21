@@ -25,6 +25,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okhttp3.mockwebserver.*
 import org.junit.*
 import org.junit.Assert.*
@@ -72,9 +77,21 @@ abstract class AuditFixture {
   protected lateinit var repository: NextDnsRepository
   protected lateinit var preferences: NextDnsPreferences
   protected val requests = CopyOnWriteArrayList<String>()
+  protected val streamRequests = CopyOnWriteArrayList<String>()
   protected val gates = mutableListOf<CountDownLatch>()
   @Volatile protected var response: (RecordedRequest) -> MockResponse = { json("{}", 500) }
   protected fun json(body: String, code: Int = 200) = MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
+  private val testStreamClient = OkHttpClient.Builder().addInterceptor { chain ->
+    val request = chain.request()
+    streamRequests += request.url.encodedPath
+    Response.Builder()
+      .request(request)
+      .protocol(Protocol.HTTP_1_1)
+      .code(200)
+      .message("OK")
+      .body(ByteArray(0).toResponseBody("text/event-stream".toMediaType()))
+      .build()
+  }.build()
 
   @Before fun prepareDisposableFixture() {
     val context = ApplicationProvider.getApplicationContext<Context>()
@@ -101,7 +118,7 @@ abstract class AuditFixture {
     repository = NextDnsRepository(preferences,
       apiService = retrofit.create(NextDnsApiService::class.java),
       diagnosticService = retrofit.create(NextDnsTestService::class.java),
-      diagnosticProbe = { null }, backgroundWorkEnabled = false)
+      diagnosticProbe = { null }, streamClient = testStreamClient, backgroundWorkEnabled = false)
   }
 
   @After fun cleanDisposableFixture() {
@@ -196,15 +213,17 @@ class RepositoryAuditTest : AuditFixture() {
     delay(100)
 
     assertFalse(repository.isLiveStreaming.value)
-    assertFalse("Ascending history cannot open a live SSE stream", requests.any { it.contains("/logs/stream") })
+    assertFalse("Ascending history cannot open a live SSE stream", streamRequests.any { it.endsWith("/logs/stream") })
   }
 
   @Test fun previouslyActiveLiveStreamResumesWhenReturningToNewestAvailableHistory() = runBlocking {
     response = { json("""{"data":[]}""") }
     try {
       repository.setLiveStreaming(true)
-      delay(100)
-      assertTrue(requests.any { it.contains("/logs/stream") })
+      withTimeout(2_000) {
+        while (streamRequests.none { it.endsWith("/logs/stream") }) delay(10)
+      }
+      assertTrue(streamRequests.any { it.endsWith("/logs/stream") })
 
       val bounded = LogsHistoryFilter(
         window = LogsTimeWindow(
@@ -214,12 +233,14 @@ class RepositoryAuditTest : AuditFixture() {
       )
       assertTrue(repository.setLogsHistoryFilter(bounded))
       assertFalse(repository.isLiveStreaming.value)
-      val streamsAfterFilter = requests.count { it.contains("/logs/stream") }
+      val streamsAfterFilter = streamRequests.count { it.endsWith("/logs/stream") }
 
       assertTrue(repository.setLogsHistoryFilter(LogsHistoryFilter()))
       assertTrue(repository.isLiveStreaming.value)
-      delay(100)
-      assertTrue(requests.count { it.contains("/logs/stream") } > streamsAfterFilter)
+      withTimeout(2_000) {
+        while (streamRequests.count { it.endsWith("/logs/stream") } <= streamsAfterFilter) delay(10)
+      }
+      assertTrue(streamRequests.count { it.endsWith("/logs/stream") } > streamsAfterFilter)
     } finally {
       repository.stopLogsStream()
     }
@@ -228,7 +249,8 @@ class RepositoryAuditTest : AuditFixture() {
   @Test fun analyticsDevicePaginationIncludesEveryFilterableDevice() = runBlocking {
     response = { request ->
       val url = request.requestUrl!!
-      if (url.encodedPath.endsWith("/analytics/devices")) {
+      if (url.encodedPath.endsWith("/analytics/devices") &&
+        url.queryParameter("limit") == "500" && url.queryParameter("from") == null) {
         when (url.queryParameter("cursor")) {
           null -> json("""{"data":[{"id":"PHONE_A","name":"Annem","queries":10}],"meta":{"pagination":{"cursor":"devices-page-2"}}}""")
           "devices-page-2" -> json("""{"data":[{"id":"__UNIDENTIFIED__","queries":4}],"meta":{"pagination":{"cursor":null}}}""")
@@ -259,7 +281,8 @@ class RepositoryAuditTest : AuditFixture() {
   @Test fun repeatedAnalyticsDeviceCursorKeepsTheLastCompleteInventory() = runBlocking {
     response = { request ->
       val url = request.requestUrl!!
-      if (url.encodedPath.endsWith("/analytics/devices") && url.queryParameter("limit") == "500") {
+      if (url.encodedPath.endsWith("/analytics/devices") && url.queryParameter("limit") == "500" &&
+        url.queryParameter("from") == null) {
         json("""{"data":[{"id":"COMPLETE_DEVICE","name":"Complete","queries":1}],"meta":{"pagination":{"cursor":null}}}""")
       } else {
         json("""{"data":[]}""")
@@ -268,7 +291,8 @@ class RepositoryAuditTest : AuditFixture() {
     repository.loadActiveProfileDataFromApi()
     response = { request ->
       val url = request.requestUrl!!
-      if (url.encodedPath.endsWith("/analytics/devices") && url.queryParameter("limit") == "500") {
+      if (url.encodedPath.endsWith("/analytics/devices") && url.queryParameter("limit") == "500" &&
+        url.queryParameter("from") == null) {
         when (url.queryParameter("cursor")) {
           null -> json("""{"data":[{"id":"PHONE_A","name":"Annem","queries":10}],"meta":{"pagination":{"cursor":"repeat"}}}""")
           "repeat" -> json("""{"data":[{"id":"PHONE_B","name":"Other","queries":5}],"meta":{"pagination":{"cursor":"repeat"}}}""")
@@ -295,7 +319,8 @@ class RepositoryAuditTest : AuditFixture() {
     val pageRequests = CopyOnWriteArrayList<String?>()
     response = { request ->
       val url = request.requestUrl!!
-      if (url.encodedPath.endsWith("/analytics/devices") && url.queryParameter("limit") == "500") {
+      if (url.encodedPath.endsWith("/analytics/devices") && url.queryParameter("limit") == "500" &&
+        url.queryParameter("from") == null) {
         pageRequests += url.queryParameter("cursor")
         val page = pageRequests.size
         json("""{"data":[{"id":"PARTIAL_$page","queries":$page}],"meta":{"pagination":{"cursor":"cursor-$page"}}}""")
