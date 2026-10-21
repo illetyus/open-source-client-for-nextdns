@@ -135,12 +135,12 @@ class AnalyticsSeriesContractTest {
     }
   }
 
-  private fun query() = AnalyticsSeriesQuery(
+  private fun query(metric: SeriesMetric = SeriesMetric.QUERY_TYPES) = AnalyticsSeriesQuery(
     profileId = "abcdef",
     deviceId = null,
     fromInclusive = Instant.parse("2026-10-20T00:00:00Z"),
     toExclusive = Instant.parse("2026-10-20T02:00:00Z"),
-    metric = SeriesMetric.QUERY_TYPES,
+    metric = metric,
     intervalSeconds = 3_600L
   )
 }

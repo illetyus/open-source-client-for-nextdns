@@ -61,14 +61,12 @@ class AnalyticsSeriesRepositoryTest : AuditFixture() {
     assertTrue(started.await(5, TimeUnit.SECONDS))
     repository.setActiveProfile("bbbbbb")
     release.countDown()
-    try {
-      val committed = try {
-        request.await()
-      } catch (_: CancellationException) {
-        false
-      }
-      assertFalse("A response for the old profile must be discarded", committed)
+    val committed = try {
+      request.await()
+    } catch (_: CancellationException) {
+      false
     }
+    assertFalse("A response for the old profile must be discarded", committed)
     assertNull(repository.analyticsSeries.value.query)
     assertTrue(repository.analyticsSeries.value.rows.isEmpty())
   }
