@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import verify_quality_regressions as quality
 from verify_quality_regressions import assert_reports_cover_changed_sources, source_tree_sha256
 
 TEST_TEMP_ROOT = Path(__file__).resolve().parents[2] / "build" / "quality-script-tests"
@@ -50,6 +51,23 @@ class QualityRegressionEvidenceTest(unittest.TestCase):
             source.write_text("class After", encoding="utf-8")
 
             self.assertNotEqual(before, source_tree_sha256(root))
+
+    def test_retired_speed_regression_needs_removal_evidence(self):
+        required = quality.REQUIRED
+        account_case = ("com.example.audit.AccountSettingsFlowTest", "speedTestEntryIsAbsentFromAccountScreen")
+        preferences_class = "com.example.data.local.RetiredFeaturePreferencesTest"
+        self.assertIn(account_case, required["NDNS-061"])
+        self.assertIn((preferences_class, "retiredSpeedSettingsAreClearedWithoutTouchingCredentialsOrTheme"), required["NDNS-061"])
+        self.assertIn((preferences_class, "retiredSpeedSettingsCleanupIsIdempotent"), required["NDNS-062"])
+        retired_classes = {
+            class_name
+            for cases in (required["NDNS-061"], required["NDNS-062"])
+            for class_name, _ in cases
+        }
+        self.assertFalse(retired_classes.intersection({
+            "com.example.data.diagnostics.LibreSpeedContractTest",
+            "com.example.ui.screens.SpeedTestLifecycleTest",
+        }))
 
 
 if __name__ == "__main__":

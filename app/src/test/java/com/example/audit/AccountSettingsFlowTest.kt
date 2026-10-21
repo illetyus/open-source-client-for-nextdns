@@ -123,21 +123,12 @@ class AccountSettingsFlowTest : AuditFixture() {
     english()
   }
 
-  @Test fun speedTestHasNoDefaultServerAndRequiresExplicitSetupBeforeNetworkUse() {
+  @Test fun speedTestEntryIsAbsentFromAccountScreen() {
     english()
-    val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
-    context.getSharedPreferences("speed_test_local_settings", android.content.Context.MODE_PRIVATE)
-      .edit().clear().commit()
     val model = NextDnsViewModel(repository)
     rule.setContent { AppTheme { AccountScreen(model) } }
 
-    rule.onNodeWithTag("open_speed_test").performScrollTo().performClick()
-    rule.onNodeWithTag("speed_test_server").assertIsDisplayed()
-    rule.onNodeWithTag("speed_test_start").assertIsNotEnabled()
-    rule.onNodeWithTag("speed_test_upload").assertIsNotEnabled()
-    rule.onNodeWithText(AppStrings.get(R.string.speed_test_disclosure)).assertIsDisplayed()
-    rule.onNodeWithText(AppStrings.get(R.string.speed_test_authorization)).assertIsDisplayed()
-    rule.onNodeWithTag("speed_test_transfer_consent").assertIsDisplayed()
+    rule.onNodeWithTag("open_speed_test").assertDoesNotExist()
   }
 
   @Test fun connectionAreaOpensFromDedicatedTopRightButton() {
