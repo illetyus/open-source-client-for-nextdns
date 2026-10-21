@@ -62,10 +62,17 @@ def audit_dex(data):
     descriptors = type_descriptors(data)
     prefixes = (b'Lorg/robolectric/', b'Lokhttp3/mockwebserver/', b'Lorg/jacoco/',
                 b'Lcom/example/ReleaseSecurityRuntimeTest')
+    retired_product_type_prefixes = (
+        b'Lcom/example/data/diagnostics/LibreSpeedClient',
+        b'Lcom/example/ui/screens/SpeedTestDialog',
+    )
     for descriptor in sorted(descriptors):
         if descriptor.lstrip(b'[').startswith(prefixes):
             raise TestCodeFound('Forbidden test type: ' + descriptor.decode('ascii', errors='replace'))
-    for marker in (b'$jacoco', b'RELEASE_AUDIT_SYNTHETIC_CANARY_20261009'):
+        if descriptor.lstrip(b'[').startswith(retired_product_type_prefixes):
+            raise TestCodeFound('Retired product type: ' + descriptor.decode('ascii'))
+    for marker in (b'$jacoco', b'RELEASE_AUDIT_SYNTHETIC_CANARY_20261009',
+                   b'garbage.php', b'empty.php'):
         if marker in data:
             raise TestCodeFound('Forbidden release marker: ' + marker.decode('ascii'))
     return len(descriptors)

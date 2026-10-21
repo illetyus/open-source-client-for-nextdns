@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 import sys
+import os
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import verify_quality_regressions as quality
@@ -24,6 +25,8 @@ class QualityRegressionEvidenceTest(unittest.TestCase):
             report.parent.mkdir(parents=True)
             report.write_text("<testsuite/>", encoding="utf-8")
             source.write_text("class Changed", encoding="utf-8")
+            os.utime(report, (1_700_000_000, 1_700_000_000))
+            os.utime(source, (1_700_000_002, 1_700_000_002))
 
             with self.assertRaisesRegex(AssertionError, "reports predate changed app sources"):
                 assert_reports_cover_changed_sources(root, [report], ["app/src/main/Changed.kt"])
@@ -37,7 +40,8 @@ class QualityRegressionEvidenceTest(unittest.TestCase):
             report.parent.mkdir(parents=True)
             source.write_text("class Changed", encoding="utf-8")
             report.write_text("<testsuite/>", encoding="utf-8")
-            report.touch()
+            os.utime(source, (1_700_000_000, 1_700_000_000))
+            os.utime(report, (1_700_000_002, 1_700_000_002))
 
             assert_reports_cover_changed_sources(root, [report], ["app/src/main/Changed.kt"])
 
@@ -57,7 +61,7 @@ class QualityRegressionEvidenceTest(unittest.TestCase):
         account_case = ("com.example.audit.AccountSettingsFlowTest", "speedTestEntryIsAbsentFromAccountScreen")
         preferences_class = "com.example.data.local.RetiredFeaturePreferencesTest"
         self.assertIn(account_case, required["NDNS-061"])
-        self.assertIn((preferences_class, "retiredSpeedSettingsAreClearedWithoutTouchingCredentialsOrTheme"), required["NDNS-061"])
+        self.assertIn((preferences_class, "retiredSpeedSettingsAreClearedWithoutTouchingCredentialsThemeLocaleOrLegalAcceptance"), required["NDNS-061"])
         self.assertIn((preferences_class, "retiredSpeedSettingsCleanupIsIdempotent"), required["NDNS-062"])
         retired_classes = {
             class_name

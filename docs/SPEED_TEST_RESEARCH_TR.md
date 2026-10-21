@@ -2,7 +2,9 @@
 
 **İnceleme tarihi:** 20 Ekim 2026  
 **Kapsam:** NextDNS API'si dışında çalışan, Android'de kullanıcı tarafından başlatılan bağlantı ölçümü.  
-**Durum:** Kod ve yerel sözleşme testleri PR taslağında; gerçek sunucu ve cihaz doğrulaması yayın kapısı olarak açık.
+**Tarihsel araştırma durumu:** Bu özellik önceki bir PR taslağında kodlanmıştı; bu araştırma kaydı tarihsel tasarımı ve dış kaynakları saklar.
+
+**Güncel sürüm kararı — 21 Ekim 2026:** Hız testi bu sürüm için kullanıcı kararıyla iptal edildi. İlgili ekran, yürütülebilir istemci ve ürün testleri kaynak ağacından kaldırıldı; daha önce kaydedilmiş araştırma ve hata geçmişi yalnız tarihsel bağlam olarak tutuluyor. Bu belge uygulamada hâlen bir hız testi bulunduğunu veya sunucuya istek yapıldığını göstermez.
 
 ## Kaynak taraması
 

@@ -89,7 +89,6 @@ fun AccountScreen(
   var showNewProfileDialog by remember { mutableStateOf(false) }
   var newProfileName by remember { mutableStateOf("") }
   var showApiKey by remember { mutableStateOf(false) }
-  var showSpeedTest by remember { mutableStateOf(false) }
   var profileNameInput by remember(activeProfile?.id, activeProfile?.name) {
     mutableStateOf(activeProfile?.name.orEmpty())
   }
@@ -625,22 +624,6 @@ fun AccountScreen(
       }
     }
 
-    item {
-      NextDnsCard(
-        title = AppStrings.get(R.string.speed_test_title),
-        subtitle = AppStrings.get(R.string.speed_test_card_summary)
-      ) {
-        Button(
-          onClick = { showSpeedTest = true },
-          modifier = Modifier.fillMaxWidth().testTag("open_speed_test")
-        ) {
-          Icon(imageVector = Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(16.dp))
-          Spacer(modifier = Modifier.width(8.dp))
-          Text(AppStrings.get(R.string.speed_test_open))
-        }
-      }
-    }
-
     // 6. Account Management / Web Link & Logout
     item {
       NextDnsCard(
@@ -689,10 +672,6 @@ fun AccountScreen(
         }
       }
     }
-  }
-
-  if (showSpeedTest) {
-    SpeedTestDialog(onDismiss = { showSpeedTest = false })
   }
 
   // Logout Dialog

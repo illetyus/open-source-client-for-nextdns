@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.example.data.preferences.ThemePreferences
 import com.example.data.legal.LegalAcceptanceStore
 import com.example.ui.screens.HomeScreen
@@ -28,6 +29,8 @@ import com.example.ui.screens.LegalWelcomeScreen
 import com.example.ui.theme.AppTheme
 import com.example.ui.theme.ThemeMode
 import com.example.ui.viewmodel.NextDnsViewModel
+import com.example.data.local.clearRetiredSpeedTestSettings
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
   override fun attachBaseContext(newBase: Context) {
@@ -42,6 +45,9 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     com.example.data.notifications.NotificationCenter.createChannels(this)
+    lifecycleScope.launch {
+      clearRetiredSpeedTestSettings(applicationContext)
+    }
     
     splashScreen.setKeepOnScreenCondition {
         // Keep splash screen on until we know the login status

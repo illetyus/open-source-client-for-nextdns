@@ -43,5 +43,7 @@ PR #27 başlığı `db868282d9ab463ed39a27185acdc182184a1764` dokümantasyon gü
 
 PR #27'nin güncel başı `be8111d37346cfba043166b2b440700958789683` için [CI #358](https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39529639581) başarıyla tamamlandı. Bu, sonraki kod değişikliklerinin CI kanıtı değildir. Rota envanterinde 61 Retrofit satırı korunurken 52'si belgeli genel/yol sözleşmesi, 9'u yalnızca kodda tanımlı olarak ayrılmıştır; 0 rota canlı gözlem diye sunulur. Hız testi mevcut sürüm kapsamından iptal edildi. Faz 9'un gerçek cihaz, fiziksel performans, özgün ikon incelemesi, nihai hukuk ve Play kapıları açık kalır.
 
+P01 uygulamasında hız testi kartı, dialog, istemci, saklama deposu ve ilgili eski testler kaldırıldı. Uygulama başlangıcında yalnız `speed_test_local_settings` temizlenir; API anahtarı, tema, dil ve sözleşme kabulü bu temizliğin kapsamına girmez. Kalan CI/PR sonucu güncel kaynak başında doğrulanacaktır.
+
 
 **Kod kalitesi düzeltme güncellemesi:** [PR #21](https://github.com/illetyus/open-source-client-for-nextdns/pull/21), ilk incelemedeki 3 P1/7 P2 kusuru kodda giderir; 37 hedefli regresyon dahil 104 JVM testi ve 10 native release güvenlik testi başarılıdır. [Düzeltme raporu](CODE_QUALITY_FIXES_TR_2026-10-10.md) ve hata defteri güncel `FIXED_JVM_VERIFIED_DEVICE_PENDING` durumunu taşır. Önceki paragraf ilk bulgu kaydıdır. Yeni main CI’a bağlı imzalı aday ve B01–B22 kabulü sıradadır; hukuk DRAFT ve Faz 9 açık kalır.
