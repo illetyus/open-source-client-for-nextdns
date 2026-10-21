@@ -1,7 +1,7 @@
 # Open Source Client for NextDNS — Privacy Policy (English draft)
 
 **DRAFT FOR TECHNICAL/LEGAL REVIEW — DO NOT PUBLISH YET**
-Document revision: 0.2 (9 October 2026). Effective date: [DATE OF FIRST PUBLIC RELEASE].
+Document revision: 0.4 (21 October 2026). Effective date: [DATE OF FIRST PUBLIC RELEASE].
 Developer/publisher: [VERIFIED LEGAL OR TRADING NAME].
 Support and privacy inquiries: [WORKING CONTACT / HTTPS PAGE].
 Public policy URL: [PUBLIC ACCESSIBLE NON-PDF HTTPS URL].
@@ -18,8 +18,8 @@ This Policy describes the Android application's access to, use of, storage of an
 Subject to the user's account, NextDNS settings and features used, the Application may handle the following categories:
 
 - **API access credentials:** An API key provided by the user to access permitted NextDNS API functions.
-- **Account details:** Information returned by NextDNS such as display name, account email or subscription/plan status.
-- **Profile and configuration data:** Profile identifiers/names, security, privacy and parental-control settings, allow and deny lists, linked-IP settings and relevant management state.
+- **Account and profile context:** The client requests profile and configuration data through documented API routes. It does not request an undocumented account endpoint or retrieve account email/subscription-plan details through that route.
+- **Profile and configuration data:** Profile identifiers/names, security, privacy and parental-control settings, allow and deny lists, and relevant management state returned by the public API.
 - **DNS logs and usage analytics:** Domain names, query times, connection-related or device-related indicators, query counts, protection status, IP information and other fields available from NextDNS. Logs may reflect network activity involving people other than the account holder.
 - **Local operational preferences:** Selected profile, UI theme, app language, accepted Terms revision and device-local acceptance time, optional notification settings, related state or deduplication information and timestamps.
 - **Log exports:** A file requested by the user through NextDNS's export mechanisms and saved to a location selected by the user.
@@ -28,11 +28,11 @@ Only information necessary for the requested account-management function should 
 
 ## 3. How the data is used
 
-The Application uses the data for authenticating API requests; displaying account, profile and configuration information; applying the user's requested profile changes; presenting available logs and statistics; exporting selected information; and enabling optional local notifications or summaries. It is not designed to establish a separate social account, sell subscriptions or proxy the user's DNS browsing traffic through a developer-controlled server.
+The Application uses the data for authenticating API requests; displaying profile and configuration information; applying the user's requested profile changes; presenting available logs and statistics; exporting selected information; and enabling optional local notifications or summaries. It is not designed to establish a separate social account, sell subscriptions or proxy the user's DNS browsing traffic through a developer-controlled server.
 
 ## 4. Destinations and network transmissions
 
-The intended architecture uses HTTPS connections from the Android device directly to NextDNS endpoints, including https://api.nextdns.io/, https://test.nextdns.io/ and https://link-ip.nextdns.io/ as required by the selected functions. These requests may reveal data such as API credentials, relevant account/profile identifiers, query parameters and the network source IP to NextDNS in the course of the service.
+The intended architecture uses HTTPS connections from the Android device directly to NextDNS endpoints, including https://api.nextdns.io/ and https://test.nextdns.io/. These requests may reveal data such as API credentials, relevant account/profile identifiers, query parameters and the network source IP to NextDNS in the course of the service. The client does not call https://link-ip.nextdns.io/ or undocumented profile setup/linked-IP API routes. The public API documentation does not define those operations; the setup screen sends users to the NextDNS dashboard to view or manage linked-IP settings. The dashboard is opened in the user's browser, outside the client's API request flow.
 
 For user-requested DNS log exports, NextDNS may supply a HTTPS file-download URL with a different hostname. The Application uses a separate download client without attaching the API key as an authorization header to that URL. **The precise destinations and redirects require verification in the final production network test.**
 

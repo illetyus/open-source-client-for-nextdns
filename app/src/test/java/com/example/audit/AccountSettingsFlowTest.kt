@@ -1,7 +1,6 @@
 package com.example.audit
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.runtime.mutableStateOf
 import androidx.test.core.app.ApplicationProvider
 import com.example.NextDnsApp
@@ -9,6 +8,7 @@ import com.example.R
 import com.example.data.model.AllowDenyItem
 import com.example.data.model.NativeTrackingEntry
 import com.example.data.model.PrivacySettings
+import com.example.data.repository.TldCatalogLoadState
 import com.example.i18n.AppStrings
 import com.example.i18n.LocalePreferences
 import com.example.ui.screens.AccountScreen
@@ -20,6 +20,8 @@ import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.PrivacyScreen
 import com.example.ui.screens.SettingsScreen
+import com.example.ui.screens.SecurityScreen
+import com.example.ui.screens.TldCatalogContent
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NavTab
 import com.example.ui.viewmodel.NextDnsViewModel
@@ -37,7 +39,7 @@ import kotlinx.coroutines.runBlocking
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], qualifiers = "w400dp-h2400dp-mdpi", application = NextDnsApp::class)
 class AccountSettingsFlowTest : AuditFixture() {
-  @get:Rule val rule = createComposeRule()
+  @get:Rule val rule = AuditComposeTestRule()
 
   private fun english() {
     LocalePreferences.setSelection(ApplicationProvider.getApplicationContext<NextDnsApp>(), "en")
@@ -121,6 +123,14 @@ class AccountSettingsFlowTest : AuditFixture() {
     english()
   }
 
+  @Test fun speedTestEntryIsAbsentFromAccountScreen() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { AccountScreen(model) } }
+
+    rule.onNodeWithTag("open_speed_test").assertDoesNotExist()
+  }
+
   @Test fun connectionAreaOpensFromDedicatedTopRightButton() {
     english()
     response = { request ->
@@ -178,11 +188,49 @@ class AccountSettingsFlowTest : AuditFixture() {
       }
     }
 
-    rule.onNodeWithTag("allowlist_domain_icon").assertWidthIsEqualTo(16.dp)
-    rule.onNodeWithTag("allowlist_domain_icon").assertHeightIsEqualTo(16.dp)
+    rule.onNodeWithTag("allowlist_domain_icon").assertWidthIsEqualTo(12.dp)
+    rule.onNodeWithTag("allowlist_domain_icon").assertHeightIsEqualTo(12.dp)
     rule.runOnIdle { showAllowlist.value = false }
-    rule.onNodeWithTag("denylist_domain_icon").assertWidthIsEqualTo(16.dp)
-    rule.onNodeWithTag("denylist_domain_icon").assertHeightIsEqualTo(16.dp)
+    rule.onNodeWithTag("denylist_domain_icon").assertWidthIsEqualTo(12.dp)
+    rule.onNodeWithTag("denylist_domain_icon").assertHeightIsEqualTo(12.dp)
+  }
+
+  @Test fun tldCatalogContentShowsLoadingInsteadOfCatalogEntriesBeforeLoadCompletes() {
+    english()
+    rule.setContent {
+      AppTheme {
+        TldCatalogContent(
+          loadState = TldCatalogLoadState.LOADING,
+          tlds = listOf(".work", ".zip"),
+          onAddTld = {}
+        )
+      }
+    }
+    rule.onNodeWithTag("security_tld_catalog_loading").assertIsDisplayed()
+    rule.onNodeWithText(".work").assertDoesNotExist()
+    rule.onNodeWithText(".zip").assertDoesNotExist()
+  }
+
+  @Test fun successfulEmptyTldCatalogIsNotReportedAsANetworkFailure() = runBlocking {
+    response = { json("""{"data":[]}""") }
+    repository.loadAllLiveCatalogs()
+
+    assertEquals(TldCatalogLoadState.EMPTY, repository.tldCatalogLoadState.value)
+    assertTrue(repository.availableTldsCatalog.value.isEmpty())
+  }
+
+  @Test fun loadedTldCatalogUsesOnlyServerProvidedEntries() = runBlocking {
+    response = { request ->
+      if (request.requestUrl?.encodedPath == "/security/tlds") {
+        json("""{"data":[{"id":"zip","spamhaus":0}]}""")
+      } else {
+        json("""{"data":[]}""")
+      }
+    }
+    repository.loadAllLiveCatalogs()
+
+    assertEquals(TldCatalogLoadState.AVAILABLE, repository.tldCatalogLoadState.value)
+    assertEquals(listOf("zip"), repository.availableTldsCatalog.value.map { it.id })
   }
 
   @Test fun destinationsMapShowsCountryDataWhenAnotherAnalyticsRequestFails() {
@@ -343,6 +391,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithText("Anycast: enabled").assertIsDisplayed()
     rule.onNodeWithTag("diagnostic_source").assertTextEquals(AppStrings.get(R.string.diagnostic_source))
     rule.onNodeWithTag("diagnostic_checked_at").assertIsDisplayed()
+    rule.onNodeWithTag("diagnostic_region_unavailable").assertIsDisplayed()
     rule.onNodeWithText("New York", substring = true).assertDoesNotExist()
     rule.onNodeWithText("United States", substring = true).assertDoesNotExist()
   }
@@ -426,3 +475,5 @@ class AccountSettingsFlowTest : AuditFixture() {
     assertTrue(model.uiMessage.value?.text?.contains(NavTab.ANALYTICS.title) == true)
   }
 }
+
+

@@ -34,6 +34,10 @@ object ConfigSnapshotHasher {
       appendBool(snapshot.security.parking)
       appendBool(snapshot.security.csam)
       appendList(snapshot.security.tlds.orEmpty().map { it.id })
+      append("unknown-security:")
+      appendCanonicalValue(snapshot.security.unknownFields)
+      append("overflow:").append(snapshot.security.unknownFieldOverflowCount).append(';')
+      append(snapshot.security.unknownFieldOverflowDigest).append(';')
 
       append("|privacy:")
       appendBool(snapshot.privacy.disguisedTrackers)
@@ -92,6 +96,36 @@ object ConfigSnapshotHasher {
       append(it).append(',')
     }
     append(';')
+  }
+
+  private fun StringBuilder.appendCanonicalValue(value: Any?) {
+    when (value) {
+      null -> append('n')
+      is Boolean -> append(if (value) "b1" else "b0")
+      is String -> appendSized('s', value)
+      is Number -> appendSized('d', value.toString())
+      is Map<*, *> -> {
+        append('{')
+        value.entries
+          .filter { it.key is String }
+          .sortedBy { it.key as String }
+          .forEach { (key, nestedValue) ->
+            appendSized('k', key as String)
+            appendCanonicalValue(nestedValue)
+          }
+        append('}')
+      }
+      is Iterable<*> -> {
+        append('[')
+        value.forEach { appendCanonicalValue(it) }
+        append(']')
+      }
+      else -> appendSized('x', value.javaClass.name)
+    }
+  }
+
+  private fun StringBuilder.appendSized(type: Char, value: String) {
+    append(type).append(value.length).append(':').append(value)
   }
 
   private fun Boolean?.token(): String = when (this) {

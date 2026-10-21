@@ -1,5 +1,62 @@
 # Hata defteri — yayın öncesi kod incelemesi
 
+## 20 Ekim 2026 — kullanıcı tarafından tanımlanan hız testi sunucusu
+
+| Kayıt | Bulgu | Düzeltme / doğrulama |
+|---|---|---|
+| NDNS-054 | Kamuya açık bir test sunucusunu varsayılan seçmek, sunucu izni ve IP/telemetry saklama koşulları doğrulanmadığı için kullanıcıyı beklenmeyen veri paylaşımına ve trafikten doğan sorunlara sokabilirdi. Önceki plan aktarım motorunu bu nedenle ertelemişti. | Uygulamaya varsayılan adres koymadan kullanıcı tarafından girilen HTTPS LibreSpeed uyumlu sunucu, HTTPS politika bağlantısı ve test başına yetki onayı eklendi. İndirme 10.000.000 baytta sınırlandırıldı; 1.000.000 baytlık sentetik yükleme ayrı onay gerektiriyor. Redirect/cookie/retry, IP-ISP sorgusu, telemetry ve sonuç kalıcılığı yok. MockWebServer ve Compose testleri eklendi; CI #350'de offline sözleşme ve onay testleri geçti; kullanıcı yönlendirmesiyle canlı sunucu/telefon ölçümü ertelendi. |
+
+LibreSpeed'in yayımlanmış sunucu belgesi `garbage.php` için `ckSize` büyüklüğünü ve `empty.php` ping/yükleme rollerini açıklar; güncel kaynak kodu veri parçalarını 1.048.576 bayt olarak yazar. Ayrıntı ve kaynak bağlantıları [hız testi araştırma kaydında](SPEED_TEST_RESEARCH_TR.md). Bu, herhangi bir üçüncü taraf sunucunun kullanım iznini veya kapasitesini doğrulamaz.
+
+## 20 Ekim 2026 — PR #27 CI #322–#327 dispatcher yarışı ve son doğrulama
+
+CI #322 (run `39451553055`, head `b9e0173e00f7827933b76f881bd868082c3ad4ff`) başarısız oldu: `accountDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected` sırasında `TestMainDispatcher.kt:72` eşzamanlı Main-dispatcher erişim hatası verdi. JUnit 4.13.2, `@Before`/`@After` çağrılarını kuralların içine sarıyor; eski fixture, `@After` içinde Main'i sıfırlarken Compose kuralının teardown'ı hâlâ çalışabiliyordu ([JUnit 4.13.2 runner](https://github.com/junit-team/junit4/blob/r4.13.2/src/main/java/org/junit/runners/BlockJUnit4ClassRunner.java)). Main dispatcher kurulum/sıfırlaması dış TestRule'a taşındı; Compose test kuralı onun içine `RuleChain` ile yerleştirildi. Repository-only testler kendi Main kuralını, account ve UI testleri bileşik Compose kuralını kullanıyor.
+
+İlk kural-wrapper denemesi CI #326'da (`39454569461`) derlenmedi: `createComposeRule()` dönüşünün `ComposeContentTestRule` API'si yerine `ComposeTestRule` diye tiplendirilmesi `setContent` metodunu görünmez yaptı; ayrıca test kuralı sınıfı public `@Rule` alanında internal tip olarak açığa çıkıyordu. Wrapper, Compose'un content-rule arayüzüne ve public görünürlüğe geçirildi.
+
+Düzeltilmiş kod başlığı `6096f584ffef25bcf3d151f6924b8c443880e5de` için [CI #327](https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39455562687) başarılı tamamlandı: Android Lint, metadata/API matrisi/beş dil/hukuki DRAFT kapıları, 205 JVM/Compose testi (0 başarısız/0 atlanan), 12 ekran görüntüsü, 588 coverage sınıfı, Debug ve unsigned Release, Macrobenchmark derlemesi, bağımlılık/SDK/NOTICE/DEX ve Snyk High (50 bağımlılık, 0 bulgu). Release-payload emülatöründe 12 test geçti; logcat'te canary bulunmadı ve imzalı/unsigned payload girdileri eşleşti. `Snyk Monitor Main` PR çalışması olduğu için beklendiği şekilde atlandı. Hız testi kullanıcı kararıyla ertelenmiş durumda. BrowserStack/gerçek cihaz, aynı cihazda kıyas, Perfetto ve recomposition ölçümleri hâlâ fiziksel kanıt bekliyor.
+
+| Kayıt | Öncelik | Bulgu | Düzeltme / doğrulama |
+|---|---|---|---|
+| NDNS-059 | P2 | Test fixture, Compose kuralı kapanmadan önce global `Dispatchers.Main` değerini `@After` içinde sıfırladığı için CI'da eşzamanlı okuma/yazma yarışı oluştu. | Dispatcher yaşam döngüsü Compose teardown'ını saran JUnit RuleChain'e taşındı; account/UI ve repository testleri ayrı kuralla çalışıyor. CI #327 tüm 205 testi ve test kanıtı kapısını geçti. |
+
+## 20 Ekim 2026 — PR #27 CI #319 kapanışı ve doğrulama düzeltmeleri
+
+[CI #319](https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39443973201) (`39443973201`) `90ea34ab87c353e07ee097a2321b863d6678a258` commit'inde başarılı tamamlandı. 205 JVM/Compose testi 0 başarısız ve 0 atlanan sonuçla, 12 ekran görüntüsü ve 588 coverage sınıfıyla üretildi. Android Lint; taslak metadata, 61 Retrofit rotası/API matrisi, beş dil ve hukuki DRAFT kapıları; debug ve unsigned release derlemesi; Macrobenchmark hedefi derlemesi; bağımlılık/SDK, NOTICE ve DEX kontrolleri geçti. Snyk High kapısı 0 bulgu verdi. Release payload emülatör paketi 12 testte 0 başarısız/atlanan sonuç verdi; canary logcat'te bulunmadı ve imzalı/unsigned payload girdileri eşleşti. `Snyk Monitor Main` PR koşusunda beklenen şekilde atlandı.
+
+| Kayıt | Öncelik | Bulgu | Düzeltme / doğrulama |
+|---|---|---|---|
+| NDNS-056 | P2 | GitHub CI Java 17 ile çalışırken Robolectric varsayılan SDK 36 seçimi test sürecinde Java 21 gereksinimi nedeniyle duruyordu. | Düzeltildi; CI #346 lint ve derlemeyi, 214 testi ve güvenlik kapılarını geçti. |
+| NDNS-057 | P2 | Robolectric `ShadowBitmapFactory`, geçersiz görüntü baytları için sentetik bitmap üretebildiğinden yalnız decode sonucuna dayalı bozuk PNG testi güvenilir değildi. | PNG uç noktası için decode öncesi PNG imza baytları doğrulandı; bozuk veri regresyonu CI #319'da geçti. |
+| NDNS-058 | P2 | StrictMode ihlal dinleyicisi ana döngüye ertelenirken test politikayı aynı döngü çağrısı içinde geri yüklediği için dinleyici bildirimi kaybolabiliyordu. | Test, disk/ağ negatif kontrollerinin latch bildirimi gelene kadar politikayı etkin tutuyor ve ardından önceki politikayı geri yüklüyor. CI #319 release-emülatör kapısında 12 testle geçti. |
+
+CI #319'daki kod doğrulamasının ardından, son PR başlığı `8c12dc709703f0d6ee08b96b74e6cbbebb080808` için [CI #321](https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39448353556) da başarılı tamamlandı. 205 JVM/Compose testi (0 başarısız/0 atlanan), 21 hata regresyonu, 76 zorunlu vaka, 12 ekran görüntüsü, 588 coverage sınıfı ve release-payload emülatöründe 12/12 test geçti; Lint, 61-route envanteri, beş dil, DRAFT hukuk, derlemeler, bağımlılık/NOTICE/DEX, Snyk High ve StrictMode kontrolleri de başarılıydı. Aradaki CI #320, dal yeni commit alınca iptal edildi; test başarısızlığı değildi. Macrobenchmark hedefinin CI'da derlenmesi fiziksel cihaz ölçümü anlamına gelmiyor. BrowserStack/gerçek telefon, aynı cihazda taban-aday kıyası, Perfetto/yeniden bileşim incelemesi ve kimlik doğrulamalı günlük/analiz akışları açık. Kullanıcı 20 Ekim'de hız testini erteledi; sunucu/koşul veya hız testi kodu eklenmedi. Yaş doğrulama ve erken erişim yazma alanları doğrulanmış API sözleşmesi/yanıtı olmadığından eklenmedi. PR #27 taslak ve birleştirilmemiş durumda.
+## 20 Ekim 2026 — PR #27 Macrobenchmark CI derleme zinciri
+
+CI #308 (`39420610554`) `:macrobenchmark:assembleBenchmark` görevini bulamadı; test modülüne açık `benchmark` varyantı eklendi. CI #309 (`39422084551`) lint, 196 test, test kanıtı ve debug derlemesini geçti; Macrobenchmark derlemesi `androidx.compose.runtime:runtime-tracing:1.7.0` sürümünü çözemedi. Sürümü BOM'a bırakma denemesi de projenin Compose BOM `2024.09.00` sürümünde bu bağımlılık için yönetilen bir sürüm bulunmadığını gösterdi (`runtime-tracing:`). Katalog, AndroidX'in yayımladığı Compose Runtime Tracing `1.7.0-rc01` sürümüne sabitlendi.
+
+| Kayıt | Bulgu | Düzeltme / doğrulama |
+|---|---|---|
+| NDNS-053 | Macrobenchmark CI hedefi önce varyant olmadığı için bulunamadı; varyant eklenince de yayımlanmamış `1.7.0` veya BOM'da bulunmayan sürümsüz bağımlılık istendi. | `benchmark` test varyantı eklendi; `runtime-tracing` `1.7.0-rc01` olarak sabitlendi. CI #310 (`39423174547`, commit `e442a8c`) geçti: lint, 196 JVM/Compose testi (0 başarısız/atlanan), 12 ekran görüntüsü, 585 coverage sınıfı, tüm 20 kusur regresyonu ve 67 zorunlu vaka, debug ve unsigned release, Macrobenchmark APK derlemesi, SDK/NOTICE/DEX kanıtı, Snyk High kapısı (0 bulgu) ve imzalı release payload emülatör güvenlik testi. `Snyk Monitor Main` yalnız PR koşusu olduğu için atlandı. |
+
+CI #319 Macrobenchmark hedefinin derlendiğini ve release-emülatör StrictMode denetiminin geçtiğini doğruladı; Macrobenchmark fiziksel cihazda çalıştırılmadı ve süre/akış ölçümü üretmedi. Aynı cihazda `main`/aday performans kıyası ile authenticated ana ekran-günlük-analiz senaryoları açık kalıyor. PR #27 taslak ve birleştirilmemiş durumda.
+
+## 20 Ekim 2026 — API kenar durumları ve liste simgeleri
+
+Canlı `main` tabanı `c7db8d9d04d2022741ccc1564877940f45fe485a` üzerinde açılan [PR #27](https://github.com/illetyus/open-source-client-for-nextdns/pull/27) için kullanıcı onaylı API/performans planı kapsamında ek arayüz boşlukları kaydedildi. CI #303'te yalnızca TLD dialog Compose regresyonu, #304'te ise XML kaynak derleme kapısı başarısız oldu; iki bulgu giderildi. CI #310 beş dil, hukuk taslağı, 196 test, Lint, debug/release, Macrobenchmark derleme ve güvenlik kapılarını geçti. Fiziksel cihaz doğrulamaları hâlâ bekliyor.
+
+| Kayıt | Öncelik | Bulgu | Düzeltme / durum |
+|---|---|---|---|
+| NDNS-048 | P2 | `/security/tlds` kataloğu boş ya da erişilemez olduğunda kod örnek TLD listesini gerçek sunucu kataloğu gibi gösteriyordu; boş başlangıç hali yükleme sürerken yanlışlıkla hata durumu gibi sunulabiliyordu. | Tahmini liste kaldırıldı; yükleniyor, sunucudan boş geldi ve erişilemiyor durumları ayrıldı; arama yalnız sunucu kataloğu geldiğinde açılıyor. CI #310 PASS. |
+| NDNS-049 | P2 | `test.nextdns.io` yanıtı bölge/şehir alanı sağlamadığı halde tanı ekranı bu bilginin yokluğunu açıkça belirtmiyordu. | Dönen sunucu/çözümleyici/Anycast değerleri korunuyor; bölge bilgisinin tanı yanıtında bulunmadığı beş dilde gösteriliyor. CI #310 PASS. |
+| NDNS-050 | P3 | İzin/engel listesi favicon'ları 16 dp idi; kullanıcının belirttiği görsel hiyerarşide fazla büyük kalıyordu. | Görsel 12 dp'ye indirildi; satır ve etkileşim alanlarının ölçüsü değiştirilmedi. CI #310 PASS. |
+| NDNS-051 | P2 | TLD dialog regresyonu Compose saatini etkileşim öncesi dondurdu ve başlangıçtaki yükleme UI'ını “yüklenemedi” ile karıştırdı; CI #303'te tek başarısız test olarak görüldü. | Diyalog gövdesi deterministik ortak composable olarak ayrıldı; yükleme, boş katalog ve hata ayrı test edildi. CI #310 PASS. |
+| NDNS-052 | P2 | CI #304, Türkçe `security_tld_catalog_loading` kaynağındaki ASCII kesme işaretini AAPT'nin kaçışsız metin olarak kabul etmemesi nedeniyle kaynak birleştirme aşamasında durdu. | Kesme işareti Android kaynak sözdizimine uygun biçimde kaçırıldı. CI #310 PASS. |
+
+İlk test-only commit PR'da üç regresyon beklentisini tanımladı: 12 dp ikon, sunucu kataloğu olmadan tahmini TLD göstermeme ve tanı bölgesini kullanılamaz gösterme. CI #303'te tek Compose testi başarısız oldu; beklenen durum hatası ile yükleme durumunun aynı kabul edildiği ortaya çıktı. Katalog durumu şimdi yükleniyor/boş/erişilemiyor/var olarak ayrıldı ve dialog gövdesi saat animasyonuna bağımlı olmadan test ediliyor. CI #304 ayrıca Türkçe kaynak kaçış sorununu gösterdi; kaynak düzeltildi. CI #310 kod ve paket kapılarını geçti. `test.nextdns.io` gerçek bölge alanı sunmadığından herhangi bir şehir/IP/Anycast eşlemesi yapılmadı.
+
+**Kalan doğrulama:** PR CI geçti. BrowserStack/gerçek cihaz ve performans ölçümü hâlâ tamamlanmadı. Hız testi istemcisi eklendi; operator onaylı HTTPS sunucusunda smoke test ve politika doğrulaması bekliyor. Yaş doğrulama ve erken erişim alanları yayımlanmış API sözleşmesi veya sanitize edilmiş yanıtla doğrulanmadığı için yazma/anahtar tahmini eklenmedi.
+
 ## 20 Ekim 2026 — günlükler, ikonlar ve arayüz düzeni
 
 Bu ek kayıt, `c78c9af464a4e23ac926f69478a59c5cc44a05f3` tabanlı `fix/settings-account-sync-ux-2026-10-19` geliştirme dalındaki yerel değişiklikleri kapsar. Önceki hata kayıtları tarihsel halleriyle korunur. Aşağıdaki bulguların kod düzeltmeleri yerel JVM/Compose testleriyle doğrulandı; bu değişiklikler henüz PR CI veya gerçek Android/BrowserStack cihaz tekrarı almadı.
@@ -132,171 +189,15 @@ P1, son kabul aşamasından önce düzeltilmesi gereken yüksek öncelik; P2, be
 
 **Tetikleyici:** Kurulum ekranı açıkken uygulamayı arka plana al ve 15 saniyeden uzun bekle.
 
-**Kaynakta görülen davranış:** LaunchedEffect(Unit) bileşimde kaldığı sürece her 15 saniyede ViewModel işi başlatıyor; yaşam döngüsü RESUMED kontrolü yok. HomeScreen yalnız profil/sekme sorgularını durduruyor.
-
-**Düzeltme yönü:** Tanılama üreticisini RESUMED yaşam döngüsüne bağla; başlatılan tanılama işini de aynı kapsama bağlayıp tek aktif isteği koru.
-
-**Kapanış ölçütü:** Arka planda yeni tanılama isteği oluşmaz; ön plana dönüşte tek döngü çalışır; ekran ve Activity kapanışı işi sonlandırır.
-
-**Cihaz tekrar testi:** B05, B08, B16.
-
-### NDNS-006 — P2: Coroutine iptali senkron OkHttp çağrısını kapatmıyor
-
-**Durum:** `FIXED_JVM_VERIFIED_DEVICE_PENDING`. Kontrollü JVM regresyonu: PASS. Cihaz tekrar testi: NOT_RUN. Düzeltme commit’i: `40aefa8a6446bd1f16824cc14e290b6307f35440`. [Vaka bazlı kanıt](release/code-quality-fix-evidence-2026-10-10.json). Kaynakta görülen davranış aşağıda ilk inceleme kaydı olarak korunur.
-
-**Kaynak:** [NextDnsRepository.kt:1814–1826](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L1814-L1826); [NextDnsRepository.kt:1925–1928](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L1925-L1928); [NextDnsRepository.kt:1672–1689](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L1672-L1689); [NextDnsApiService.kt:948–963](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/api/NextDnsApiService.kt#L948-L963).
-
-**Tetikleyici:** SSE veya export yanıtını açık/bekleyen durumda tut; profil değiştir, çıkış yap veya ilgili ekranı kapat.
-
-**Kaynakta görülen davranış:** Call.execute/read işlemi bloklayıcı; Call nesnesi saklanmıyor ve Job iptalinde Call.cancel çağrılmıyor. stopLogsStream yalnız Job.cancel kullanır. İşin iptal edilmesi açık ağ aktarımının anında durduğunu kanıtlamaz.
-
-**Düzeltme yönü:** Çağrı iptalini coroutine iptaline bağla; response/body kapatmayı finally/use ile garanti et; sonuç yazımından önce oturum kontrolü yap.
-
-**Kapanış ölçütü:** Bekleyen fixture çağrısının iptal edildiği ve response kaynaklarının kapandığı ölçülür; eski iş tekrar bağlanmaz veya veri yazmaz.
-
-**Cihaz tekrar testi:** B06, B08, B13, B21.
-
-### NDNS-007 — P2: IP bağlama ve katalog hata yollarında Response kaynakları açık kalabilir
-
-**Durum:** `FIXED_JVM_VERIFIED_DEVICE_PENDING`. Kontrollü JVM regresyonu: PASS. Cihaz tekrar testi: NOT_RUN. Düzeltme commit’i: `40aefa8a6446bd1f16824cc14e290b6307f35440`. [Vaka bazlı kanıt](release/code-quality-fix-evidence-2026-10-10.json). Kaynakta görülen davranış aşağıda ilk inceleme kaydı olarak korunur.
-
-**Kaynak:** [NextDnsApiService.kt:979–988](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/api/NextDnsApiService.kt#L979-L988); [NextDnsApiService.kt:999–1006](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/api/NextDnsApiService.kt#L999-L1006); [NextDnsApiService.kt:1032–1041](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/api/NextDnsApiService.kt#L1032-L1041).
-
-**Tetikleyici:** IP bağlamayı tekrar çalıştır; katalog fallback isteğine body içeren non-2xx yanıtlar döndür.
-
-**Kaynakta görülen davranış:** linkIpAddress yalnız isSuccessful okur; body tüketilmez ve response kapatılmaz. Katalog fallback erken non-2xx dönüşleri de body tüketilmeden gerçekleşir. Başarılı body.string yolları zaten kapanır ve bu bulguya dahil değildir.
-
-**Düzeltme yönü:** Bütün senkron Response sahipliğini use kapsamına al; erken dönüş/istisnalarda da body kapansın.
-
-**Kapanış ölçütü:** Başarı, non-2xx ve parse hatası yollarında her response kapatılır; tekrarlı fixture çağrılarında açık kaynak birikmez.
-
-**Cihaz tekrar testi:** B03, B05, B19.
-
-### NDNS-008 — P2: Senkronizasyon bayrakları iptal ve eşzamanlı güncellemede tutarsızlaşabilir
-
-**Durum:** `FIXED_JVM_VERIFIED_DEVICE_PENDING`. Kontrollü JVM regresyonu: PASS. Cihaz tekrar testi: NOT_RUN. Düzeltme commit’i: `40aefa8a6446bd1f16824cc14e290b6307f35440`. [Vaka bazlı kanıt](release/code-quality-fix-evidence-2026-10-10.json). Kaynakta görülen davranış aşağıda ilk inceleme kaydı olarak korunur.
-
-**Kaynak:** [NextDnsRepository.kt:143–150](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L143-L150); [NextDnsRepository.kt:157–180](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L157-L180); [HomeScreen.kt:454–457](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/ui/screens/HomeScreen.kt#L454-L457).
-
-**Tetikleyici:** refreshSection isRefreshing=true olduktan sonra sekme sorgusunu iptal et. Ayrı durumda farklı section güncellemelerini eşzamanlı tamamlat.
-
-**Kaynakta görülen davranış:** CancellationException güncel bayrak temizlenmeden yeniden fırlatılır; temizleme finally içinde değil. Harita read/value→copy→write ile güncellenir; eşzamanlı değişiklikler birbirini kaybedebilir.
-
-**Düzeltme yönü:** İstek kimliğine bağlı finally temizliği ve atomik StateFlow.update kullan; eski isteğin yeni isteğin bayrağını temizlemesine izin verme.
-
-**Kapanış ölçütü:** İptalde eski isRefreshing kalmaz; iki section değişikliği korunur; ardışık eski/yeni istek tamamlanması yeni isteğin durumunu bozmaz.
-
-**Cihaz tekrar testi:** B05, B08, B16.
-
-### NDNS-009 — P2: Günlük cihaz menüsünde Tüm cihazlar etiketi çevrilmiyor
-
-**Durum:** `FIXED_JVM_VERIFIED_DEVICE_PENDING`. Kontrollü JVM regresyonu: PASS. Cihaz tekrar testi: NOT_RUN. Düzeltme commit’i: `40aefa8a6446bd1f16824cc14e290b6307f35440`. [Vaka bazlı kanıt](release/code-quality-fix-evidence-2026-10-10.json). Kaynakta görülen davranış aşağıda ilk inceleme kaydı olarak korunur.
-
-**Kaynak:** [LogsScreen.kt:118–120](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/ui/screens/LogsScreen.kt#L118-L120); [LogsScreen.kt:140–142](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/ui/screens/LogsScreen.kt#L140-L142); [LogsScreen.kt:270–271](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/ui/screens/LogsScreen.kt#L270-L271); [LogsScreen.kt:292–299](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/ui/screens/LogsScreen.kt#L292-L299).
-
-**Tetikleyici:** EN/DE/FR/ES seç; Logs cihaz filtresi menüsünü aç.
-
-**Kaynakta görülen davranış:** Seçili başlık UiLabels.canonical ile çevrilir fakat menü Text(text=dev) kullanır. Listeye eklenen Türkçe Tüm cihazlar sentinel değeri menüde aynen görünür; statik kaynak eşitliği kapısı bunu yakalamaz.
-
-**Düzeltme yönü:** Sabit sentinel etiketlerini menüde de çevir; gerçek sunucu cihaz adlarını aynen koru.
-
-**Kapanış ölçütü:** Beş dilde başlık ve menü etiketi aynı anlamda çevrilir; kullanıcı cihaz adları çeviri yüzünden değiştirilmez.
-
-**Cihaz tekrar testi:** B12, B17.
-
-### NDNS-010 — P2: Bozuk export URL veya çıktı açma hatası kontrolsüz istisna oluşturabilir
-
-**Durum:** `FIXED_JVM_VERIFIED_DEVICE_PENDING`. Kontrollü JVM regresyonu: PASS. Cihaz tekrar testi: NOT_RUN. Düzeltme commit’i: `40aefa8a6446bd1f16824cc14e290b6307f35440`. [Vaka bazlı kanıt](release/code-quality-fix-evidence-2026-10-10.json). Kaynakta görülen davranış aşağıda ilk inceleme kaydı olarak korunur.
-
-**Kaynak:** [NextDnsRepository.kt:1615–1618](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L1615-L1618); [NextDnsRepository.kt:1662–1673](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/data/repository/NextDnsRepository.kt#L1662-L1673); [SettingsScreen.kt:63–73](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/ui/screens/SettingsScreen.kt#L63-L73); [NextDnsViewModel.kt:678–684](https://github.com/illetyus/open-source-client-for-nextdns/blob/4abf26a1a556cf42235fbf05c70f89cb5ad79e8c/app/src/main/java/com/example/ui/viewmodel/NextDnsViewModel.kt#L678-L684).
-
-**Tetikleyici:** Export link yanıtında https:// gibi geçersiz ama prefix kontrolünü geçen bir değer kullan. Ayrı durumda belge sağlayıcısının openOutputStream çağrısını hata ile sonlandır.
-
-**Kaynakta görülen davranış:** Request.Builder.url try bloğundan önce çalışır; geçersiz URL IllegalArgumentException üretir ve Result akışından kaçar. UI openOutputStream çağrısı da try içinde değildir; sağlayıcı istisnası screenScope.launch içinde kontrolsüz kalır.
-
-**Düzeltme yönü:** URLyi HttpUrl ile doğrula, bütün export/sağlayıcı işlemini yönetilen hata akışına al; cancellation istisnasını yeniden fırlat ve kısmi dosyayı başarı sayma.
-
-**Kapanış ölçütü:** Geçersiz URL, silinen/revoked URI, sağlayıcı erişim hatası ve IO hatası kullanıcıya hata gösterir; çökme/başarı bildirimi olmaz; tüm akışlar kapanır.
-
-**Cihaz tekrar testi:** B07, B16, B19.
-
-### NDNS-011 — P2: Kısa yatay hukuk ekranında belge alanı ve devam kontrolü erişilemiyor
-
-**Durum:** `FIXED_REAL_DEVICE_RETEST_VERIFIED`. İlk gerçek Pixel 7 gözlemi [ilk cihaz kaydında](release/browserstack-initial-results-2026-10-10.json) korunur. Eski yerleşime eklenen regresyon CI `38080658261` üzerinde **0 dp belge yüksekliği** ile başarısız oldu. Düzeltme commit’i: `20d9143f57133b998fe620a05d0fed26a9b006c7`.
-
-Belge alanının sonlu, en az 160 dp yüksekliği ve dış sayfanın kaydırılması, 2× yazı boyutunda kabul kontrollerini erişilebilir tutar. Beş dilde arayüz/Terms ve mevcut İngilizce Privacy, dikey/yatay döndürme, boş checkbox ve seçim öncesi devre dışı devam düğmesi dört gerçek cihazda başarılıdır. [Commit, APK hash ve yöntem kanıtı](release/browserstack-legal-notification-fix-results-2026-10-10.json). Bu kapanış tam B11/B18/B20 kabulü değildir.
-
-## Kalite ve süreç gözlemleri
-
-| Kayıt | Öncelik | Gözlem | Durum |
-|---|---|---|---|
-| Q-001 | P2 | Repository oturum/mutasyon yollarının hedefli regresyon kanıtı eksik | 66 regresyon/135 JVM CI PASS; 4 cihaz genel smoke PASS; hedefli cihaz testleri bekliyor |
-| Q-002 | P3 | Repository çok sayıda sorumluluğu ve statik API bağımlılığını topluyor | AÇIK |
-| Q-003 | P2 | PR/CI süreci uygulanıyor fakat main sunucu tarafında korunmuyor | AÇIK |
-| Q-004 | P2 | BrowserStack yerel MockWebServer ayarı eksik | ÖNCEKİ CİHAZ TEKRARINDA DÜZELTİLDİ |
-| Q-005 | P2 | Bildirim testi sistem kanal görünürlüğünü uygulama garantisi sayıyor | DÜZELTİLDİ; HEDEFLİ CİHAZ PASS |
-| Q-006 | P2 | Release test APK desugaring API eksikliği ve izin temizleme sırasında süreç sonlanması | DÜZELTİLDİ; HEDEFLİ CİHAZ PASS |
-| Q-007 | P2 | BrowserStack yöntemleri arasında bildirim izin durumu kalıyor | DÜZELTİLDİ; AYNI APK TEKRARI PASS |
-
-**Q-005:** Android kanal görünürlüğünü sistem yönetir. `03ac6dd000363c8ba2b23cf8767e1c140dbb881f` ile yanlış varsayım kaldırıldı; izin reddinde iki bildirim türünün de yayımlanmadığı, izin verildiğinde Android'e ulaşan gerçek bildirimlerin PRIVATE ve genel publicVersion taşıdığı denetlendi. Android 13/16 izin reddi kontrolleri geçti; Android 10/12 sürüm koşulu nedeniyle atlandı. Kullanıcı kanal ayarlarının bütün B09 kapsamı ayrıca açıktır.
-
-**Q-006:** İlk release tekrarındaki dört misafir akışı `j$.time.Instant.parse` test APK uyumsuzluğuyla durdu; iki pozitif izin testi süreç çökmesi bildirdi. `f3c2c465bf4e03678bc5a4c65df05577c07cf5c8` gerçek ISO API/log biçimlendirme kontrolünü test paketinde korur ve pozitif test sonunda süreç öldürebilen izin geri alma işlemini kaldırır. Üretim tarih/protokol kodu değişmedi.
-
-**Q-007:** Sonraki koşuda izin verilmiş yöntemden kalan durum Android 13/16 izin geri alma testini sonlandırdı. `bd2f3806cf5ae208aab67654eed72fe97820bf9f` ile BrowserStack gönderimine `clearPackageData=true` eklendi. Aynı yüklenmiş APK çiftinin tekrarında iki izin yolu bağımsız geçti; assertion atlanmadı. Önceki başarısız koşular ve başarılı son koşu [düzeltme raporunda](BROWSERSTACK_LEGAL_NOTIFICATION_FIX_RESULTS_TR_2026-10-10.md) korunur: toplam 62 PASS, 0 FAIL, 2 OS koşullu atlama; 40 güvenlik kontrolü bu toplam içindedir.
-
-**19 Ekim düzeltme sayacı:** PR CI `39287249075` üzerinde 135 JVM testi, 66 zorunlu hedefli regresyon ve 12 ekran görüntüsü geçti; BrowserStack build `91b080c97113c42aa03c2bdae990247889cd9f54` dört cihazda 22 PASS, 0 FAIL, 42 koşullu atlama verdi. [CI ve test kanıtı](release/bug-fixes-2026-10-19/fix-results.json), [BrowserStack XML özeti](release/bug-fixes-2026-10-19/browserstack-results.json). `38082499286` sayıları önceki dilimin tarihsel CI kanıtıdır.
-
-**Q-001 önceki dilim kanıtı:** 37 gerekli regresyon gerçek XML üzerinden doğrulandı; 104 JVM testi ve 10 native güvenlik testi başarılı. 19 Ekim güncel sayaçları yukarıdaki tabloda ve [düzeltme kanıtında](release/bug-fixes-2026-10-19/fix-results.json) bulunur. **İlk inceleme:** JVM toplam LINE %20.73, BRANCH %10.28; NextDnsRepository sınıfı LINE %7.06. Coroutine/Compose üretilmiş kodu oranları etkiler; API 35 native güvenlik testleri bu JVM raporuna dahil değildir. Kritik bug yolları için mevcut testler başarı kanıtı vermez. Rastgele bir genel yüzde hedefi yerine yukarıdaki kapanış senaryoları gereklidir.
-
-**Q-002 güncelleme:** Enjekte edilebilir ağ/API sınırları ve küçük kaynak/yaşam döngüsü/sunum yardımcıları eklendi; geniş repository sorumlulukları bakım gözlemi olarak açık kalır. **İlk inceleme:** 2456 satırlık repository ağ, cache, profil, SSE, analytics ve sunum formatlamasını birlikte yönetir. Test edilebilir API/clock/session bağımlılıkları ve küçük saf mapper sınırları bakım işidir; önceki fazları baştan geliştirme gerekçesi değildir.
-
-**Q-003:** GitHub branch protection API main için 404 Branch not protected verdi; etkin branch rules yanıtı boş listedir. Normal PR/CI izlendiği doğrulandı; zorunlu review/check kuralı platform tarafından dayatılmıyor. Bu inceleme depo yönetim ayarlarını değiştirmez.
-
-## Önceki dilimde giderilmiş kayıtlar
-
-| Kayıt | Sorun | Düzeltme ve kanıt | Durum |
-|---|---|---|---|
-| HIST-01 | Üretim kütüphanesindeki sıradan Robolectric/MockWebServer metinlerini test kodu sayan yanlış pozitif | [PR #18](https://github.com/illetyus/open-source-client-for-nextdns/pull/18): gerçek DEX tür tablosu kontrolü; gerçek test APK ve kesilmiş DEX reddi; başarılı main CI | GİDERİLDİ; mevcut paket kanıtında doğrulandı |
-| HIST-02 | Korumalı Windows imzalama klasörüne tekrar ACL yazarken SeSecurityPrivilege hatası | [PR #19](https://github.com/illetyus/open-source-client-for-nextdns/pull/19): tekrar kullanımda ACL doğrulaması; aynı yerel anahtarla imzalı paket kanıtı | GİDERİLDİ; mevcut paket kanıtında doğrulandı |
-| HIST-03 | Yerel masaüstü dosya bağlantısının telefondan indirilememesi | Önceki teslim turunda APK hesaba özel Drive dosyası olarak yüklendi; ad/boyut metadata ile doğrulandı. Bu APK inceleme adayıdır; Play yayını değildir. | TESLİM DÜZELTİLDİ; cihaz kurulumu/testi iddia edilmez |
-
-## Kapatma ve son aşama sırası
-
-İlk iki adım PR #21 düzeltmeleri ve saklanan CI regresyonuyla tamamlandı. NDNS-011 ve Q-005–007 için hedefli cihaz kapanışı verilmiştir; NDNS-001–010 için kendi kapanış senaryoları beklenir. Aşağıdaki sıra planın izlenebilir kaydıdır.
-
-1. NDNS-001–003 için oturum/profil ayrımı ve bağlantı durumunu düzelt; diğer kayıtları ilgili küçük düzeltme dilimlerine ayır.
-2. Her düzeltmeyi hedefli regresyon, PR ve CI kanıtına bağla; mevcut kaydı koruyarak düzeltme commit’i ve tekrar test adresini ekle.
-3. Uygulama kodu değiştikten sonra yeni main CI’a bağlı imzalı inceleme adayı üret. Eski APK hash’i yeni kodun kanıtı olamaz.
-4. Yeni aday üzerinde ilgili B vakalarını ve B01–B22 kabul matrisini çalıştır. Son yayıncı/metin incelemesi ve Play kanalları bu aşamayı izler.
-
-Mevcut hukuk metinleri **DRAFT** kalır; yayıncı/iletişim/onay bilgisi eklenmez. Bu hata defteri kullanıcıya yeni bir hizmet, SLA veya destek taahhüdü oluşturmaz.
-
-## 20 Ekim uygulama düzeltmeleri
-
-| Kayıt | Sorun | Düzeltme | Doğrulama |
-|---|---|---|---|
-| NDNS-012 | Tam eşitleme, belgelenmemiş /account yolunu gerçek NextDNS ayarı gibi ele alıyor; hesap planı alanları bu istemcide API eşitlemesine ait değil | Hesap DTO/endpoint ve ACCOUNT eşitleme bölümünü kaldır. API anahtarı ve bağlantı durumu cihazda yerel kalır; profil ve desteklenen yapılandırma uçları eşitlenmeye devam eder. | fullSyncDoesNotRequestAnAccountEndpointThatIsNotInThePublicApi; tam JVM test kümesi |
-| NDNS-013 | Analiz varış noktaları metin listesi olarak gösteriliyor, ülke seçimi yok | Yerel Natural Earth ülke geometrisiyle etkileşimli harita ekle. Seçili ülke için API'nin sorgu, yüzde ve alan adı örneklerini göster; ekran okuyucu eylemlerini ve çevrimdışı çalışmayı koru. | WorldMapChartInteractionTest; harita kaynağı ve SHA-256 provenans kaydında |
-| NDNS-014 | İzin ver/engelle listelerindeki favicon'lar satır içeriğine göre çok büyük | Liste favicon boyutunu 12 dp yap; satır ve eylem hedeflerinin dokunma alanını koru. | Tam JVM test kümesi; Android Lint |
-
-**Yerel doğrulama, 20 Ekim 2026:** Debug APK derlendi. 33 sınıfta 156 JVM/Robolectric testi geçti, 0 hata. lintDebug başarılı; 0 hata ve 94 uyarı raporlandı. Uyarıların tüm depo için önceki sürüm karşılaştırması yapılmadığından bunlar yeni/eski diye sınıflandırılmaz. APK OpenSourceClientForNextDNS-review-2026-10-20-map-ui.apk adıyla yönlendirilmiş Download klasörüne kopyalandı; boyutu 22.682.757 bayt, SHA-256 E4EE820E39C472A45D0DCF7914E0A1A3C1A52E743013E89BF29D7E1960AD4255 ve kopya hash'i derleme çıktısıyla eşleşiyor. BrowserStack ve fiziksel cihaz bu düzeltme diliminde çalıştırılmadı; GitHub CI veya main birleştirmesi de yapılmadı. APK yerel inceleme adayıdır, Play yayını değildir.
-
-**18 dp takip doğrulaması, 20 Ekim 2026:** Güncel kaynak kopyasından 33 JVM/Robolectric sınıfında 158 test geçti; 0 başarısız, 0 hata, 0 atlanan test. `lintDebug` başarılı; 0 hata ve 99 uyarı. `assembleDebug` başarılı. APK: `OpenSourceClientForNextDNS-review-2026-10-20-map-ui-18dp.apk`, 21.936.035 bayt, SHA-256 `15FF1A10FE176204303F1353428D4DC77A53963C70369BE4B807C07CEB9C7CFC`; paket kimliği `com.aistudio.nextdns.mgrqvt`; `assets/maps/world-countries.tsv` paket içinde doğrulandı. APK yerel çıktı `C:\Users\Cemalettin R. Okatan\Documents\Codex\nx-verify\app\build\outputs\apk\debug\app-debug.apk` altında kaldı. Önceden belirlenen `\\tsclient\Local Storage\Download` yolu erişim reddi verdi. APK'yı Google Drive'a yükleme girişimi, Drive hedefinin kullanıcı tarafından açıkça yetkilendirilmediği gerekçesiyle otomatik incelemede reddedildi; dosya harici depoya yüklenmedi. Bu sürüm için BrowserStack/cihaz, GitHub CI veya `main` birleştirmesi yapılmadı. Bu, yerel debug inceleme adayıdır; yayın adayı değildir.
-
-## 20 Ekim takip düzeltmesi: analiz dayanıklılığı ve görsel ölçüler
-
-| Kayıt | Bulgu ve düzeltme | Kanıt |
-|---|---|---|
-| NDNS-012 takip | Resmî NextDNS API belgesinde hesap/bağlantı durumu eşitleme ucu bulunmuyor. Hesap ve bağlantı tanı bilgisi cihazda yerel tutuluyor; API anahtarıyla profil/yapılandırma eşitlemesi korunuyor. İngilizce gizlilik taslağı artık hesabın e-posta/plan verisinin alınmadığını ve favicon alan adı aktarımını açıklıyor; DRAFT statüsü sürüyor. | `fullSyncDoesNotRequestAnAccountEndpointThatIsNotInThePublicApi`; privacy registry SHA-256 doğrulaması; NextDNS API belgesi: https://nextdns.github.io/api/ |
-| NDNS-013 takip | Analiz yenilemesi bir uç nokta başarısız olunca başarılı varış noktalarını da gizliyordu. Şimdi kullanılabilir paneller/etkileşimli harita gösteriliyor; başarısız panelin son değeri ve kısmi hata uyarısı korunuyor. Uyarı Hesabım özetinde de görünür. | `destinationsMapShowsCountryDataWhenAnotherAnalyticsRequestFails`; `partialAnalyticsWarningIsVisibleInAccountOverview`; `failedCountryPanelRetainsItsLastSuccessfulSnapshot`; `WorldMapChartInteractionTest` |
+**Kaynakta görülen davranış:** LaunchedEffect(Unit) bileşimde kaldığı sürece her 15 saniyede ViewModel işi başlatıyor; yaşam döngüsü RESUMED kontrolü yok. H…5434 tokens truncated…nAnotherAnalyticsRequestFails`; `partialAnalyticsWarningIsVisibleInAccountOverview`; `failedCountryPanelRetainsItsLastSuccessfulSnapshot`; `WorldMapChartInteractionTest` |
 | NDNS-014 takip | İzin/engelle listesi alan adı favicon'ları 18 dp'den 16 dp'ye indirildi; satır ve eylem dokunma alanları korunuyor. | `AccountSettingsFlowTest` ikon genişliği/yüksekliği 16 dp doğrulaması; `lintDebug` |
 | Simge görsel düzeltmesi | Başlatıcı simgesi beyaz arka plan, ortalanmış kalkan ve tek ince/geniş açılı yeşil sinyal çiftiyle sadeleştirildi. Uygulama içi ağ simgesi aynı bırakıldı. | `LauncherAssetsTest`; üretilen Android launcher varyantları ve mağaza PNG'si |
 
-**Yerel yeniden doğrulama, 20 Ekim 2026:** Tam `testDebugUnitTest` çalışmasında 33 sınıfta 163 test geçti; 0 başarısız, 0 hata, 0 atlanan. Son gizlilik taslağı ve görünürlük testi güncellemesinden sonra ilgili 3 test sınıfında 25 test tekrar geçti. `lintDebug`: başarılı, 0 hata ve 99 uyarı. `assembleDebug`: başarılı. Güncel debug APK: `C:\Users\Cemalettin R. Okatan\Documents\Codex\nx-verify\app\build\outputs\apk\debug\app-debug.apk`, 22.493.215 bayt; SHA-256 `70ECBD18C659147F95FB5329F94381AB5B9E7296146BB4A03D544F7550F4FE52`; applicationId `com.aistudio.nextdns.mgrqvt`, version `1.0`. BrowserStack/fiziksel cihaz, GitHub CI, PR ve `main` birleştirmesi bu takip diliminde çalıştırılmadı. Hukuki taslakların DRAFT durumu ve bağımsız istemci ifadesi değişmedi.
+**Yerel yeniden doğrulama, 20 Ekim 2026:** Tam `testDebugUnitTest` çalışmasında 33 sınıfta 163 test geçti; 0 başarısız, 0 hata, 0 atlanan. Son gizlilik taslağı ve görünürlük testi güncellemesinden sonra ilgili 3 test sınıfında 25 test tekrar geçti. `lintDebug`: başarılı, 0 hata ve 99 uyarı. `assembleDebug`: başarılı. Güncel debug APK: `yerel APK yolu paylaşılmıyor`, 22.493.215 bayt; SHA-256 `70ECBD18C659147F95FB5329F94381AB5B9E7296146BB4A03D544F7550F4FE52`; applicationId `com.aistudio.nextdns.mgrqvt`, version `1.0`. BrowserStack/fiziksel cihaz, GitHub CI, PR ve `main` birleştirmesi bu takip diliminde çalıştırılmadı. Hukuki taslakların DRAFT durumu ve bağımsız istemci ifadesi değişmedi.
 
 **Hesabım gezinme takip düzeltmesi, 20 Ekim 2026:** Ana ekrandaki üst “Hesabım” düğmesi kaldırıldı. Hesabım bölümü Ayarlar gezinme grubuna taşındı; hesap/bağlantı bilgilerine sekme üzerinden erişim sürüyor. Eski başlık düğmesini bekleyen ekran testi bu yeni akışa göre güncellendi.
 
-**Önceki yerel doğrulama (20 Ekim 2026, bu değişikliklerden önce):** Tam Gradle zinciri `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug` başarılı tamamlandı. JVM/Robolectric test raporları: 33 sınıf, 163 test; 0 başarısız, 0 hata, 0 atlanan. `lintDebug`: 0 hata, 101 uyarı. Debug APK: `C:\Users\Cemalettin R. Okatan\Documents\Codex\nx-verify\app\build\outputs\apk\debug\app-debug.apk`, 22.491.441 bayt, SHA-256 `F14B4ECCF165286FDD210BDCE64BD5E0CB1699E083CDCF85A11294242AD7DBB`; applicationId `com.aistudio.nextdns.mgrqvt`, version `1.0`, görünen ad `Open Source Client for NextDNS`. Bu önceki test ve APK çıktıları mevcut diff'i doğrulamaz. BrowserStack/fiziksel cihaz, GitHub CI/PR ve `main` birleştirmesi o yerel dilimde yapılmadı. Hukuki belgeler DRAFT statüsünde kalır.
+**Önceki yerel doğrulama (20 Ekim 2026, bu değişikliklerden önce):** Tam Gradle zinciri `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug` başarılı tamamlandı. JVM/Robolectric test raporları: 33 sınıf, 163 test; 0 başarısız, 0 hata, 0 atlanan. `lintDebug`: 0 hata, 101 uyarı. Debug APK: `yerel APK yolu paylaşılmıyor`, 22.491.441 bayt, SHA-256 `F14B4ECCF165286FDD210BDCE64BD5E0CB1699E083CDCF85A11294242AD7DBB`; applicationId `com.aistudio.nextdns.mgrqvt`, version `1.0`, görünen ad `Open Source Client for NextDNS`. Bu önceki test ve APK çıktıları mevcut diff'i doğrulamaz. BrowserStack/fiziksel cihaz, GitHub CI/PR ve `main` birleştirmesi o yerel dilimde yapılmadı. Hukuki belgeler DRAFT statüsünde kalır.
 
 ## 20 Ekim 2026 — bağlantı kısayolu ve ikon takip düzeltmesi
 
@@ -307,7 +208,7 @@ Mevcut hukuk metinleri **DRAFT** kalır; yayıncı/iletişim/onay bilgisi eklenm
 | NDNS-017 | Başlatıcı işareti sivri ve fazla yüksek DNS parantezleri kullanıyordu. Mavi merkez kalkan ve resmî siteden renk referansı olan yeşil çizgiler korunup tek, ince, kavisli ve daha kısa bir çift hâline getirildi; adaptive, monochrome ve legacy ikonlar aynı betikten yeniden üretildi. | `launcherUsesOneCompactWideAnglePairOfCurvedDnsLinesAroundTheShield`; paketlenmiş launcher testleri; mağaza simgesi görsel denetimi |
 | NDNS-014 ikinci takip | Beyaz/siyah liste alan adı favicon'ları 48 dp'den 16 dp'ye indirildi; satır düzeni okunaklı kaldı ve anahtar etkileşim alanları 48 dp olarak korundu. | `allowAndDenyListFaviconsUseCompactSize` 16 dp boyut doğrulaması |
 
-**Önceki yerel doğrulama (20 Ekim 2026, bu değişikliklerden önce):** `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug` başarılı tamamlandı. 33 test sınıfında 164 test geçti; 0 başarısız, 0 hata, 0 atlanan test. Lint 0 hata ve 125 uyarıyla tamamlandı. Debug APK `C:\Users\Cemalettin R. Okatan\Documents\Codex\nx-verify\app\build\outputs\apk\debug\app-debug.apk`, 22.745.689 bayt; SHA-256 `04CBC1DED2FA6DEDEBD5955D5527A48F9F868A002A8413BF74021734088FB3D0`. `aapt` paket kimliğini `com.aistudio.nextdns.mgrqvt`, görünen adı `Open Source Client for NextDNS` olarak doğruladı; APK'da etkileşimli haritanın ülke geometrisi varlığı bulundu. Bu önceki test ve APK çıktıları mevcut diff'i doğrulamaz. Fiziksel cihaz/BrowserStack, GitHub CI/PR ve `main` entegrasyonu yapılmadı; hukuk metinleri DRAFT, istemci bağımsız ve gayriresmî kalır.
+**Önceki yerel doğrulama (20 Ekim 2026, bu değişikliklerden önce):** `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug` başarılı tamamlandı. 33 test sınıfında 164 test geçti; 0 başarısız, 0 hata, 0 atlanan test. Lint 0 hata ve 125 uyarıyla tamamlandı. Debug APK `yerel APK yolu paylaşılmıyor`, 22.745.689 bayt; SHA-256 `04CBC1DED2FA6DEDEBD5955D5527A48F9F868A002A8413BF74021734088FB3D0`. `aapt` paket kimliğini `com.aistudio.nextdns.mgrqvt`, görünen adı `Open Source Client for NextDNS` olarak doğruladı; APK'da etkileşimli haritanın ülke geometrisi varlığı bulundu. Bu önceki test ve APK çıktıları mevcut diff'i doğrulamaz. Fiziksel cihaz/BrowserStack, GitHub CI/PR ve `main` entegrasyonu yapılmadı; hukuk metinleri DRAFT, istemci bağımsız ve gayriresmî kalır.
 
 ## 20 Ekim 2026 — NextDNS API, günlük ve analiz doğruluk incelemesi
 
@@ -328,7 +229,7 @@ Mevcut hukuk metinleri **DRAFT** kalır; yayıncı/iletişim/onay bilgisi eklenm
 
 **Bu turdaki Gradle sonucu:** Yerel ve çalışma alanı önbellek kilidi sorunları ayrı Gradle user home ve salt-okunur bağımlılık önbelleğiyle aşıldı. `:app:compileDebugKotlin` PASS oldu; ilk turda derleme üç Kotlin hatası buldu, düzeltmelerden sonra Kotlin derlemesi geçti. `:app:testDebugUnitTest` daha sonra `compileDebugJavaWithJavac` aşamasında Gradle worker loopback soketi açılamadığı (`Unable to establish loopback connection`, `Permission denied`) için durdu; yükseltilmiş yürütme denemesi de aynı sistem hatasını verdi. Testler, lint ve APK üretimi bu turda tamamlanmadı. `python scripts/verify_localization.py` (607 kaynak/beş dil), `python scripts/verify_legal_assets.py` (DRAFT demeti), `git diff --check` ve kalite betiği koruması için 3 Python testi PASS oldu. Eski JUnit XML raporları `verify_quality_regressions.py` tarafından artık doğru biçimde reddediliyor. Mevcut test XML'leri ve debug APK önceki ağaçtan kalmadır ve güncel diff'i doğrulamaz.
 
-**Devam eden yayın/kanıt engelleri:** fiziksel cihazda Macrobenchmark/Perfetto ölçümü; güvenli HTTPS hız testi sunucusu ve kullanım/lisans şartları; sanitize edilmiş gerçek API yanıtı ve sözleşme olmadan erken erişim güvenlik alanları; API'de belgelenmeyen yaş doğrulama alanı; beş dil dışındaki hukuki inceleme ve yayıma hazır olmayan DRAFT metinler. Ayrıntılı API karşılaştırması [NEXTDNS_API_CAPABILITY_MATRIX_TR.md](NEXTDNS_API_CAPABILITY_MATRIX_TR.md) içindedir.
+**Devam eden yayın/kanıt engelleri:** fiziksel cihazda Macrobenchmark/Perfetto ölçümü; operator onaylı HTTPS hız testi sunucusunda smoke test ve sunucu politikasının doğrulanması; sanitize edilmiş gerçek API yanıtı ve sözleşme olmadan erken erişim güvenlik alanları; API'de belgelenmeyen yaş doğrulama alanı; beş dil dışındaki hukuki inceleme ve yayıma hazır olmayan DRAFT metinler. Ayrıntılı API karşılaştırması [NEXTDNS_API_CAPABILITY_MATRIX_TR.md](NEXTDNS_API_CAPABILITY_MATRIX_TR.md) içindedir.
 
 ## 20 Ekim 2026 — devam eden uygulama incelemesi
 
@@ -374,3 +275,36 @@ Run `39403140152` (`761eff6`) Android Lint, metadata, beş dil ve DRAFT hukuk ka
 | Kayıt | Bulgu ve düzeltme | Regresyon / kanıt | Durum |
 |---|---|---|---|
 | NDNS-047 | Analiz uç noktalarının bir bölümü hata verirken `fetchAnalytics` kullanılabilir panelleri koruyup `true` döndürebiliyor. Tam eşitleme bu Boolean'ı tam başarı sayıyordu. Sonuç artık başarılı/kısmi/başarısız durumunu ayırıyor; kısmi veriler görünür kalıyor, eşitleme özeti ve beş dildeki durum satırı “kısmen eşitlendi” olarak gösteriliyor. | `AccountSettingsFlowTest.fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels`; `scripts/verify_quality_regressions.py` zorunlu regresyon listesi | Kod ve regresyon eklendi; CI doğrulaması bekleniyor. |
+| NDNS-054 | P1 | Favicon isteği `Dispatchers.IO` üzerinde senkron `execute()` ile yapılıyordu; Compose işi iptal edilse bile OkHttp çağrısı iptal edilmeden zaman aşımına kadar sürebilirdi. | İstek callback tabanlı askıya alma ile yürütülüyor ve coroutine iptali gerçek `Call.cancel()` çağrısına bağlanıyor. Sabit NextDNS HTTPS ana makine kısıtı, yönlendirme kapatma, 128 KiB sınırı, yerel fallback ve bellek önbelleği korunuyor. | `NextDnsFaviconNetworkTest`: iptal, yönlendirme, yanlış MIME, bilinmeyen uzunlukta aşırı gövde, bozuk görsel, süre aşımı ve bellek önbelleği regresyonları; CI #350'de dokuz ağ regresyonu 227 test içinde geçti (0 başarısız, 0 atlanan). Sağlayıcı davranışı en iyi çabadır. |
+| NDNS-055 | P1 | Dünya haritası asset okumasının ana iş parçacığında gerçekleşmediğini StrictMode ile doğrulayacak çalıştırılmış bir emülatör kapısı yoktu. | Harita yükleme dispatcher sınırı ortak fonksiyona çıkarıldı; negatif StrictMode örneği disk/ağ ihlallerini algılıyor ve gerçek harita yüklemesi ihlalsiz olmalı. CI release emülatör denetimi 10'dan 12 teste genişletildi. | `WorldMapStrictModeTest`; `scripts/run_release_runtime_audit.sh`; `scripts/verify_release_runtime.py`. CI #350'de 12 release-emülatör testi, StrictMode kontrolleri dâhil, geçti. |
+| NDNS-056 | Hız testi ilk PR CI derlemesi iki Kotlin hatası buldu: constructor varsayılanı sınıf üyesi `defaultClient()` işlevini çözemiyordu ve Compose `Dialog` yanlış Material3 paketinden içe aktarılmıştı. Varsayılan istemci `OkHttpClient()` olarak kuruldu; güvenlik kısıtları mevcut builder'da uygulanıyor. `Dialog`, `androidx.compose.ui.window` paketinden alınıyor. | CI #340 ve #344 Kotlin derleme günlükleri; `LibreSpeedClient.kt`; `SpeedTestDialog.kt` | Düzeltmeler PR dalına gönderildi; yeni CI doğrulaması bekliyor. |
+
+## 21 Ekim 2026 — takip incelemesi
+
+| Kayıt | Bulgu | Düzeltme / doğrulama |
+|---|---|---|
+| NDNS-060 | P1 | Günlük arama filtresi değişirken önceki filtreye ait SSE akışı REST yenilemesi tamamlanana kadar çalışıp eski sorguları yeni listenin “araya giren” kayıtları olarak tutabiliyordu. | Filtre değişiminde eski akış REST çağrısından önce iptal ediliyor; filtre nesli ile hem parse hem listeye ekleme sınırında eski kuyruktaki olaylar reddediliyor. `oldSearchStreamCannotLeakRowsIntoNewSearchResults` regresyonu eklendi. | CI #350'de regresyon 227 test içinde geçti (0 başarısız, 0 atlanan). |
+| NDNS-061 | P1 | Önceki sürümde LibreSpeed uyumlu olmayan yol HTTP 200 HTML hata sayfası döndürdüğünde veya ikili yanıt erken bittiğinde istemci bunu başarılı ölçüm sayıp Mbps gösterebiliyordu. | Önceki sürümde indirme yanıtının türü, tam boyutu ve 10 MB sınırı doğrulanıyordu; HTML/kısa gövde regresyonları CI #350'de geçti. Kullanıcı hız testini bu sürüm için iptal etti. Ekran/istemci kaldırıldı; yokluk ve yalnız eski ayar deposunu temizleme regresyonları eklendi. | Özellik kaldırma commit'i `111cc9c8cc5cb5ac52ff12cc3bb1cb5f51319bef`; PR #27 CI #361 / run `39539845235` başarıyla tamamlandı. Gerçek uç nokta hiç doğrulanmadı ve istek gönderilmedi. |
+| NDNS-062 | P1 | Önceki hız testi dialogu Home/ekran kilidi sonrası Compose içinde kalınca ağ işi arka planda sürebiliyor; sunucu değişikliği de tamamlanmış sonucu ve izni geçersiz kılamayabiliyordu. | Önceki sürümde Activity `ON_STOP` sırasında etkin iş iptal ediliyor ve sunucu/izin değişince eski sonuç temizleniyordu. Kullanıcı kararıyla özellik mevcut sürümden tamamen kaldırıldı; eski sunucu tercihleri idempotent temizleniyor. | Önceki yaşam döngüsü regresyonları CI #350'de geçti. Kaldırma commit'i `111cc9c8cc5cb5ac52ff12cc3bb1cb5f51319bef`; PR #27 CI #361 / run `39539845235` başarıyla tamamlandı. Canlı sunucu kullanılmadı. |
+| NDNS-063 | P1 | Sabit `SecurityDto`, API yanıtındaki henüz belgelenmemiş güvenlik anahtarlarını Moshi'nin varsayılan atlaması nedeniyle kaybediyordu. Yaş doğrulaması veya başka bir özellik hakkında alan adı ya da yazma desteği tahmin etmek sözleşme dışı davranış oluştururdu. | Güvenlik yanıtı JSON ayrıştırılmadan önce 512 KiB ile sınırlandırılıyor. Moshi adaptörü en fazla 32 üst düzey alanı geçici DTO belleğinde koruyor; fazlasını adet ve deterministik SHA-256 özetiyle temsil ediyor. Güvenlik ekranı güvenli anahtar adını/türünü salt okunur gösteriyor; yalnız Boolean değeri görünür, diğer içerikler gizli. Değerler tercih deposuna yazılmıyor veya PATCH'e eklenmiyor; anlık görüntü özeti değişiklikleri algılıyor. | Bilinmeyen alan, taşma, serileştirme, büyük/chunked yanıt, özet ve Compose regresyonları CI #350'de geçti. Resmî API'de yaş doğrulama alanı/yazılabilirlik belgesi bulunamadı; gerçek profil yanıtı/PATCH kanıtı hâlâ yok. |
+| NDNS-064 | P1 | CI #349, `MIN_DOWNLOAD_BYTES` sabitinin companion object içinde daha sonra tanımlanan `MIN_DOWNLOAD_MEBIBYTES` ve `BYTES_PER_MEBIBYTE` değerlerine başvurması nedeniyle Kotlin derlemesini durdurdu. | `LibreSpeedClient` içindeki bağımlı sabitler, kullanımlarından önce tanımlanacak biçimde sıralandı. | CI #350'de düzeltme derlendi; 227 test 0 başarısız ve 0 atlanan sonuçla geçti. |
+
+## 21 Ekim 2026 — alan doğruluğu ve canlı test sınırı
+
+| Kayıt | Öncelik | Bulgu | Düzeltme | Regresyon / kanıt |
+|---|---|---|---|---|
+| NDNS-065 | P2 | `settings.logs.location` alanı uygulamanın tanımadığı bir sunucu kodu (`apac` gibi) döndürdüğünde repository önceki yerel konum etiketini gösteriyor, böylece NextDNS'in gerçek durumunu yanlış temsil edebiliyordu. Eksik (`null`) alan ile tanınmayan dolu değer ayrılmamıştı. | `null` geldiğinde mevcut değer korunur; `ch/eu/us` dışındaki dolu değer beş dildeki bilinmeyen etiketiyle gösterilir ve hiçbir yeni kod yazma seçeneği eklenmez. Matris alanı, API belgesi izinli kodların tamamını tanımlamadığı için `PARTIAL` olarak sınıflandırır. | `RepositoryRegressionTest.unknownLogStorageLocationDoesNotMasqueradeAsThePreviousLocalValue`; CI #355'te 228 JVM/Compose testi ve 26 regresyon geçti. |
+| NDNS-066 | P1 | CI #354, `NextDnsRepository.kt` içindeki mevcut ve yeni kaynak etiketleri için gereken `com.example.R` ve `AppStrings` import'larının eksik olduğunu buldu; Kotlin derlemesi durdu ve sonraki test/artifact adımları çalışmadı. | İki import yeniden eklendi; bilinmeyen değerler kaynak dizgeler üzerinden yerelleştirilmiş kalır. | Düzeltme commit'i `64e8ece`; CI #355 tam iş akışı başarılı tamamlandı. |
+
+**Kullanıcı kararı:** Canlı hız testi ertelendi. Test sunucusuna istek yapılmadı; canlı uç nokta, sunucu izni, gizlilik koşulu veya ölçüm sonucu doğrulanmış kabul edilmemelidir.
+
+## 21 Ekim 2026 — PR #27 P02 kurulum ve bağlı IP doğruluğu
+
+| Kayıt | Öncelik | Bulgu | Düzeltme | Regresyon / kanıt |
+|---|---|---|---|---|
+| NDNS-067 | P1 | Belgelenmemiş `GET /profiles/{profileId}/setup` ve `POST /profiles/{profileId}/setup/linkedIp` Retrofit rotaları uygulamadaydı; ilki her tam eşitlemede çağrılıyor ve desteklenen profil bölümü gibi sayılıyordu. | İki rota/DTO kaldırıldı; Setup yalnızca profil kimliğinden üretilen doğrulanmış DNS uçlarını gösterir, tam eşitleme yalnız belgeli profil bölümlerini içerir. Capability matrix 61'den 59 Retrofit rotasına güncellendi. | `undocumentedSetupAndLinkedIpRoutesAreNotDeclared`; `fullSyncDoesNotRequestAnAccountEndpointThatIsNotInThePublicApi`; API matrix verifier 59 rota/39 alan geçti. Android CI henüz bekleniyor. |
+| NDNS-068 | P1 | `https://link-ip.nextdns.io/{profileId}` için token/sözleşme olmadan istek yapılıyor, HTTP 2xx başarı sayılıyor ve ardından tanı IP'si bağlı IP doğrulaması gibi yeşil onayla gösterilebiliyordu. | Doğrudan istek ve UI mutasyonu kaldırıldı. Tanıda ölçülen genel IP ayrı etiketlenir; profil bağlama durumu doğrulanamıyorsa açıkça böyle gösterilir ve yönetim resmi NextDNS paneline gider. | `linkedIpLabelUsesServiceBindingNotDiagnosticClientIp`; client/API route yokluğu; kamuya açık API belgesi [NextDNS API](https://nextdns.github.io/api/). Android CI henüz bekleniyor. |
+| NDNS-069 | P2 | Setup ekranı, profile özel IPv4 değerini alamadığında sabit `.234` değerlerine düşüyor; Router/Windows kurulumunda API'den gelmemiş değerler servis sonucu gibi gösterilebiliyordu. | `.234` fallback'leri kaldırıldı. Profile özel IPv4/linked-IP panelde yönetilir; Windows kılavuzundaki genel `45.90.28.0` adresi profile bağlı IP diye sunulmaz. Profile IPv6 yalnız altı hexadecimal profil kimliğinden üretilir. | `missingSetupIpv4IsUnavailable`; `profileIpv6EndpointsComeFromTheValidatedProfileId`; `endpointsMustUseTheValidatedProfileIpv6Format`. Yerel API/lokalizasyon/DRAFT kapıları geçti; Android CI henüz bekleniyor. |
+| NDNS-070 | P2 - test bakımı | Privacy taslak revizyonu DRAFT-8 olduğunda beş dilli yatay/düşük yükseklik ekran testi hâlâ eski DRAFT-6 metnini bekliyordu; bu nedenle LegalWelcomeViewportTest.shortLandscapeAtLargeFontKeepsDocumentsAndConsentReachableInFiveLanguages başarısız oldu. | Beklenti güncel taslak revizyonuna alındı. Ürün ekranındaki erişilebilirlik/yerleşim iddiası değişmedi; başarısızlık eski sabit test metninden kaynaklandı. | PR #27 CI #362, run 39542170936: 220 testten yalnız bu assertion başarısız oldu. Düzeltme sonrası yeni tam CI bekleniyor. |
+| NDNS-071 | P2 - kalite kanıtı bakımı | P02 kamuya açık API sözleşmesi bulunmadığı için linkIpAddress istemci metodu kaldırılınca quality gate NDNS-007 için eski ipLinkSuccessClosesUnconsumedBody testini zorunlu saymaya devam etti. | Zorunlu regresyon, linked-IP istemcisinin ve belgelenmemiş setup/link-IP rotalarının bulunmadığını denetleyen API contract testine taşındı. Diğer katalog/diagnostic response kapatma regresyonları korundu. | PR #27 CI #363, run 39542908465: 220 JVM/Compose testi geçti; yalnız test kanıtı eşleme adımı eski test adı nedeniyle durdu. Yerel Python kapıları 13/13 geçti; NDNS-013'ün ayrı eski test adları CI #364'te görüldü. |
+| NDNS-072 | P2 - kalite kanıtı bakımı | P02 profil IPv6 davranışını, belgelenmemiş `/setup` rotasına dayanmadan doğrulanmış altı haneli profil kimliğinden üretilecek şekilde netleştirdi; NDNS-013 kalite kapısı ise eski `endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation` ve `setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback` adlarını bekledi. | Regresyon eşlemesi UI'daki `endpointsMustUseTheValidatedProfileIpv6Format` ve `copiedIpv6MustMatchBothDisplayedServiceAddresses` ile modeldeki `profileIpv6EndpointsComeFromTheValidatedProfileId` testlerine taşındı; kalite defterindeki test listesi eşleştirildi ve bu sözleşme için test-first Python regresyonu eklendi. | PR #27 CI #364, run 39543780885: lint, API matrix, localization, legal DRAFT ve 220 JVM/Compose testi geçti; yalnız `verify_test_evidence.py` iki eski NDNS-013 test adı nedeniyle başarısız oldu. Yeni tam CI bekleniyor. |

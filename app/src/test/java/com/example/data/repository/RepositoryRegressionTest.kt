@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.example.NextDnsApp
+import com.example.R
 import com.example.data.api.NextDnsApiService
 import com.example.data.api.NextDnsNetworkClient
 import com.example.data.api.NextDnsTestResponse
@@ -13,6 +14,7 @@ import com.example.data.api.NextDnsTestService
 import com.example.data.local.NextDnsPreferences
 import com.example.data.model.NextDnsProfile
 import com.example.data.security.ApiKeyProtector
+import com.example.i18n.AppStrings
 import com.example.ui.viewmodel.NextDnsViewModel
 import kotlinx.coroutines.*
 import okhttp3.mockwebserver.Dispatcher
@@ -83,9 +85,12 @@ class RepositoryRegressionTest {
     repository = newRepository()
   }
 
-  private fun newRepository(probe: suspend (String?) -> NextDnsTestResponse? = { null }) =
+  private fun newRepository(
+    streamClient: OkHttpClient = NextDnsNetworkClient.client,
+    probe: suspend (String?) -> NextDnsTestResponse? = { null }
+  ) =
     NextDnsRepository(preferences, apiService = api, diagnosticService = testApi,
-      diagnosticProbe = probe, backgroundWorkEnabled = false)
+      diagnosticProbe = probe, streamClient = streamClient, backgroundWorkEnabled = false)
 
   @After fun tearDown() {
     gates.forEach { it.countDown() }
@@ -192,6 +197,57 @@ class RepositoryRegressionTest {
     assertTrue(requests.last().contains("device=__UNIDENTIFIED__"))
     assertEquals("unidentified.example", repository.logs.value.single().domain)
     assertNull(repository.logs.value.single().deviceId)
+  }
+
+  @Test fun oldSearchStreamCannotLeakRowsIntoNewSearchResults() = runBlocking {
+    val oldStreamRequest = gate()
+    val releaseOldStream = gate()
+    val searchRequest = gate()
+    val releaseSearch = gate()
+    val streamClient = OkHttpClient.Builder()
+      .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().url(server.url("/stream")).build()) }
+      .build()
+    repository = newRepository(streamClient = streamClient)
+    response = { request ->
+      val requestUrl = request.requestUrl!!
+      when {
+        requestUrl.encodedPath == "/stream" && requestUrl.queryParameter("search") == null -> {
+          oldStreamRequest.countDown()
+          await(releaseOldStream)
+          MockResponse()
+            .setBody("""id: outside-search
+data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"default"}
+
+""")
+            .setBodyDelay(250, TimeUnit.MILLISECONDS)
+        }
+        requestUrl.encodedPath == "/stream" -> MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE)
+        requestUrl.queryParameter("search") == "needle" -> {
+          searchRequest.countDown()
+          await(releaseSearch)
+          json("""{"data":[{"domain":"needle.example","timestamp":"2026-10-20T00:00:01Z","status":"default"}]}""")
+        }
+        else -> json("""{"data":[],"meta":{"stream":{"id":"seed-cursor"}}}""")
+      }
+    }
+
+    repository.startLogsStream()
+    await(oldStreamRequest)
+    val filter = async(Dispatchers.IO) { repository.setLogsSearchFilter("needle") }
+    await(searchRequest)
+    releaseOldStream.countDown()
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+    while (repository.logs.value.none { it.domain == "outside.example" } && System.nanoTime() < deadline) {
+      shadowOf(Looper.getMainLooper()).idle()
+      delay(5)
+    }
+    releaseSearch.countDown()
+    try {
+      assertTrue(filter.await())
+      assertEquals(listOf("needle.example"), repository.logs.value.map { it.domain })
+    } finally {
+      repository.stopLogsStream()
+    }
   }
 
   @Test fun logStatusesAndApiReasonsRemainFaithfulToTheResponse() = runBlocking {
@@ -326,8 +382,10 @@ class RepositoryRegressionTest {
     val syncResult = repository.loadActiveProfileDataFromApi()
 
     assertFalse("Full sync must not call the undocumented /account route", requests.any { it.contains("/account") })
+    assertFalse("Full sync must not call undocumented setup routes", requests.any { it.contains("/setup") })
     assertEquals("Every sync result must correspond to a supported profile section", SyncSection.values().toSet(), syncResult.sectionResults.keys)
     assertFalse("Account connection state is local app state, not an API sync section", syncResult.sectionResults.keys.any { it.name == "ACCOUNT" })
+    assertFalse("Setup guidance is local and is not a documented sync section", syncResult.sectionResults.keys.any { it.name == "SETUP" })
   }
 
   @Test fun fullSyncPreservesCursorPagesAlreadyLoadedFromTheLogsScreen() = runBlocking {
@@ -426,6 +484,25 @@ class RepositoryRegressionTest {
     assertFalse(repository.configSettings.value.web3)
     repository.loadLocalProfileData("aaaaaa")
     assertFalse(repository.configSettings.value.web3)
+  }
+
+  @Test fun unknownLogStorageLocationDoesNotMasqueradeAsThePreviousLocalValue() = runBlocking {
+    response = { json("""{"data":{"logs":{"location":"eu","retention":1234}}}""") }
+    assertTrue(repository.refreshSection(SyncSection.SETTINGS))
+    assertEquals("Avrupa Birliği (AB)", repository.configSettings.value.logStorageLocation)
+    assertEquals(AppStrings.get(R.string.value_unknown), repository.configSettings.value.logRetention)
+
+    response = { json("""{"data":{"logs":{"location":"apac"}}}""") }
+    assertTrue(repository.refreshSection(SyncSection.SETTINGS))
+    assertEquals(AppStrings.get(R.string.value_unknown), repository.configSettings.value.logStorageLocation)
+
+    response = { json("""{"data":{"logs":{"enabled":true}}}""") }
+    assertTrue(repository.refreshSection(SyncSection.SETTINGS))
+    assertEquals(AppStrings.get(R.string.value_unknown), repository.configSettings.value.logStorageLocation)
+
+    response = { json("""{"data":{"logs":{"location":"us"}}}""") }
+    assertTrue(repository.refreshSection(SyncSection.SETTINGS))
+    assertEquals("Amerika Birleşik Devletleri (ABD)", repository.configSettings.value.logStorageLocation)
   }
 
   @Test fun diagnosticTimeoutDoesNotReplaceLastSuccessWithFreshSuccess() = runBlocking {

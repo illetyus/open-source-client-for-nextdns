@@ -50,3 +50,7 @@ API belgelerinin log-download davranışı: https://nextdns.github.io/api/ — `
 **Denetim hükmü:** Kodda geliştiriciye ait veri toplama backend'i tespit edilmedi; bu tam ağ denetimi veya Google Play Data Safety deklarasyonu **değildir**.
 
 Resmî politika: https://support.google.com/googleplay/android-developer/answer/13326895
+
+## 21 Ekim 2026 — kurulum ve bağlı IP çağrısı güncellemesi
+
+Bu denetimin tarihsel kaynak tablosunda görülen `link-ip.nextdns.io` isteği, güncel PR #27 adayından kaldırılmıştır. Kamuya açık NextDNS REST belgesi profil kurulum veya linked-IP rotası tanımlamadığından istemci profil kurulumunu API eşitlemesine dahil etmez ve tanı sonucundaki mevcut istemci IP'sini bağlı IP olarak göstermez. Kurulum ekranı, linked-IP ayarını görüntülemek veya değiştirmek için `https://my.nextdns.io/` adresini kullanıcının tarayıcısında açar. Bu kaynak değişikliği imzalı paket veya canlı ağ gözlemiyle henüz doğrulanmış sayılmaz; belge ve Privacy asset'i DRAFT kalır.

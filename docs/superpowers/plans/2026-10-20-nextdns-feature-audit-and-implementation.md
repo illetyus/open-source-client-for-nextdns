@@ -1,5 +1,7 @@
 # NextDNS API, Performance, Logs and Analytics Implementation Plan
 
+**Scope update — 21 October 2026:** The user canceled speed testing for the current release. The earlier speed-test design, implementation, and research below are retained as historical records; the approved [completion plan](2026-10-21-nextdns-completion-without-speed-test.md) supersedes those active steps and removes the feature from the current application.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Audit the existing independent NextDNS Android client against the ten requested API, diagnostics, performance, logs, analytics, and icon requirements; implement only behavior supported by a documented or observed contract and validate it through tests and GitHub CI.
@@ -35,9 +37,9 @@
 | Req. | Priority | Primary code paths | Verification path | Starting status |
 |---|---|---|---|---|
 | 1. Age-verification option | P1 research gate | `app/src/main/java/com/example/data/api/NextDnsApiService.kt`, `app/src/main/java/com/example/ui/screens/SecurityScreen.kt` | `app/src/test/java/com/example/data/api/NextDnsApiContractTest.kt`; official schema and sanitized response evidence | No exact field or read/write contract in published schema; no speculative UI |
-| 2. Compose/UI performance | P1 | `app/build.gradle.kts`, `settings.gradle.kts`, new `benchmark/` module, `.github/workflows/ci.yml` | AndroidX Macrobenchmark, Compose trace, StrictMode instrumentation; same-device before/after report under `docs/performance/` | No benchmark module or physical-device baseline |
+| 2. Compose/UI performance | P1 | `app/build.gradle.kts`, `settings.gradle.kts`, `macrobenchmark/`, `.github/workflows/ci.yml` | AndroidX Macrobenchmark, Compose trace, StrictMode instrumentation; same-device before/after report under `docs/performance/` | Harness and release-emulator StrictMode audit pass CI; no physical-device baseline |
 | 3. DNS server/location | P1 | `NextDnsApiService.kt`, `app/src/main/java/com/example/data/model/NextDnsModels.kt`, `app/src/main/java/com/example/data/repository/NextDnsRepository.kt`, `app/src/main/java/com/example/ui/screens/AccountScreen.kt`, localized `strings.xml` | `app/src/test/java/com/example/data/api/NextDnsApiContractTest.kt`, repository and diagnostic Compose tests | `server`, `resolver`, `anycast` DTO fields exist; UI mapping/fallback must be checked |
-| 4. Open-source speed test | P1 privacy/security gate | new `app/src/main/java/com/example/data/diagnostics/SpeedTestEngine.kt`, `app/src/main/java/com/example/ui/screens/SpeedTestScreen.kt`, `app/src/main/res/values*/strings.xml`, `app/src/main/assets/licenses/`, `app/build.gradle.kts` | new deterministic speed-test engine and screen tests; HTTPS endpoint and license/NOTICE audit | No engine or disclosed destination; candidates have different licensing/server requirements |
+| 4. Open-source speed test | P1 privacy/security gate | `LibreSpeedClient.kt`, `SpeedTestSettingsStore.kt`, `SpeedTestDialog.kt`, five-language strings, contract/Compose tests, research record | MockWebServer and Compose tests; live authorized HTTPS endpoint check remains open | No public endpoint default; bounded traffic and explicit user/operator consent |
 | 5. Device-name fallback | P2 | `NextDnsModels.kt`, `NextDnsRepository.kt`, `AnalyticsScreen.kt`, `LogsScreen.kt` | new device-label unit tests and `UiAuditTest.kt` | Placeholder-name risk; API IDs must remain separate from display labels |
 | 6. Logs categories/reasons/history | P1 | `NextDnsApiService.kt`, `NextDnsModels.kt`, `NextDnsRepository.kt`, `NextDnsViewModel.kt`, `LogsScreen.kt`, localized `strings.xml` | `NextDnsApiContractTest.kt`, `RepositoryRegressionTest.kt`, `UiAuditTest.kt` | Cursor pagination/device filtering exist in local diff; status UI and exact reason coverage are not yet proven |
 | 7. Early-access security | P1 | `NextDnsApiService.kt`, `NextDnsRepository.kt`, `ConfigSnapshotHasher.kt`, `SecurityScreen.kt` | API parser, PATCH/read-back, snapshot, and UI tests | Known fields are typed; unknown response keys are currently discarded |
@@ -50,7 +52,7 @@
 - `NextDnsApiService` remains the HTTP boundary. Repository methods translate its DTOs into app models; Compose screens consume repository/ViewModel state only.
 - `DeviceLabelResolver.label(name, model, unidentified)` will be the shared display-label boundary for logs and analytics; stable IDs stay in the existing filter state.
 - `GafamSegmentModel.from(analytics)` will be a pure calculation returning the same ordered segment values used by both the donut and legend; chart drawing will not recompute separate totals.
-- `SpeedTestEngine` will expose a cancellable suspend operation over an explicitly selected `SpeedTestServer`; UI disclosure and network execution share that selected server object.
+- `LibreSpeedClient` exposes cancellable suspend operations over a validated, explicitly selected server; UI disclosure and network execution share that server object.
 - `ApiCapabilityMatrix` is documentation, not runtime configuration. It cannot authorize a write; runtime mutation support still requires a contract test.
 
 ## Explicit uncertainty constraints
@@ -68,17 +70,32 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 ## Current evidence and repository state
 
 - GitHub repository: `illetyus/open-source-client-for-nextdns`; public, writable by the connected account; default branch `main`.
-- `main` currently resolves locally to `4812323`; the active local branch is `fix/settings-account-sync-ux-2026-10-19` at `c78c9af`, six commits ahead of `main`, with a substantial uncommitted user-authorized diff. GitHub currently reports no open PR. Preserve this work and inspect the exact diff before commit or push.
+- GitHub `main` was fetched and verified at `c7db8d9d04d2022741ccc1564877940f45fe485a`. Work is isolated in `feat/nextdns-api-performance-audit`; draft PR #27 was opened from that exact main commit for a test-first red phase. Its initial regression changes and implementation are tracked in the PR; CI outcomes are recorded below.
 - The existing local plan `docs/superpowers/plans/2026-10-20-logs-icons-settings-onboarding.md` records log cursor pagination/device filtering, first-party best-effort favicon loading, settings/guest/legal grouping, and launcher redesign as locally implemented. Its recorded build and test results predate this plan and do not prove the present tree or GitHub CI.
 - Official NextDNS API documentation currently labels the API beta, documents cursor/limit pagination, security fields, profile settings, and log parameters. It does not document an age-verification bypass field. The codebase has no live account API-key evidence available to this audit.
 - A NextDNS Help Center bug report dated 2026-03-09 discusses the option's dashboard availability but provides no API field or read/write contract. This is community evidence about uncertainty, not proof that the feature is absent.
-- `NextDnsTestResponse` already models `server`, `resolver`, and `anycast`; whether the UI communicates these fields accurately remains to be verified.
-- Logs have a cursor-based API call, a device filter, and a load-older action in the current local diff. Status/category filtering and complete reason display require source/test verification.
-- The current GAFAM legend lists six groups, but the donut canvas draws only Google, Facebook, Microsoft, and a remainder arc; Apple and Amazon are omitted from the plotted segments.
+- `NextDnsTestResponse` models `server`, `resolver`, and `anycast`; these are shown without geo inference. The response does not provide a region field, so the screen now has a five-language explicit unavailable-region row.
+- At the verified live-main base, logs already use documented status/device/search parameters, cursor pagination, stale-response rejection and raw-reason fallback; date/sort controls remain a documented UI gap.
+- At the verified live-main base, the interactive country map and six-segment GAFAM chart already exist. They will be validated through PR CI rather than reimplemented.
 - `FaviconImage` uses HTTPS `favicons.nextdns.io`, bounded network reads, and a generic fallback. The route is not in the published API reference and the cache is process-memory only.
-- No speed-test or Macrobenchmark module is present. The local ADB server currently fails to start, so a live-device measurement is not yet available.
+- The native LibreSpeed-compatible adapter and localized configuration dialog are implemented with no public endpoint default; live measurement is deferred. The PR adds a profileable, release-like Macrobenchmark target with cold-start and initial-screen frame metrics plus benchmark-only Compose composition tracing. No physical-device baseline is available; authenticated home/logs/analytics journeys still need a reproducible profile fixture.
 
+### Execution update — 20 October 2026
+
+- PR #27 red-phase runs `39410235278`, `39411101417`, and `39411876774` passed lint, metadata, localization, and legal-draft checks. Their targeted assertions failed on the missing diagnostic region row and 16 dp list icons; the TLD test first exposed Compose/Espresso cursor-animation timing. Run `39412587641` then failed all three targeted assertions for the expected old behavior, including the missing unavailable-catalog label, across 194 tests.
+- CI `39414065197` passed Android Lint, metadata, five-language and legal-draft gates; 193 of 194 tests passed. The only failure was the TLD dialog assertion. The UI test had frozen Compose time before triggering the dialog, and the UI treated the initial empty list as unavailable. CI `39415807258` then stopped at XML resource merge because the new Turkish loading string did not escape its ASCII apostrophe. Both corrections are in the current working tree; CI must validate them.
+- PR #27 CI `39423174547` (#310) was the implementation checkpoint; code head `90ea34ab87c353e07ee097a2321b863d6678a258` passed CI #319 (`39443973201`). Final head `8c12dc709703f0d6ee08b96b74e6cbbebb080808`, which adds the final documentation updates and records the user's speed-test deferral, passed CI #321 (`39448353556`): Android Lint, draft metadata, 61-route API inventory, five-language/legal-DRAFT checks, 205 JVM/Compose tests (0 failed/0 skipped), 21 defect regressions, 76 required cases, 12 screenshots, 588 coverage classes, debug and unsigned release assembly, Macrobenchmark target compilation, dependency/SDK, NOTICE and DEX checks, Snyk High (0 findings), and 12 release-payload emulator tests (0 failed/0 skipped, no canary in logcat, signed/unsigned payload entries identical). `Snyk Monitor Main` was skipped as expected for a PR run. The harness compiled but was not run on a physical phone; real-device timings/traces, same-device baseline, authenticated logs/analytics journeys, BrowserStack repetition, and recomposition analysis remain pending.
+- The performance harness uses the official AndroidX `com.android.test` Macrobenchmark setup, `StartupTimingMetric`, `FrameTimingMetric`, release-like non-debuggable/profileable app variant, the already bundled ProfileInstaller 1.4.0, and benchmark-only Compose tracing. AndroidX documents that Macrobenchmark is intended for Compose UI measurement and reports startup and frame percentiles; emulator results are not representative of phone performance ([Macrobenchmark setup](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview), [metric definitions](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)).
+- Local Gradle tests could not start because the configured wrapper-cache lock returned access denied. No local build, lint, unit test or APK result is claimed; GitHub CI remains the executable validation path.
+- BrowserStack credentials are not configured in the current process or Windows user/machine environment, and no device is attached. Physical-device performance values, recomposition traces and BrowserStack results therefore remain unverified.
+- The user deferred live speed testing. The app now has a native LibreSpeed-compatible client with a user-configured authorized HTTPS endpoint, explicit transfer consent, separate upload confirmation, cancellation, and no public default; live endpoint permissions and behavior remain a release gate.
+- Keep age-verification and early-access settings unsupported until a documented API field or sanitized response proves them; do not guess names or send speculative writes. The current API matrix and error ledger record these boundaries.
+
+- PR #27 CI #346 (`39468316658`) passed on head `c85c01978cb6861dce9c9f7a2408bde6fd1c24a6`: Android Lint, metadata, all 61 API routes, 644 resources across five languages, DRAFT integrity, 214 JVM/Contract/Compose tests (0 failures/0 skipped), all 21 defect regressions and 76 required cases, 12 screenshots and 598 coverage classes, Debug and unsigned Release builds, Macrobenchmark compilation, dependency/SDK, NOTICE, manifest/signature and DEX checks, Snyk High, and 12 release-emulator security tests with no log canary. `Snyk Monitor Main` was skipped as expected. CI #340/#344 had identified two speed-test compile errors on earlier heads; the constructor default and Dialog import were fixed before #346 passed.
+- CI #322 (`39451553055`) exposed a concurrent `Dispatchers.Main` access during Compose teardown because fixture `@After` reset Main before the Compose rule had closed. The fix moves Main setup/reset into an outer JUnit RuleChain; repository tests use a standalone Main rule. CI #326 (`39454569461`) caught the first wrapper's incorrect Compose rule interface and internal visibility; corrected to public `ComposeContentTestRule`. CI #327 (`39455562687`, code head `6096f584ffef25bcf3d151f6924b8c443880e5de`) passed all gates: 205 JVM/Compose tests, 12 screenshots, 588 coverage classes, Lint, debug/unsigned release, Macrobenchmark compilation, dependency/NOTICE/DEX, Snyk High (50 dependencies, 0 findings), and 12 release-payload emulator tests (no canary, signed/unsigned payload parity).
 ---
+
+**Current patch:** PR #27 includes API/UI audit corrections, bounded favicon handling, user-configured speed-test support, the release-emulator StrictMode audit, and the 61-route inventory check. CI #346 passed the full build, test, lint, security, release-payload, and evidence gates. Live BrowserStack execution remains unavailable because credentials are not present in this session.
 
 ## Numbered work items
 
@@ -110,20 +127,20 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 2. Performance and UI-fluidity measurements
 
-**Current status:** The world-map asset read was moved off the main thread and loading/error UI was added. StrictMode auditing, Macrobenchmark instrumentation, Perfetto traces, recomposition measurements, and same-device baseline/candidate results remain incomplete.
+**Current status:** The world-map asset read is dispatched to `Dispatchers.IO`; CI #346 passed the release-emulator StrictMode audit and compiled the release-like Macrobenchmark target. ADB server startup succeeds with elevated execution, but `adb devices -l` reports no attached device and no emulator binary is available in PATH. Authenticated home/logs/analytics journeys, Perfetto traces, recomposition analysis, and same-device baseline/candidate results remain incomplete. BrowserStack credentials are absent from this process and the Windows user environment.
 
 **Root Cause Analysis:** The repository has no repeatable performance baseline for Compose recompositions, UI frame timing/jank, startup, or main-thread I/O. Source inspection and passing UI tests do not quantify these properties.
 
 **Scope of Change:** Add a reproducible measurement harness and report before/after values for startup and representative home, logs, and analytics interactions on a named API/device configuration.
 
 **Implementation Steps:**
-- [ ] Add a test-only StrictMode audit for disk/network work on the main thread and document known false positives.
-- [ ] Add AndroidX Macrobenchmark cases using `StartupTimingMetric` and `FrameTimingMetric`; collect release-like builds and Perfetto traces.
-- [ ] Enable Compose runtime tracing only in the profiling configuration and record recomposition/layout observations for the same named scenarios.
+- [x] Add a test-only StrictMode audit for disk/network work on the main thread; verify deliberate disk/network probes are detected and the production map asset load is clean.
+- [x] Add an AndroidX Macrobenchmark cold-start and initial-screen scroll case using `StartupTimingMetric` and `FrameTimingMetric`, with a release-like non-debuggable/profileable app variant.
+- [x] Enable Compose runtime tracing only in the benchmark variant and configure Macrobenchmark full tracing; authenticated home/logs/analytics journeys and recorded trace analysis remain pending.
 - [ ] Capture baseline from the current `main` commit and candidate from the feature branch on the same device/runtime; store raw benchmark output and a concise comparison report.
 - [ ] If local device access remains unavailable, run supported CI/BrowserStack checks and mark any emulator/cloud timing as non-equivalent to a physical-device baseline.
 
-**Testing Strategy:** Benchmark configuration smoke test; Macrobenchmark startup and scroll/navigation scenarios; StrictMode test fails on intentional main-thread network/disk fixtures; repeat runs to report median and percentile rather than a single result.
+**Testing Strategy:** Benchmark configuration smoke test; Macrobenchmark startup and scroll/navigation scenarios; release-emulator StrictMode probe plus world-map asset check; repeat device runs to report median and percentile rather than a single result.
 
 **Acceptance Criteria:** A versioned report identifies commit, device, Android version, build type, iterations, startup and frame timing/jank values, trace locations, main-thread I/O outcome, and recomposition inspection method. No unsupported “smoothness” claim is made.
 
@@ -137,7 +154,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 3. DNS resolver/server identity and location wording
 
-**Current status:** Implemented in source and covered by Compose tests: the screen shows only the returned server/resolver/Anycast values, identifies `test.nextdns.io` and the local check time, and uses an explicit unavailable label. CI/runtime verification remains pending.
+**Current status:** Implemented in source and covered by Compose tests: the screen shows only the returned server/resolver/Anycast values, identifies `test.nextdns.io` and the local check time, and uses an explicit unavailable label. CI #346 passed; no location inference or protocol change was added.
 
 **Root Cause Analysis:** The diagnostic response can provide server/resolver identifiers and an Anycast flag, but these values do not by themselves prove a city or country.
 
@@ -162,21 +179,23 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 4. User-controlled open-source internet speed test
 
-**Current status:** Client/license candidates were compared. No acceptable, verified HTTPS test server and usage terms are available, so runtime transfer code and UI remain deferred.
+**Current status:** A native, user-configured LibreSpeed-compatible client and localized UI are implemented in PR work. The user explicitly deferred live speed testing; no test-server request was sent, and no public server is selected or bundled. Mocked contract tests do not establish endpoint policy, permission, capacity, or measured throughput.
 
-**Root Cause Analysis:** No speed-test engine exists. A library license alone does not grant permission to use a third-party test server, and the candidate JSpeedTest project documents legacy HTTP/FTP endpoints as examples.
+**Root Cause Analysis:** A library license alone does not authorize use of a third-party test server. M-Lab's current AUP requires a published privacy policy for third-party clients, and its public test page says that test data, including client IP addresses, is published indefinitely. The LibreSpeed server documentation provides configurable PHP endpoints, so the client can implement that contract without choosing a public host.
 
-**Scope of Change:** Select an Android-compatible open-source engine only after verifying license, maintenance/dependency risks, HTTPS support, ping/upload behavior, and an actual server’s terms. Do not silently use a vendor’s undocumented endpoint.
+**Scope of Change:** Implement a small native OkHttp adapter for the documented LibreSpeed PHP backend paths. Require an HTTPS base URL, HTTPS privacy-policy URL, and per-test confirmation that the user owns or is authorized to use the server. Keep speed-test settings local and separate from NextDNS account synchronization.
 
 **Implementation Steps:**
 - [x] Compare the MIT JSpeedTest client with the LGPL-3.0 LibreSpeed Android template; inspect source, dependency freshness, TLS behavior, server configuration, and NOTICE obligations.
-- [ ] Verify a test endpoint/server is currently online over HTTPS and permits user-initiated test traffic; otherwise make the server configurable or record the item as blocked pending a valid server.
-- [ ] Implement a foreground, user-started flow with server identity, approximate transfer size, upload confirmation, metered-network notice, progress, cancellation, and explicit results deletion/no-retention behavior.
-- [ ] Keep test traffic, IP information, and results out of analytics and logs; add license/NOTICE and privacy copy in all five languages.
+- [x] Keep the endpoint blank by default; save only the user-entered server URL, privacy-policy URL, and relative backend path in an app-local preferences file.
+- [x] Implement a foreground, user-started flow with HTTPS validation, data-use disclosure, metered-network consent, a 10,000,000-byte download cap, separate confirmation for the default 1,000,000-byte upload, progress, cancellation, and no result persistence.
+- [x] Use only the documented `empty.php` ping/upload and `garbage.php?ckSize=` download routes; disable redirects, cookies, retries, telemetry, IP/ISP lookup, and cross-host requests. No upstream client code or binary is bundled.
+- [x] Add deterministic local contract tests and five-language UI copy.
+- [ ] Run a live-device test against an operator-approved HTTPS LibreSpeed-compatible server and verify the endpoint's actual privacy policy and capacity before release.
 
-**Testing Strategy:** Deterministic local HTTP(S) test server for ping, download, upload, rate calculation, timeout, TLS failure, cancellation, and metered-network prompts; license inventory and release dependency scan.
+**Testing Strategy:** MockWebServer contract coverage for configured routes, HTTPS policy, authorization, bounded streaming, transfer rates, upload size, redirects, and data headers; Compose coverage for blank defaults and disabled actions. Device TLS/cancellation/performance validation against a real authorized endpoint remains a release gate.
 
-**Acceptance Criteria:** Download/upload Mbps and ping are measured against the disclosed HTTPS server; cancellation closes sockets promptly; no transfer starts before user action; no telemetry or result persistence occurs unless separately enabled and explained.
+**Acceptance Criteria:** No test runs before explicit user action and authorization. The configured HTTPS server and policy are visible before the test; upload has a separate confirmation; cancellation closes the active OkHttp call; traffic is capped; the app does not run telemetry/IP lookup or persist results.
 
 **Backward Compatibility Considerations:** New feature is additive, does not change NextDNS DNS transport, API credentials, or default app startup network traffic.
 
@@ -184,11 +203,11 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 **Design System & UI Adjustments:** Put it under explicit diagnostics/tools; show destination, data-use estimate, and separate download/upload controls in accessible localized UI.
 
-**Phased PR Plan:** PR 4 only after engine, endpoint, licensing, and privacy review pass; otherwise publish the verified blocker and do not ship a misleading button.
+**Phased PR Plan:** Native client/UI changes are included in the current draft audit PR. A live endpoint test and any final legal/server-operator review must pass before removing the release gate.
 
 ### 5. Device analysis name fallback
 
-**Current status:** Implemented in repository, analytics, and logs source with API-ID filtering; unit and Compose regressions are present. CI verification remains pending.
+**Current status:** Implemented in repository, analytics, and logs source with API-ID filtering; unit and Compose regressions passed in CI #346.
 
 **Root Cause Analysis:** API analytics can omit device name/model or return placeholder text; rendering a nullable field directly can produce “undefined” or an empty label.
 
@@ -213,7 +232,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 6. DNS logs: status categories, reasons, and history
 
-**Current status:** API status/device/search filtering, cursor resets, stale-page rejection, exact unknown-reason fallback, and pagination/stream integration are implemented with repository/UI regressions. Date and sort controls remain absent from the screen; existing retention limits are documented. Tests have not been executed in this environment.
+**Current status:** API status/device/search filtering, cursor resets, stale-page rejection, exact unknown-reason fallback, and pagination/stream integration are implemented with repository/UI regressions; CI #346 passed. Date and sort controls remain absent from the screen; existing retention limits are documented.
 
 **Root Cause Analysis:** The API supports `status`, `device`, date, search, `raw`, `limit`, and `cursor`; first-page-only behavior or client-only filtering can hide historical/device-specific records and misstate why an event was blocked.
 
@@ -239,21 +258,21 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 7. Server-driven early-access security settings
 
-**Current status:** Deferred at the evidence gate. No sanitized user-authorized response demonstrates an unknown field, so no dynamic label, control, or PATCH behavior is invented. The capability matrix records the limitation.
+**Current status:** Bounded Moshi discovery, safe read-only presentation, snapshot change detection, and synthetic JSON regressions are implemented. No sanitized user-authorized response demonstrates an unknown field on the user's profile, so no field meaning or PATCH behavior is invented. The capability matrix records the distinction between synthetic parser coverage and live-account evidence.
 
-**Root Cause Analysis:** The fixed `SecurityDto` enumerates published fields, so Moshi discards unknown response keys. Hardcoding guessed names would be unsafe, but discarding server-provided fields prevents future capability discovery.
+**Root Cause Analysis:** A fixed DTO would discard unknown response keys. Hardcoding guessed names would be unsafe, so a bounded adapter now captures them for safe, read-only discovery without assigning undocumented meaning.
 
 **Scope of Change:** Preserve unknown JSON values from the documented security response. Expose only safely typed, explicitly identified server-returned values; keep unsupported types read-only/diagnostic. Unknown write support remains conditional on endpoint verification.
 
 **Implementation Steps:**
-- [ ] Add a narrowly scoped Moshi adapter or raw security JSON model that captures unknown keys without changing known typed fields.
-- [ ] Add a server-field presentation model that distinguishes documented fields from unknown fields and avoids fabricated labels/descriptions.
-- [ ] For an unknown Boolean field, permit a write only if the existing security PATCH endpoint demonstrably accepts a single-field patch and the repository verifies it with a subsequent GET; otherwise show it read-only.
-- [ ] Include dynamic fields in sync snapshots and error handling without allowing app-local values to enter the API payload.
+- [x] Add a narrowly scoped Moshi adapter that captures bounded unknown keys while preserving known typed fields.
+- [x] Add a neutral server-field presentation model; show safe field names/types read-only and expose only Boolean values.
+- [x] Keep all unknown fields read-only. No real-account field or single-field PATCH/read-back evidence authorizes a write.
+- [x] Include unknown fields in sync change fingerprints without persisting response values or adding them to mutation payloads.
 
-**Testing Strategy:** Moshi fixture tests for known keys, unknown Boolean/string/number/object/list/null; PATCH serialization tests; mocked acceptance/rejection/read-back behavior; snapshot hash tests.
+**Testing Strategy:** Moshi fixture tests for known keys and unknown Boolean/string/number/object/list/null; PATCH serialization exclusion; bounded overflow/digest; snapshot hash; and read-only Compose disclosure tests. All use synthetic fixtures, not a personal profile response.
 
-**Acceptance Criteria:** Unknown response fields are not silently lost; no setting name is invented; known behavior is unchanged; a UI mutation is offered only for an observed Boolean field with a passing PATCH/read-back contract.
+**Acceptance Criteria:** Unknown response fields are bounded and not silently lost; no setting name or meaning is invented; known behavior is unchanged; unknown fields remain read-only until field-specific API evidence exists.
 
 **Backward Compatibility Considerations:** Older profiles missing new fields retain current defaults and controls.
 
@@ -265,7 +284,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 8. GAFAM analytics chart correctness and accessibility
 
-**Current status:** Six-segment count-based model, accessibility description, API slug normalization, and light/dark colors are implemented with unit and Compose regressions. CI verification remains pending.
+**Current status:** Six-segment count-based model, accessibility description, API slug normalization, and light/dark colors are implemented with unit and Compose regressions; CI #346 passed.
 
 **Root Cause Analysis:** The current legend includes Google, Facebook, Microsoft, Apple, Amazon, and Other, but the donut renderer draws only the first three companies plus Other. Apple and Amazon query counts are excluded from the plotted arcs, so visual segments and labels disagree.
 
@@ -291,17 +310,18 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 9. Comprehensive API capability inventory
 
-**Current status:** `docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md` maps published endpoints to this client, distinguishes local/diagnostic/undocumented data, and records the API beta caveat. Repository invariants already have regression tests. Scripted consistency execution and Gradle verification remain pending.
+**Current status:** `docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md` maps all 61 Retrofit routes and each of the 39 documented profile-example leaf fields to DTOs, repository/UI behavior, and read/write status. Its checker now asserts both inventories; it passes locally. `settings.logs.retention` and `settings.logs.location` are `PARTIAL` because the public docs do not define their complete accepted value sets.
 
-**Root Cause Analysis:** Existing API calls are distributed across Retrofit declarations, repository methods, and screens; there is no single audited mapping of supported/read-only/writable/missing/unsupported options.
+**Root Cause Analysis:** Existing API calls and profile fields are distributed across Retrofit declarations, DTOs, repository methods, and screens; an endpoint-only inventory cannot show which individual fields are read, written, missing, or only partially supported.
 
 **Scope of Change:** Produce a versioned matrix for profile/setup, security, privacy, parental control, allow/deny lists, settings, logs, analytics, diagnostics, and app-local data.
 
 **Implementation Steps:**
 - [x] Enumerate current official API endpoints, methods, query parameters, response fields, and cursor semantics from `https://nextdns.github.io/api/`.
-- [x] Cross-map each field to `NextDnsApiService`, DTOs, repository reads/writes, UI, and tests.
+- [x] Cross-map all 39 documented profile-example leaf fields to DTOs, repository reads/writes, UI, limitations, and relevant tests.
 - [x] Classify each row `SUPPORTED_READ_WRITE`, `SUPPORTED_READ_ONLY`, `PARTIAL`, `MISSING`, or `UNVERIFIED`; include evidence link and limitations.
 - [x] Add and retain repository/UI regression tests for critical endpoint/request invariants, including absence of `/account` and no mutation of app-local preferences.
+- [x] Add a CI inventory check that requires the matrix's explicit method/path list to equal the Retrofit annotations.
 
 **Testing Strategy:** Scripted inventory consistency check against Retrofit annotations and selected API contract tests; manual review of every row against the official documentation.
 
@@ -317,7 +337,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 10. NextDNS favicon quality, cache, and provenance
 
-**Current status:** Synthetic HTTPS GET confirmed 200 `image/png` for github.com/google.com and 404 for example.com on 20 October 2026. The observed route remains best-effort; redirect/MIME/size/timeout behavior is bounded in code, including a shared eight-second deadline. DNS log rows use local icons so browsing-history domains are not sent to the favicon host. Full network-path tests and a provider guarantee are unavailable. Memory-only cache and local fallback are retained.
+**Current status:** Synthetic HTTPS GET confirmed 200 `image/png` for github.com/google.com and 404 for example.com on 20 October 2026. The route remains best-effort. Bounded network-path tests for redirect, MIME, chunked size, timeout, malformed PNG, cache, and coroutine cancellation passed CI #346; cancellation reaches the underlying OkHttp call. DNS log rows use local icons so browsing-history domains are not sent to the favicon host. No provider guarantee is claimed. Memory-only cache and local fallback are retained.
 
 **Root Cause Analysis:** Current code uses a high-resolution route on `favicons.nextdns.io`, but the route is absent from the published API contract and the cache is memory-only; provider response quality and reuse terms are not guaranteed.
 
@@ -326,7 +346,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 **Implementation Steps:**
 - [x] Verify live HTTPS response behavior for representative synthetic hostnames and document that the route is unofficial/unsupported by the public API specification.
 - [x] Review NextDNS Help Center guidance and repository/community usage evidence; do not treat third-party code as an API guarantee.
-- [ ] Test redirects, MIME mismatch, oversized bodies, timeouts, malformed images, IDN inputs, local/private hostnames, and cancellation.
+- [x] Add network-path tests for redirects, MIME mismatch, oversized chunked bodies, timeouts, malformed images, valid/cache behavior, and cancellation; retain URL unit tests for IDN and local/private hostnames. Run them in PR CI before closing this item.
 - [x] Evaluate disk caching against user data deletion, expiry, size cap, and privacy documentation before implementation; retain memory-only cache and local fallback.
 - [x] Record source/provenance and attribution requirements for locally bundled visual assets.
 - [x] Keep browsing-history domains off the remote favicon request path; use a local icon in DNS log rows and state this boundary in the DRAFT privacy notice.
@@ -349,8 +369,8 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 1. **Audit and research:** this plan, API inventory, official-source evidence, test-gap list, and clean pre-change baseline.
 2. **PR 1 — data and chart correctness:** device labels, diagnostic wording, log filters/reasons/history, GAFAM chart; run API/repository/Compose tests and lint.
 3. **PR 2 — capability transparency:** API field inventory and age-setting status; dynamic security fields only after parser/PATCH evidence; run contract and compatibility tests.
-4. **PR 3 — performance:** benchmark harness, StrictMode audit, same-device baseline/candidate report; run CI and device measurements.
-5. **PR 4 — speed test:** only after the chosen open-source engine and HTTPS test server pass licensing, maintenance, privacy, and security review.
+4. **PR 3 — performance:** benchmark harness and StrictMode audit are in PR #27; same-device baseline/candidate report and authenticated journeys remain blocked on a device/fixture.
+5. **PR 4 — speed test:** live test deferred at the user's request; do not contact a server. Native client/UI and offline contract tests remain in PR #27; revisit only after the user requests resumption and an authorized server is available.
 6. **PR 5 — favicon lifecycle:** verify current first-party route, cache/provenance policy, and any retention disclosure before changing runtime behavior.
 7. **Review and deployment readiness:** security diff review, full test/lint/build, CI status, BrowserStack or named-device evidence, API matrix, error ledger, and a release-readiness decision. Open PRs but do not imply public release or merge without the project’s approved release gate.
 
@@ -363,3 +383,41 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - `bertrandmartel/speed-test-lib`, [README](https://github.com/bertrandmartel/speed-test-lib) and [MIT license](https://github.com/bertrandmartel/speed-test-lib/blob/master/LICENSE.md); endpoint and maintenance suitability still requires review.
 - `librespeed/speedtest-android`, [README and LGPL-3.0 terms](https://github.com/librespeed/speedtest-android); requires a configured LibreSpeed server.
 - NextDNS favicon host use is evidenced by [NextDNS Help Center discussion](https://help.nextdns.io/t/m1h08qc/using-favicons-nextdns-io-to-request-other-resources) and independent code examples, not by the official API schema.
+
+
+
+### Execution update — 21 October 2026
+
+- NDNS-060 rejects queued events from an obsolete log-search stream after a filter change.
+- NDNS-061 rejects HTML fallback pages and incomplete LibreSpeed download bodies; NDNS-062 cancels work when the screen stops and invalidates measurements after server or authorization changes.
+- NDNS-063 retains bounded unknown security response fields for read-only inspection, hides non-Boolean values, and excludes all unknown data from persistence and PATCH requests. The public API does not establish age-verification semantics or write support.
+- The user deferred live speed testing. No public test endpoint is configured; physical-device measurements remain open.
+### CI follow-up — 21 October 2026
+
+- CI #349 on head `8d1e015` stopped during Kotlin compilation because `MIN_DOWNLOAD_BYTES` referenced later-declared constants. The declarations were reordered and recorded as NDNS-064.
+- CI #350 on code head `7ce8db5` passed Android Lint, 227 tests (0 failed/0 skipped), 25 defect regressions, 88 required cases, 12 screenshots, 611 coverage classes, Debug and unsigned Release builds, Macrobenchmark compilation, 138 bundled license notices with 98 hashes, Snyk High (0 findings across 50 dependencies), and 12 release-emulator runtime tests. `Snyk Monitor Main` was skipped as expected on a PR.
+- The user deferred live speed testing. Contract, consent, cancellation, and response-validation tests passed offline; no endpoint was contacted and no public server is configured. Live measurements remain deferred.
+- Physical-device and BrowserStack evidence, same-device performance baseline, authenticated benchmark journeys, Perfetto/recomposition traces, and legal review remain open. Legal texts remain DRAFT; this draft PR is not release approval.
+- Documentation-only CI #351 on commit `d3716e0` completed the full workflow successfully; all configured steps passed except the expected PR-only skip of `Snyk Monitor Main`. The code was unchanged from the CI #350 validated head.
+
+### Evidence refresh — 21 October 2026 (CI #352)
+
+- PR #27 remains open and draft at head `915c1a9fa3ac18017d85bc39a4dbf71e73c84368`, based on verified `main` commit `c7db8d9d04d2022741ccc1564877940f45fe485a`. [CI #352](https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39516431745) completed successfully on that head. The configured lint, capability-matrix, localization/legal-draft, JVM/Compose, build, benchmark-compilation, dependency/license, Snyk High, and release-emulator steps passed; only the expected PR-only `Snyk Monitor Main` step was skipped.
+- The CI artifact ZIP SHA-256 matched GitHub's artifact digest. Its debug and `androidTest` APK SHA-256 values matched `package-evidence.json`, where both signatures are marked verified. This establishes artifact provenance only; no BrowserStack build was submitted.
+- Local Gradle validation was attempted again. The shared wrapper cache returned `Access Denied` on its lock file; an isolated wrapper home could not resolve `services.gradle.org`. No local Kotlin test, lint, build, or APK result is claimed. The 61-route capability-matrix check passes locally.
+- ADB 1.0.41 / platform-tools 37.0.1 failed to start on both the default port 5037 and an unused alternate port 5038 (`could not read ok from ADB Server`). No listener or ADB override variable was present. BrowserStack App Automate opened the `/request_access` page without exposing an upload/run flow; the expected credential-variable names were absent at Process, User, and Machine scopes. No test build was submitted and no access cause is inferred.
+- The user deferred live speed testing. No server endpoint is configured or contacted. Its mocked contract, consent, cancellation, and response-validation tests remain covered by CI.
+- The physical performance gate remains open: no same-device `main`/candidate comparison, authenticated home/logs/analytics journey, collected Perfetto trace, or recomposition analysis is available. Macrobenchmark CI compilation and release-emulator StrictMode checks are not substitutes for those measurements. PR #27 stays draft; no merge or release readiness is claimed. Legal documents remain `DRAFT`; the original app icon is still a separate publication gate.
+
+### Continued execution — 21 October 2026
+
+- The current official [NextDNS API profile schema](https://nextdns.github.io/api/) was rechecked. It documents the profile fields used by the capability table but contains no age-verification bypass field; `parentalControl.blockBypass` remains a distinct option. No credentials or personal profile responses were used.
+- The capability matrix now maps each of the profile example's 39 leaf fields to DTO, repository/UI behavior, and write/read boundary. `scripts/verify_api_capability_matrix.py` passes locally and checks both all 61 Retrofit routes and all 39 fields.
+- NDNS-065 records a settings-sync accuracy bug: an unknown non-null `settings.logs.location` had been shown as the previous local location. The repository now shows the localized unknown-value label for an unrecognized server code while preserving the current value when the field is absent. A regression covers known, unknown, missing, and known-again responses.
+- Local Gradle validation was retried for the focused regression. The wrapper first received access denied for its cache lock; elevated execution then failed to establish a Windows loopback connection. CI #354 caught missing `R`/`AppStrings` imports before the test stage; the imports were restored in commit `64e8ece`. CI #355 passed on that head, including the NDNS-065 regression; NDNS-066 records the CI-discovered compile issue and verified fix.
+- The user explicitly deferred live speed testing. No test endpoint was contacted; only the existing offline contract, consent, cancellation, and response-validation tests remain in scope.
+- ADB can start with elevated execution, but no Android device is attached and no emulator binary is available. Physical Macrobenchmark, authenticated journeys, and Perfetto/recomposition evidence remain open. BrowserStack, legal review, and the separate original-icon publication gate also remain open; legal documents stay `DRAFT`.
+
+### CI verification — 21 October 2026
+
+- [CI #355](https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/39524277201) passed on commit `64e8ecea6c1d65850d2279306d7c4045a85b8cfc`: 228 tests (0 failures/0 skipped), 26 defect regressions, 89 required cases, 12 screenshots, 611 coverage classes, Android Lint, API capability matrix (61 routes/39 profile fields), five-language/legal-draft checks, Debug and unsigned Release builds, Macrobenchmark compilation, dependency/privacy and license/NOTICE/DEX gates, Snyk High (0 issues in 50 dependencies), and 12 Android-emulator runtime tests. `Snyk Monitor Main` was skipped on the PR run as expected. The PR remains open/draft; physical-device and BrowserStack evidence, live speed testing, legal review, and the original-icon publication gate remain outstanding.

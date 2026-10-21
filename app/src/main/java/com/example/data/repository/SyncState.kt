@@ -2,13 +2,20 @@ package com.example.data.repository
 
 /** Remote profile sections with supported NextDNS endpoints; credentials and connection diagnostics stay local. */
 enum class SyncSection {
-  SETUP,
   SECURITY,
   PRIVACY,
   PARENTAL,
   DENYLIST,
   ALLOWLIST,
   SETTINGS
+}
+
+/** Load outcome for the server-provided TLD selection catalog. */
+enum class TldCatalogLoadState {
+  LOADING,
+  AVAILABLE,
+  EMPTY,
+  UNAVAILABLE
 }
 
 data class SectionSyncState(

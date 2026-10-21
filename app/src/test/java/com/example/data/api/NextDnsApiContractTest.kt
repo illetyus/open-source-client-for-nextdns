@@ -19,18 +19,21 @@ class NextDnsApiContractTest {
 
   private lateinit var server: MockWebServer
   private lateinit var api: NextDnsApiService
+  private lateinit var moshi: Moshi
 
   @Before
   fun setUp() {
     server = MockWebServer()
     server.start()
 
-    val moshi = Moshi.Builder()
-      .add(KotlinJsonAdapterFactory())
+    moshi = Moshi.Builder()
+      .add(SecurityDtoJsonAdapterFactory())
+      .addLast(KotlinJsonAdapterFactory())
       .build()
 
     api = Retrofit.Builder()
       .baseUrl(server.url("/"))
+      .client(NextDnsNetworkClient.client)
       .addConverterFactory(MoshiConverterFactory.create(moshi))
       .build()
       .create(NextDnsApiService::class.java)
@@ -45,6 +48,16 @@ class NextDnsApiContractTest {
   fun credentialedClient_doesNotFollowRedirects() {
     assertFalse(NextDnsNetworkClient.client.followRedirects)
     assertFalse(NextDnsNetworkClient.client.followSslRedirects)
+  }
+
+  @Test
+  fun undocumentedSetupAndLinkedIpRoutesAreNotDeclared() {
+    val methodNames = NextDnsApiService::class.java.declaredMethods.map { it.name }.toSet()
+    val networkMethodNames = NextDnsNetworkClient::class.java.declaredMethods.map { it.name }.toSet()
+
+    assertFalse("The public API contract does not document profile setup", methodNames.contains("getProfileSetup"))
+    assertFalse("The public API contract does not document linked-IP writes", methodNames.contains("updateLinkedIp"))
+    assertFalse("No direct linked-IP mutation client is included", networkMethodNames.contains("linkIpAddress"))
   }
 
   @Test
@@ -171,6 +184,94 @@ class NextDnsApiContractTest {
     assertTrue(parental.body().isSemanticallySuccessful())
     assertEquals("tiktok", parental.body()?.data?.services?.firstOrNull()?.id)
     assertEquals(false, parental.body()?.data?.blockBypass)
+  }
+
+  @Test
+  fun securityResponseRetainsUnknownJsonForReadOnlyDiscovery() = runTest {
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody(
+          """{"data":{"threatIntelligenceFeeds":true,"previewBoolean":true,"previewText":"value-hidden","previewNumber":7,"previewObject":{"enabled":true},"previewArray":[1,"item"],"previewNull":null}}"""
+        )
+    )
+
+    val security = api.getSecurity("test-key", "profile-1").body()?.data
+
+    assertEquals(true, security?.threatIntelligenceFeeds)
+    assertEquals(true, security?.unknownFields?.get("previewBoolean"))
+    assertEquals("value-hidden", security?.unknownFields?.get("previewText"))
+    assertEquals(7.0, security?.unknownFields?.get("previewNumber"))
+    assertEquals(mapOf("enabled" to true), security?.unknownFields?.get("previewObject"))
+    assertEquals(listOf(1.0, "item"), security?.unknownFields?.get("previewArray"))
+    assertTrue(security?.unknownFields?.containsKey("previewNull") == true)
+    assertNull(security?.unknownFields?.get("previewNull"))
+
+    val disclosure = security!!.discoverUnverifiedFields()
+    assertEquals("previewBoolean", disclosure.fields.first { it.name == "previewBoolean" }.name)
+    assertEquals(true, disclosure.fields.first { it.name == "previewBoolean" }.booleanValue)
+    assertNull(disclosure.fields.first { it.name == "previewText" }.booleanValue)
+
+    val serialized = moshi.adapter(SecurityDto::class.java).toJson(security)
+    assertFalse(serialized.contains("previewBoolean"))
+    assertFalse(serialized.contains("value-hidden"))
+  }
+
+  @Test
+  fun securityUnknownFieldRetentionIsBoundedAndOverflowIsFingerprintable() {
+    val adapter = moshi.adapter(SecurityDto::class.java)
+    fun response(lastValue: Int) = (1..40).joinToString(",", "{", "}") { index ->
+      val value = if (index == 40) lastValue else index
+      "\"previewField$index\":$value"
+    }
+
+    val first = adapter.fromJson(response(lastValue = 40))!!
+    val changedOverflow = adapter.fromJson(response(lastValue = 400))!!
+    val discovery = first.discoverUnverifiedFields()
+
+    assertEquals(32, first.unknownFields.size)
+    assertEquals(8, first.unknownFieldOverflowCount)
+    assertEquals(24, discovery.fields.size)
+    assertEquals(16, discovery.omittedCount)
+    assertFalse(first.unknownFieldOverflowDigest.isBlank())
+    assertFalse(first.unknownFieldOverflowDigest == changedOverflow.unknownFieldOverflowDigest)
+  }
+
+  @Test
+  fun oversizedSecurityResponseIsRejectedWhenLengthIsKnown() = runTest {
+    val oversized = """{"data":{"preview":"${"x".repeat(512 * 1024)}"}}"""
+    server.enqueue(MockResponse().setResponseCode(200).setBody(oversized))
+
+    val failure = runCatching { api.getSecurity("test-key", "profile-1") }.exceptionOrNull()
+
+    assertTrue(failure is java.io.IOException)
+    assertTrue(failure?.message.orEmpty().contains("security response"))
+  }
+
+  @Test
+  fun oversizedChunkedSecurityResponseIsRejectedWithoutContentLength() = runTest {
+    val oversized = """{"data":{"preview":"${"x".repeat(512 * 1024)}"}}"""
+    server.enqueue(MockResponse().setResponseCode(200).setChunkedBody(oversized, 4096))
+
+    val failure = runCatching { api.getSecurity("test-key", "profile-1") }.exceptionOrNull()
+
+    assertTrue(failure is java.io.IOException)
+    assertTrue(failure?.message.orEmpty().contains("security response"))
+  }
+
+  @Test
+  fun securityResponseLimitDoesNotApplyToThePublicTldCatalog() = runTest {
+    val longId = "x".repeat(512 * 1024)
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody("""{"data":[{"id":"$longId"}]}""")
+    )
+
+    val response = api.getAvailableTlds()
+
+    assertTrue(response.isSuccessful)
+    assertEquals(longId.length, response.body()?.data?.single()?.id?.length)
   }
 
   @Test

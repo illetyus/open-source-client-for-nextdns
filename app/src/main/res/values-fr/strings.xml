@@ -325,13 +325,8 @@
     <string name="ui_af80266dc2">"Points de terminaison"</string>
     <string name="ui_9e84007b0d">"Configurez un de ces points pour utiliser NextDNS avec ce profil."</string>
     <string name="ui_e1ba21dcd4">"IP liée"</string>
-    <string name="ui_8ddbc3a609">"Si DNS-over-TLS, DNS-over-HTTPS ou IPv6 sont indisponibles, utilisez ces serveurs et liez votre IP. Cette méthode convient surtout aux réseaux domestiques et est déconseillée sur mobile."</string>
-    <string name="ui_e0b841095a">"Serveurs DNS"</string>
-    <string name="ui_d2b13bfcc8">"Détection…"</string>
-    <string name="ui_6166e7d8f7">"Lier l’IP"</string>
     <string name="ui_e351e2362e">"Masquer les paramètres avancés"</string>
     <string name="ui_533a6281d8">"Afficher les paramètres avancés"</string>
-    <string name="ui_4dc480c54f">"URL de mise à jour DNS dynamique (DDNS) :"</string>
     <string name="ui_917d229d50">"Guide de configuration"</string>
     <string name="ui_cbba6dfad2">"Suivez ces instructions pour configurer NextDNS sur un appareil, navigateur ou routeur."</string>
     <string name="ui_4cfa2b03d5">"Valeur"</string>
@@ -550,6 +545,10 @@
     <string name="server_latency">"Serveur : %1$s (%2$s) • Latence : %3$d ms"</string>
     <string name="diagnostic_resolver_identifier">Résolveur : %1$s</string>
     <string name="diagnostic_server_information_unavailable">Les informations du serveur et du résolveur sont indisponibles.</string>
+    <string name="diagnostic_region_unavailable">Ce diagnostic ne fournit aucune information sur la région.</string>
+    <string name="security_tld_catalog_unavailable">Impossible de charger les TLD disponibles. Réessayez plus tard.</string>
+    <string name="security_tld_catalog_loading">Chargement des TLD disponibles…</string>
+    <string name="security_tld_catalog_empty">Aucun TLD n’est disponible dans le catalogue du serveur.</string>
     <string name="diagnostic_anycast_enabled">Anycast : activé</string>
     <string name="diagnostic_anycast_disabled">Anycast : désactivé</string>
     <string name="diagnostic_source">Source du diagnostic : test.nextdns.io</string>
@@ -577,7 +576,6 @@
     <string name="copy_dot">"Adresse DoT"</string>
     <string name="copy_doh">"URL DoH"</string>
     <string name="copy_dns">"Serveur DNS"</string>
-    <string name="copy_ddns">"URL DDNS"</string>
     <string name="copy_chromeos_doh">"Adresse DoH de ChromeOS"</string>
     <string name="source_licenses_label">Code source et licences</string>
     <string name="diagnostic_unverified_title">"Le profil sélectionné n’a pas pu être vérifié"</string>
@@ -622,4 +620,20 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Domaines les plus consultés dans ce pays"</string>
     <string name="traffic_country_map_accessibility">"Carte interactive des destinations du trafic. Choisissez un pays sur la carte ou dans le sélecteur pour consulter le trafic DNS."</string>
+    <string name="security_unverified_title">Champs de sécurité API non vérifiés</string>
+    <string name="security_unverified_explanation">Ces clés proviennent de la réponse du serveur. Leur sens et la prise en charge de leur modification ne sont pas vérifiés. Seules les valeurs booléennes sont affichées ; ces champs ne peuvent pas être modifiés ici.</string>
+    <string name="security_unverified_boolean">Valeur booléenne : %1$s · lecture seule</string>
+    <string name="security_unverified_text">Texte · valeur masquée · lecture seule</string>
+    <string name="security_unverified_number">Nombre · valeur masquée · lecture seule</string>
+    <string name="security_unverified_object">Objet · contenu masqué · lecture seule</string>
+    <string name="security_unverified_array">Liste · contenu masqué · lecture seule</string>
+    <string name="security_unverified_null">Null · lecture seule</string>
+    <string name="security_unverified_omitted">%1$d champs supplémentaires masqués pour des raisons de sécurité</string>
+    <string name="value_unknown">Inconnu</string>
+    <string name="setup_linked_ip_unavailable">L’API publique ne permet pas de vérifier l’IP associée au profil.</string>
+    <string name="setup_profile_binding">Liaison du profil</string>
+    <string name="setup_linked_ip_dashboard_note">L’IP associée et les adresses IPv4 propres au profil se gèrent dans le tableau de bord NextDNS.</string>
+    <string name="setup_detected_public_ip">Adresse IP publique détectée</string>
+    <string name="setup_open_dashboard">Gérer l’IP associée sur NextDNS</string>
+    <string name="setup_ipv4_dashboard_note">Les adresses DNS IPv4 propres au profil sont affichées dans le tableau de bord NextDNS.</string>
 </resources>

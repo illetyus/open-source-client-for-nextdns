@@ -98,6 +98,8 @@ class NextDnsRepository(
 
   private val _securitySettings = MutableStateFlow(SecuritySettings())
   val securitySettings = _securitySettings.asStateFlow()
+  private val _unverifiedSecurityFields = MutableStateFlow(SecurityFieldDiscovery())
+  val unverifiedSecurityFields = _unverifiedSecurityFields.asStateFlow()
 
   private val _privacySettings = MutableStateFlow(PrivacySettings())
   val privacySettings = _privacySettings.asStateFlow()
@@ -145,6 +147,7 @@ class NextDnsRepository(
   private var analyticsRequest: AnalyticsRequest? = null
   private var logsRefreshRequest: Long? = null
   private var logsSnapshotGeneration = 0L
+  private var logsFilterGeneration = 0L
 
   fun updateKnownDevices(newDevices: List<String>) {
     val valid = newDevices.filter { it.isNotBlank() && it != "Bilinmeyen" && it != "Cihaz" && it != "Bilinmeyen Cihaz" }
@@ -196,9 +199,11 @@ class NextDnsRepository(
     _logsDeviceFilter.value = null
     _logsStatusFilter.value = null
     _logsPaginationState.value = LogsPaginationState()
+    _unverifiedSecurityFields.value = SecurityFieldDiscovery()
     analyticsRequest = null
     logsRefreshRequest = null
     logsSnapshotGeneration++
+    logsFilterGeneration++
     _analytics.value = AnalyticsSummary()
     _analyticsLastSuccessAt.value = null
     _analyticsErrorMessage.value = null
@@ -210,7 +215,6 @@ class NextDnsRepository(
     refreshRequests.clear()
     fullSyncRequest = null
     _isSyncing.value = false
-    _profileSetup.value = SetupDto()
     _testResult.value = DiagnosticTestResult()
     diagnosticRequest = null
   }
@@ -312,7 +316,6 @@ class NextDnsRepository(
     try {
       success = withContext(RefreshContext(section, token)) {
         when (section) {
-          SyncSection.SETUP -> applySetupFromApi(key, profileId)
           SyncSection.SECURITY -> applySecuritySettingsFromApi(key, profileId)
           SyncSection.PRIVACY -> applyPrivacySettingsFromApi(key, profileId)
           SyncSection.PARENTAL -> applyParentalSettingsFromApi(key, profileId)
@@ -424,9 +427,8 @@ class NextDnsRepository(
 
   private val _availableTldsCatalog = MutableStateFlow<List<SecurityTldCatalogDto>>(emptyList())
   val availableTldsCatalog = _availableTldsCatalog.asStateFlow()
-
-  private val _profileSetup = MutableStateFlow(SetupDto())
-  val profileSetup = _profileSetup.asStateFlow()
+  private val _tldCatalogLoadState = MutableStateFlow(TldCatalogLoadState.LOADING)
+  val tldCatalogLoadState = _tldCatalogLoadState.asStateFlow()
 
   init {
     resumeAfterTermsAccepted()
@@ -502,6 +504,7 @@ class NextDnsRepository(
   }
 
   suspend fun loadAllLiveCatalogs() = withContext(Dispatchers.IO) {
+    _tldCatalogLoadState.value = TldCatalogLoadState.LOADING
     try {
       // 1. Blocklists Catalog
       val blocklistDtos = fetchAllPages("availableBlocklists") { cursor ->
@@ -552,10 +555,20 @@ class NextDnsRepository(
       val tlds = fetchAllPages("availableTlds") { cursor ->
         apiService.getAvailableTlds(cursor = cursor)
       } ?: NextDnsNetworkClient.fetchAvailableTldsDirect()
-      if (tlds != null && tlds.isNotEmpty()) {
+      if (tlds == null) {
+        _tldCatalogLoadState.value = TldCatalogLoadState.UNAVAILABLE
+      } else {
         _availableTldsCatalog.value = tlds
+        _tldCatalogLoadState.value = if (tlds.isEmpty()) {
+          TldCatalogLoadState.EMPTY
+        } else {
+          TldCatalogLoadState.AVAILABLE
+        }
       }
+    } catch (cancel: CancellationException) {
+      throw cancel
     } catch (e: Exception) {
+      _tldCatalogLoadState.value = TldCatalogLoadState.UNAVAILABLE
       if (BuildConfig.DEBUG) Log.e(TAG, "Error loading live catalogs: ${e.message}", e)
     }
   }
@@ -625,12 +638,6 @@ class NextDnsRepository(
         }
       }
     }
-  }
-
-  suspend fun linkCurrentIp(profileId: String): Boolean = withSessionContext(expectedProfile = profileId) {
-    val ok = NextDnsNetworkClient.linkIpAddress(profileId)
-    runDiagnosticTest()
-    ok
   }
 
   // =========================================================================
@@ -810,18 +817,6 @@ class NextDnsRepository(
     }
   }
 
-  private suspend fun applySetupFromApi(key: String, profileId: String): Boolean {
-    val setupResp = safeApiCall("getProfileSetup") {
-      apiService.getProfileSetup(key, profileId)
-    } ?: return false
-    if (!setupResp.isSuccessful) return false
-    val d = setupResp.body() ?: return false
-    return commitCurrentSession {
-      _profileSetup.value = d
-      true
-    }
-  }
-
   // =========================================================================
   // Settings Loading Sub-Routines (Guard Clause & Single Responsibility)
   // =========================================================================
@@ -835,6 +830,7 @@ class NextDnsRepository(
     val d = body.data ?: return false
     return commitCurrentSession {
       val previous = _securitySettings.value
+      _unverifiedSecurityFields.value = d.discoverUnverifiedFields()
 
       val tldList = d.tlds?.map { it.id } ?: previous.blockedTlds
       val updated = SecuritySettings(
@@ -1131,13 +1127,14 @@ class NextDnsRepository(
     val s = body.data ?: return false
 
     return commitCurrentSession {
-      val locName = when (s.logs?.location) {
+      val locName = when (val location = s.logs?.location) {
+        null -> _configSettings.value.logStorageLocation
         "ch" -> "İsviçre (CH)"
         "eu" -> "Avrupa Birliği (AB)"
         "us" -> "Amerika Birleşik Devletleri (ABD)"
-        else -> _configSettings.value.logStorageLocation
+        else -> AppStrings.get(R.string.value_unknown)
       }
-      val retName = LogRetentionCodec.toLabel(s.logs?.retention) ?: "Bilinmiyor"
+      val retName = LogRetentionCodec.toLabel(s.logs?.retention) ?: AppStrings.get(R.string.value_unknown)
 
       val updated = _configSettings.value.copy(
         logsEnabled = s.logs?.enabled ?: _configSettings.value.logsEnabled,
@@ -1311,7 +1308,6 @@ class NextDnsRepository(
       _logs.value = emptyList()
       nextLogsCursor = null
       _logsPaginationState.value = LogsPaginationState()
-      _profileSetup.value = SetupDto()
       _securitySettings.value = SecuritySettings()
       _privacySettings.value = PrivacySettings()
       _parentalControlSettings.value = ParentalControlSettings()
@@ -1967,6 +1963,10 @@ class NextDnsRepository(
     val wasStreaming = _isLiveStreaming.value
     val changed = commitCurrentSession {
       if (!updateFilter()) return@commitCurrentSession false
+      // Stop the stream using the previous query before awaiting the new REST snapshot.
+      // Generation checks below also reject any event already queued by that stream.
+      if (wasStreaming) stopLogsStream()
+      logsFilterGeneration++
       logsRefreshRequest = requestSequence.incrementAndGet()
       logsSnapshotGeneration++
       logsStreamSeedId = null
@@ -2164,6 +2164,7 @@ class NextDnsRepository(
     val seedStatusFilter = _logsStatusFilter.value
     val seedSearchFilter = _logsSearchFilter.value
     val seedGeneration = synchronized(sessionLock) { logsSnapshotGeneration }
+    val streamFilterGeneration = synchronized(sessionLock) { logsFilterGeneration }
 
     stopLogsStream()
     _isLiveStreaming.value = true
@@ -2211,8 +2212,9 @@ class NextDnsRepository(
                 ?: throw java.io.IOException("Logs stream body is empty")
 
               reconnectDelayMs = 2_000L
-              consumeSseStream(body) { newId ->
+              consumeSseStream(body, streamFilterGeneration) { newId ->
                 commitCurrentSession {
+                  if (logsFilterGeneration != streamFilterGeneration) return@commitCurrentSession
                   lastId = newId
                   logsStreamSeedId = newId
                 }
@@ -2260,16 +2262,20 @@ class NextDnsRepository(
       .build()
   }
 
-  private suspend fun consumeSseStream(responseBody: okhttp3.ResponseBody, onNewId: suspend (String) -> Unit) {
+  private suspend fun consumeSseStream(
+    responseBody: okhttp3.ResponseBody,
+    streamFilterGeneration: Long,
+    onNewId: suspend (String) -> Unit
+  ) {
     val source = responseBody.source()
     var eventId: String? = null
     val dataLines = mutableListOf<String>()
 
     suspend fun dispatchEvent() {
       if (dataLines.isNotEmpty()) {
-        val entry = parseSseLogEntry(dataLines.joinToString("\n"), eventId)
+        val entry = parseSseLogEntry(dataLines.joinToString("\n"), eventId, streamFilterGeneration)
         if (entry != null) {
-          emitLogEntry(entry)
+          emitLogEntry(entry, streamFilterGeneration)
           eventId?.let { onNewId(it) }
         }
       }
@@ -2288,13 +2294,18 @@ class NextDnsRepository(
     dispatchEvent()
   }
 
-  private suspend fun parseSseLogEntry(jsonStr: String, eventId: String?): DnsLogEntry? {
+  private suspend fun parseSseLogEntry(
+    jsonStr: String,
+    eventId: String?,
+    streamFilterGeneration: Long
+  ): DnsLogEntry? {
     if (jsonStr.isBlank()) return null
     val logDto = safeApiCall("sseJsonParse") {
       NextDnsNetworkClient.moshi.adapter(DnsLogDto::class.java).fromJson(jsonStr)
     } ?: return null
 
     return commitCurrentSession {
+      if (logsFilterGeneration != streamFilterGeneration) return@commitCurrentSession null
       val devId = logDto.device?.id
       val candidateName = logDto.device?.name?.takeIf { it.isNotBlank() }
         ?: logDto.deviceName?.takeIf { it.isNotBlank() }
@@ -2338,9 +2349,10 @@ class NextDnsRepository(
     }
   }
 
-  private suspend fun emitLogEntry(entry: DnsLogEntry) {
+  private suspend fun emitLogEntry(entry: DnsLogEntry, streamFilterGeneration: Long) {
     withContext(Dispatchers.Main) {
       commitCurrentSession {
+        if (logsFilterGeneration != streamFilterGeneration) return@commitCurrentSession
         if (!matchesLogsDeviceFilter(entry.deviceId) || !matchesLogsStatusFilter(entry.status)) return@commitCurrentSession
         val current = _logs.value
         val isDuplicate = current.any { it.id == entry.id }

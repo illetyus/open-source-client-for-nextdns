@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +26,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.NextDnsViewModel
+import com.example.data.repository.TldCatalogLoadState
+import com.example.data.api.SecurityFieldDiscovery
+import com.example.data.api.SecurityJsonValueType
 
 @Composable
 fun SecurityScreen(
@@ -32,6 +36,7 @@ fun SecurityScreen(
   modifier: Modifier = Modifier
 ) {
   val settings by viewModel.securitySettings.collectAsStateWithLifecycle()
+  val unverifiedFields by viewModel.unverifiedSecurityFields.collectAsStateWithLifecycle()
   var showAddTldDialog by remember { mutableStateOf(false) }
   var newTldInput by remember { mutableStateOf("") }
 
@@ -221,20 +226,19 @@ fun SecurityScreen(
         onCheckedChange = { viewModel.toggleSecurityFeature("csam", it) }
       )
     }
+    if (unverifiedFields.fields.isNotEmpty() || unverifiedFields.omittedCount > 0) {
+      item { UnverifiedSecurityFieldsSection(unverifiedFields) }
+    }
   }
 
   // TLD Ekle Dialog
   if (showAddTldDialog) {
     val liveTldCatalog by viewModel.availableTldsCatalog.collectAsStateWithLifecycle()
+    val tldCatalogLoadState by viewModel.tldCatalogLoadState.collectAsStateWithLifecycle()
     var tldSearchQuery by remember { mutableStateOf("") }
 
-    val rawTldList = if (liveTldCatalog.isNotEmpty()) {
-      liveTldCatalog.map { it.id }
-    } else {
-      listOf("work", "fit", "surf", "review", "asia", "tokyo", "cn", "monster", "info", "机构", "xyz", "top", "ru", "zip", "mov", "app", "dev")
-    }
-
-    val availableTlds = rawTldList
+    val availableTlds = liveTldCatalog
+      .map { it.id }
       .map { if (it.startsWith(".")) it else ".$it" }
       .filter { tld ->
         !settings.blockedTlds.any { added -> added.equals(tld.removePrefix("."), ignoreCase = true) }
@@ -265,42 +269,137 @@ fun SecurityScreen(
             onValueChange = { tldSearchQuery = it },
             placeholder = { Text(AppStrings.get(R.string.ui_d812357041), fontSize = 12.sp) },
             singleLine = true,
+            enabled = tldCatalogLoadState == TldCatalogLoadState.AVAILABLE,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp)
           )
         }
       },
       text = {
-        LazyColumn(
-          modifier = Modifier.fillMaxSize(),
-          verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
-          items(availableTlds) { tld ->
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Text(tld, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-              Button(
-                onClick = { viewModel.addBlockedTld(tld.removePrefix(".")) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(6.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                modifier = Modifier.height(28.dp)
-              ) {
-                Text(AppStrings.get(R.string.add), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-              }
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(horizontal = 16.dp))
-          }
-        }
+        TldCatalogContent(
+          loadState = tldCatalogLoadState,
+          tlds = availableTlds,
+          onAddTld = { viewModel.addBlockedTld(it) }
+        )
       },
       confirmButton = {},
       dismissButton = {}
+    )
+  }
+}
+
+@Composable
+internal fun UnverifiedSecurityFieldsSection(discovery: SecurityFieldDiscovery) {
+  if (discovery.fields.isEmpty() && discovery.omittedCount == 0) return
+
+  NextDnsCard(
+    title = AppStrings.get(R.string.security_unverified_title),
+    subtitle = AppStrings.get(R.string.security_unverified_explanation)
+  ) {
+    Column(
+      modifier = Modifier.fillMaxWidth(),
+      verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+      discovery.fields.forEach { field ->
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("security_unverified_field_${field.name}"),
+          verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+          Text(
+            text = field.name,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+            fontSize = 13.sp
+          )
+          Text(
+            text = when (field.valueType) {
+              SecurityJsonValueType.BOOLEAN -> AppStrings.get(
+                R.string.security_unverified_boolean,
+                field.booleanValue.toString()
+              )
+              SecurityJsonValueType.STRING -> AppStrings.get(R.string.security_unverified_text)
+              SecurityJsonValueType.NUMBER -> AppStrings.get(R.string.security_unverified_number)
+              SecurityJsonValueType.OBJECT -> AppStrings.get(R.string.security_unverified_object)
+              SecurityJsonValueType.ARRAY -> AppStrings.get(R.string.security_unverified_array)
+              SecurityJsonValueType.NULL -> AppStrings.get(R.string.security_unverified_null)
+            },
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp
+          )
+        }
+      }
+      if (discovery.omittedCount > 0) {
+        Text(
+          text = AppStrings.get(R.string.security_unverified_omitted, discovery.omittedCount),
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          fontSize = 12.sp
+        )
+      }
+    }
+  }
+}
+
+@Composable
+internal fun TldCatalogContent(
+  loadState: TldCatalogLoadState,
+  tlds: List<String>,
+  onAddTld: (String) -> Unit
+) {
+  when (loadState) {
+    TldCatalogLoadState.LOADING -> CatalogMessage(
+      text = AppStrings.get(R.string.security_tld_catalog_loading),
+      tag = "security_tld_catalog_loading"
+    )
+    TldCatalogLoadState.UNAVAILABLE -> CatalogMessage(
+      text = AppStrings.get(R.string.security_tld_catalog_unavailable),
+      tag = "security_tld_catalog_unavailable"
+    )
+    TldCatalogLoadState.EMPTY -> CatalogMessage(
+      text = AppStrings.get(R.string.security_tld_catalog_empty),
+      tag = "security_tld_catalog_empty"
+    )
+    TldCatalogLoadState.AVAILABLE -> LazyColumn(
+      modifier = Modifier.fillMaxSize(),
+      verticalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
+      items(tlds) { tld ->
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(tld, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+          Button(
+            onClick = { onAddTld(tld.removePrefix(".")) },
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            shape = RoundedCornerShape(6.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.height(28.dp)
+          ) {
+            Text(AppStrings.get(R.string.add), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+          }
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(horizontal = 16.dp))
+      }
+    }
+  }
+}
+
+@Composable
+private fun CatalogMessage(text: String, tag: String) {
+  Box(
+    modifier = Modifier.fillMaxWidth().height(180.dp),
+    contentAlignment = Alignment.Center
+  ) {
+    Text(
+      text = text,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      modifier = Modifier.testTag(tag)
     )
   }
 }

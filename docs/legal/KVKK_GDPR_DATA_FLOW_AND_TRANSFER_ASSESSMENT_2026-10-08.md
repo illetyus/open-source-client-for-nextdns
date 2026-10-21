@@ -101,3 +101,7 @@ Mevcut hazırlık: docs/legal/KVKK_AYDINLATMA_TR_TASLAK.md; gerçek geliştirici
 Faz 9'un ilk teknik dilimi ana dala alınmıştır. Yukarıdaki 8 Ekim tespitlerinden “kabul ekranı henüz yok”, “kabul şartına bağlanmadı” ve “logout bildirim deposunun tamamını temizlemiyor” ifadeleri tarihsel başlangıç durumunu anlatır. Güncel kaynakta ilk kullanım için açık Terms kabul kapısı, repository/scheduler erişim kontrolü ve hesap kapsamlı bildirim deposu temizliği bulunmaktadır. Ana dalın 17eb30e sürümündeki CI 37851315911 geçmiştir; son imzalı paket ve gerçek cihaz veri akışı kanıtı ayrı aşamadır.
 
 Güncel mevzuat, yargısal emsaller ve akademik araştırmalar [9 Ekim araştırma dosyasında](LITERATURE_REVIEW_TR_EU_2026-10-09_DRAFT.md) değerlendirilmiştir. Geliştirici sıfatı veya aktarım hukuki sebebi, yalnızca bu teknik güncellemeyle kesinleştirilmemiştir.
+
+## 21 Ekim 2026 — aday kaynak akışı güncellemesi
+
+Bu dosyanın 8 Ekim kaynak envanteri tarihsel bir başlangıçtır. PR #27 adayı `link-ip.nextdns.io` doğrudan isteğini ve belgelenmemiş `GET /profiles/{profileId}/setup` ile `POST /profiles/{profileId}/setup/linkedIp` API deklarasyonlarını kaldırır. Linked-IP yönetimi resmi NextDNS kontrol panelini tarayıcıda açar; istemci bağlı IP değerini API veya tanı sonucundan okumaz. Bu not kaynak değişikliğini açıklar; imzalı paket ağı, gerçek servis hesabı, yayıncı kimliği ve hukuki inceleme sonucu hakkında kanıt oluşturmaz. Hukuki belgelerin DRAFT statüsü korunur.

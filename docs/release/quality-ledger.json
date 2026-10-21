@@ -906,9 +906,9 @@
         "B19"
       ],
       "reproductionTests": [
-        "endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation",
+        "endpointsMustUseTheValidatedProfileIpv6Format",
         "copiedIpv6MustMatchBothDisplayedServiceAddresses",
-        "setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback"
+        "profileIpv6EndpointsComeFromTheValidatedProfileId"
       ],
       "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",
@@ -1292,5 +1292,21 @@
     "browserstackBuildId": "91b080c97113c42aa03c2bdae990247889cd9f54",
     "targetedDeviceRetests": "NOT_RUN"
   },
-  "browserstackFixEvidence": "docs/release/bug-fixes-2026-10-19/browserstack-results.json"
+  "browserstackFixEvidence": "docs/release/bug-fixes-2026-10-19/browserstack-results.json",
+  "scopeDecisions": [
+    {
+      "id": "NDNS-SPEED-RETIREMENT",
+      "date": "2026-10-21",
+      "status": "CANCELLED_FOR_CURRENT_RELEASE",
+      "reason": "The user deferred the non-NextDNS speed-test feature; no public test server or endpoint was validated.",
+      "removedByCommit": "111cc9c8cc5cb5ac52ff12cc3bb1cb5f51319bef",
+      "regressions": [
+        "AccountSettingsFlowTest.speedTestEntryIsAbsentFromAccountScreen",
+        "RetiredFeaturePreferencesTest.retiredSpeedSettingsAreClearedWithoutTouchingCredentialsThemeLocaleOrLegalAcceptance",
+        "RetiredFeaturePreferencesTest.retiredSpeedSettingsCleanupIsIdempotent",
+        "release_dex_audit rejects retired speed-test code and endpoint markers"
+      ],
+      "pullRequestCi": "PASS: PR #27 CI #361, GitHub Actions run 39539845235"
+    }
+  ]
 }

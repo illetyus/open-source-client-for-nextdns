@@ -1,10 +1,12 @@
 package com.example.audit
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.core.app.ApplicationProvider
 import com.example.NextDnsApp
 import com.example.R
+import com.example.data.api.SecurityFieldDiscovery
+import com.example.data.api.SecurityJsonValueType
+import com.example.data.api.UnverifiedSecurityField
 import com.example.data.model.DiagnosticTestResult
 import com.example.data.model.DnsLogEntry
 import com.example.data.model.DeviceMetric
@@ -16,10 +18,11 @@ import com.example.ui.screens.AllowlistScreen
 import com.example.ui.screens.ConnectionStatusBanner
 import com.example.ui.screens.DenylistScreen
 import com.example.ui.screens.EndpointsSection
+import com.example.ui.screens.LinkedIpSection
 import com.example.ui.screens.LogsHeaderControls
 import com.example.ui.screens.LogItemRow
 import com.example.ui.screens.LogsPaginationFooter
-import com.example.data.api.SetupDto
+import com.example.ui.screens.UnverifiedSecurityFieldsSection
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NextDnsViewModel
 import org.junit.Rule
@@ -31,7 +34,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], qualifiers = "w400dp-h900dp-mdpi", application = NextDnsApp::class)
 class UiAuditTest : AuditFixture() {
-  @get:Rule val rule = createComposeRule()
+  @get:Rule val rule = AuditComposeTestRule()
   private fun english() { LocalePreferences.setSelection(ApplicationProvider.getApplicationContext<NextDnsApp>(), "en") }
 
   @Test fun identicalRealisticFingerprintMustShowConnectedForSelectedProfile() {
@@ -80,13 +83,32 @@ class UiAuditTest : AuditFixture() {
     org.junit.Assert.assertTrue(requests.none { it.startsWith("POST ") })
   }
 
-  @Test fun endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation() {
+  @Test fun endpointsMustUseTheValidatedProfileIpv6Format() {
     english()
     val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
-    rule.setContent { AppTheme { EndpointsSection("abcdef", context,
-      setup = SetupDto(ipv6 = listOf("2a07:a8c0::ab:cdef", "2a07:a8c1::ab:cdef"))) } }
+    rule.setContent { AppTheme { EndpointsSection("abcdef", context) } }
     rule.onNodeWithText("2a07:a8c0::ab:cdef\n2a07:a8c1::ab:cdef").assertIsDisplayed()
     rule.onNodeWithText("2a07:a8c0::abcdef\n2a07:a8c1::abcdef").assertDoesNotExist()
+  }
+
+  @Test fun linkedIpLabelUsesServiceBindingNotDiagnosticClientIp() {
+    english()
+    val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
+    rule.setContent {
+      AppTheme {
+        LinkedIpSection(
+          diagnosticIp = "198.51.100.42",
+          context = context,
+          onOpenNextDnsDashboard = {}
+        )
+      }
+    }
+    rule.onNodeWithText(AppStrings.get(R.string.ui_e1ba21dcd4)).assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.setup_profile_binding)).assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.setup_linked_ip_unavailable)).assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.setup_detected_public_ip)).assertIsDisplayed()
+    rule.onNodeWithText("198.51.100.42").assertIsDisplayed()
+    rule.onNodeWithContentDescription(AppStrings.get(R.string.ui_fb8d508c13)).assertDoesNotExist()
   }
 
   private fun checkFailedDomainInput(allow: Boolean) {
@@ -112,8 +134,7 @@ class UiAuditTest : AuditFixture() {
     english()
     val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
     val expected = "2a07:a8c0::ab:cdef\n2a07:a8c1::ab:cdef"
-    rule.setContent { AppTheme { EndpointsSection("abcdef", context,
-      setup = SetupDto(ipv6 = expected.split('\n'))) } }
+    rule.setContent { AppTheme { EndpointsSection("abcdef", context) } }
     rule.onNodeWithText(expected).performClick()
     val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
     org.junit.Assert.assertEquals(expected, clipboard.primaryClip!!.getItemAt(0).text.toString())
@@ -177,6 +198,23 @@ class UiAuditTest : AuditFixture() {
 
     rule.onNodeWithTag("logs_local_domain_icon", useUnmergedTree = true).assertExists()
     rule.onAllNodesWithTag("remote_favicon_image", useUnmergedTree = true).assertCountEquals(0)
+  }
+
+  @Test fun unverifiedSecurityFieldsAreDisclosedReadOnlyWithoutShowingRawValues() {
+    english()
+    val discovery = SecurityFieldDiscovery(
+      fields = listOf(
+        UnverifiedSecurityField("previewToggle", SecurityJsonValueType.BOOLEAN, true),
+        UnverifiedSecurityField("previewText", SecurityJsonValueType.STRING)
+      )
+    )
+    rule.setContent { AppTheme { UnverifiedSecurityFieldsSection(discovery) } }
+
+    rule.onNodeWithText("previewToggle").assertIsDisplayed()
+    rule.onNodeWithText("previewText").assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.security_unverified_boolean, "true")).assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.security_unverified_text)).assertIsDisplayed()
+    rule.onNodeWithText("unlogged-sensitive-value").assertDoesNotExist()
   }
 
   @Test fun successfulAllowlistSubmissionClearsOnlyTheConfirmedText() { checkSuccessfulInput(true, false) }

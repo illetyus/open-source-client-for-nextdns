@@ -37,6 +37,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import com.example.data.model.DiagnosticConnectionState
 import com.example.data.model.diagnosticConnectionState
+import com.example.data.model.ProfileSetupEndpoints
+import com.example.data.model.profileSetupEndpoints
+import com.example.data.model.setupIpv4Addresses
 import com.example.data.model.setupIpv6Addresses
 import com.example.data.model.DiagnosticTestResult
 import com.example.data.model.NextDnsProfile
@@ -54,15 +57,12 @@ fun SetupScreen(
   val testResult by viewModel.testResult.collectAsStateWithLifecycle()
   val isDiagnosticRunning by viewModel.isDiagnosticRunning.collectAsStateWithLifecycle()
 
-  val profileSetup by viewModel.profileSetup.collectAsStateWithLifecycle()
-
   var selectedPlatform by remember { mutableStateOf("Android") }
-  var showAdvancedIpSettings by remember { mutableStateOf(false) }
 
   val platforms = listOf("Android", "iOS", "Windows", "macOS", "Linux", "ChromeOS", AppStrings.get(R.string.ui_4b4de7fb15), AppStrings.get(R.string.ui_7b5d49c4a6))
   val profile = activeProfile ?: NextDnsProfile("", AppStrings.get(R.string.ui_e267d34382))
   val profileId = profile.id
-  val setup = profileSetup
+  val setup = profileSetupEndpoints(profileId)
 
   val lifecycleOwner = LocalLifecycleOwner.current
   LaunchedEffect(lifecycleOwner, activeProfile?.id) {
@@ -116,13 +116,11 @@ fun SetupScreen(
 
     item {
       LinkedIpSection(
-        profileId = profileId,
-        setup = setup,
-        testResult = testResult,
-        showAdvancedIpSettings = showAdvancedIpSettings,
-        onToggleAdvanced = { showAdvancedIpSettings = !showAdvancedIpSettings },
-        onLinkIp = { viewModel.linkIpAddress(profileId) },
-        context = context
+        diagnosticIp = testResult.clientIp,
+        context = context,
+        onOpenNextDnsDashboard = {
+          context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://my.nextdns.io/")))
+        }
       )
     }
 
@@ -342,7 +340,7 @@ internal fun EndpointsSection(
   profileId: String,
   context: Context,
   modifier: Modifier = Modifier,
-  setup: com.example.data.api.SetupDto? = null
+  setup: ProfileSetupEndpoints? = profileSetupEndpoints(profileId)
 ) {
   NextDnsCard(
     modifier = modifier,
@@ -375,24 +373,16 @@ internal fun EndpointsSection(
 }
 
 @Composable
-private fun LinkedIpSection(
-  profileId: String,
-  setup: com.example.data.api.SetupDto?,
-  testResult: DiagnosticTestResult,
-  showAdvancedIpSettings: Boolean,
-  onToggleAdvanced: () -> Unit,
-  onLinkIp: () -> Unit,
+internal fun LinkedIpSection(
+  diagnosticIp: String,
   context: Context,
+  onOpenNextDnsDashboard: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val detectedIp = testResult.clientIp.ifBlank { "" }
-  val rawStatus = testResult.status.lowercase().trim()
-  val isUsingNextDns = rawStatus == "ok" || rawStatus == "using-nextdns"
-
   NextDnsCard(
     modifier = modifier,
     title = AppStrings.get(R.string.ui_e1ba21dcd4),
-    subtitle = AppStrings.get(R.string.ui_8ddbc3a609)
+    subtitle = AppStrings.get(R.string.setup_linked_ip_dashboard_note)
   ) {
     Column(
       modifier = Modifier
@@ -401,132 +391,50 @@ private fun LinkedIpSection(
         .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(14.dp))
         .clip(RoundedCornerShape(14.dp))
     ) {
-      val ipv4List = setup?.ipv4 ?: listOf("45.90.28.234", "45.90.30.234")
-      EndpointTableRow(AppStrings.get(R.string.ui_e0b841095a), ipv4List.joinToString("\n")) {
-        copyToClipboard(context, ipv4List.firstOrNull() ?: "", AppStrings.get(R.string.copy_dns))
-      }
+      EndpointTableRow(
+        AppStrings.get(R.string.setup_profile_binding),
+        AppStrings.get(R.string.setup_linked_ip_unavailable),
+        canCopy = false
+      ) {}
       HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-      Row(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+      EndpointTableRow(
+        AppStrings.get(R.string.setup_detected_public_ip),
+        diagnosticIp,
+        canCopy = diagnosticIp.isNotBlank()
       ) {
-        Text(
-          text = AppStrings.get(R.string.ui_e1ba21dcd4),
-          color = MaterialTheme.colorScheme.onSurface,
-          fontSize = 12.5.sp,
-          fontWeight = FontWeight.Medium,
-          modifier = Modifier.width(110.dp)
-        )
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          Text(
-            text = detectedIp.ifBlank { AppStrings.get(R.string.ui_d2b13bfcc8) },
-            color = MaterialTheme.colorScheme.onSurface,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 12.sp,
-            modifier = Modifier
-              .clip(RoundedCornerShape(6.dp))
-              .heightIn(min = 48.dp)
-              .padding(horizontal = 4.dp)
-              .bounceClick(scaleDown = 0.99f) {
-                if (detectedIp.isNotBlank()) {
-                  copyToClipboard(context, detectedIp, "IP Adresi")
-                }
-              }
-          )
-          if (isUsingNextDns && detectedIp.isNotBlank()) {
-            Icon(
-              imageVector = Icons.Default.CheckCircle,
-              contentDescription = AppStrings.get(R.string.ui_fb8d508c13),
-              tint = MaterialTheme.colorScheme.tertiary,
-              modifier = Modifier.size(16.dp)
-            )
-          } else {
-            Surface(
-              modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .heightIn(min = 48.dp)
-                .bounceClick(scaleDown = 0.98f, onClick = onLinkIp),
-              color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-              shape = RoundedCornerShape(6.dp)
-            ) {
-              Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-              ) {
-                Icon(
-                  imageVector = Icons.Default.Link,
-                  contentDescription = AppStrings.get(R.string.ui_6166e7d8f7),
-                  tint = MaterialTheme.colorScheme.primary,
-                  modifier = Modifier.size(13.dp)
-                )
-                Text(
-                  text = AppStrings.get(R.string.ui_6166e7d8f7),
-                  color = MaterialTheme.colorScheme.primary,
-                  fontSize = 11.sp,
-                  fontWeight = FontWeight.Bold
-                )
-              }
-            }
-          }
-        }
+        copyToClipboard(context, diagnosticIp, AppStrings.get(R.string.setup_detected_public_ip))
       }
     }
 
     Spacer(modifier = Modifier.height(12.dp))
-
-    Row(
+    Spacer(modifier = Modifier.height(8.dp))
+    Surface(
       modifier = Modifier
+        .fillMaxWidth()
         .clip(RoundedCornerShape(8.dp))
         .heightIn(min = 48.dp)
-        .bounceClick(scaleDown = 0.98f, onClick = onToggleAdvanced)
-        .padding(vertical = 6.dp, horizontal = 6.dp),
-      verticalAlignment = Alignment.CenterVertically
+        .bounceClick(scaleDown = 0.98f, onClick = onOpenNextDnsDashboard),
+      color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+      shape = RoundedCornerShape(8.dp)
     ) {
-      Text(
-        text = if (showAdvancedIpSettings) AppStrings.get(R.string.ui_e351e2362e) else AppStrings.get(R.string.ui_533a6281d8),
-        color = MaterialTheme.colorScheme.primary,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.SemiBold
-      )
-      Icon(
-        imageVector = if (showAdvancedIpSettings) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.size(16.dp)
-      )
-    }
-
-    if (showAdvancedIpSettings) {
-      Spacer(modifier = Modifier.height(8.dp))
-      Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth()
+      Row(
+        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
       ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-          Text(AppStrings.get(R.string.ui_4dc480c54f), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.5.sp)
-          Text(
-            text = "https://link-ip.nextdns.io/$profileId/update",
-            color = MaterialTheme.colorScheme.primary,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.5.sp,
-            modifier = Modifier
-              .clip(RoundedCornerShape(6.dp))
-              .heightIn(min = 48.dp)
-              .padding(horizontal = 4.dp)
-              .bounceClick(scaleDown = 0.99f) {
-                copyToClipboard(context, "https://link-ip.nextdns.io/$profileId/update", AppStrings.get(R.string.copy_ddns))
-              }
-          )
-        }
+        Icon(
+          imageVector = Icons.Default.OpenInNew,
+          contentDescription = null,
+          tint = MaterialTheme.colorScheme.primary,
+          modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+          text = AppStrings.get(R.string.setup_open_dashboard),
+          color = MaterialTheme.colorScheme.primary,
+          fontSize = 12.sp,
+          fontWeight = FontWeight.Bold
+        )
       }
     }
   }
@@ -535,7 +443,7 @@ private fun LinkedIpSection(
 @Composable
 private fun SetupGuideSection(
   profileId: String,
-  setup: com.example.data.api.SetupDto?,
+  setup: ProfileSetupEndpoints?,
   platforms: List<String>,
   selectedPlatform: String,
   onPlatformSelected: (String) -> Unit,
@@ -647,33 +555,35 @@ private fun EndpointTableRow(
         fontSize = 12.sp,
         modifier = Modifier.weight(1f)
       )
-      Surface(
-        shape = RoundedCornerShape(6.dp),
-        color = if (isCopied) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
-                else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-        border = BorderStroke(
-          1.dp,
-          if (isCopied) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
-          else MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
-        )
-      ) {
-        Row(
-          modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(3.dp)
+      if (canCopy) {
+        Surface(
+          shape = RoundedCornerShape(6.dp),
+          color = if (isCopied) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+                  else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+          border = BorderStroke(
+            1.dp,
+            if (isCopied) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
+            else MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+          )
         ) {
-          Icon(
-            imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
-            contentDescription = AppStrings.get(R.string.ui_a8bcca42d9),
-            tint = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(12.dp)
-          )
-          Text(
-            text = if (isCopied) AppStrings.get(R.string.ui_02af74b2f0) else AppStrings.get(R.string.ui_a8bcca42d9),
-            color = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
-            fontSize = 10.5.sp,
-            fontWeight = FontWeight.Bold
-          )
+          Row(
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+          ) {
+            Icon(
+              imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+              contentDescription = AppStrings.get(R.string.ui_a8bcca42d9),
+              tint = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+              modifier = Modifier.size(12.dp)
+            )
+            Text(
+              text = if (isCopied) AppStrings.get(R.string.ui_02af74b2f0) else AppStrings.get(R.string.ui_a8bcca42d9),
+              color = if (isCopied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+              fontSize = 10.5.sp,
+              fontWeight = FontWeight.Bold
+            )
+          }
         }
       }
     }
@@ -922,7 +832,7 @@ private fun AndroidSetupGuide(profileId: String, context: Context) {
 }
 
 @Composable
-private fun WindowsSetupGuide(profileId: String, setup: com.example.data.api.SetupDto?, context: Context) {
+private fun WindowsSetupGuide(profileId: String, setup: ProfileSetupEndpoints?, context: Context) {
   Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
     Surface(
       color = MaterialTheme.colorScheme.surface,
@@ -940,10 +850,9 @@ private fun WindowsSetupGuide(profileId: String, setup: com.example.data.api.Set
         SetupStepItem("3", AppStrings.get(R.string.ui_b8b91eeb7d))
         SetupStepItem("4", AppStrings.get(R.string.ui_f817bdb64b))
 
-        val ipv4First = setup?.ipv4?.firstOrNull() ?: "45.90.28.0"
         CopyableValueBox(
           label = AppStrings.get(R.string.ui_91f537e633),
-          value = ipv4First,
+          value = "45.90.28.0",
           context = context,
           copyLabel = AppStrings.get(R.string.ui_6bd15f6947)
         )
@@ -1187,7 +1096,7 @@ private fun BrowserSetupGuide(profileId: String, context: Context) {
 }
 
 @Composable
-private fun RouterSetupGuide(profileId: String, setup: com.example.data.api.SetupDto?, context: Context) {
+private fun RouterSetupGuide(profileId: String, setup: ProfileSetupEndpoints?, context: Context) {
   Surface(
     color = MaterialTheme.colorScheme.surface,
     shape = RoundedCornerShape(14.dp),
@@ -1205,39 +1114,46 @@ private fun RouterSetupGuide(profileId: String, setup: com.example.data.api.Setu
 
       Text(AppStrings.get(R.string.ui_9de822673b), fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurface)
 
-      val ipv4First = setup?.ipv4?.getOrNull(0) ?: "45.90.28.234"
-      CopyableValueBox(
-        label = AppStrings.get(R.string.ui_e074fca8cf),
-        value = ipv4First,
-        context = context,
-        copyLabel = AppStrings.get(R.string.ui_e170a66b88)
-      )
-
-      val ipv4Second = setup?.ipv4?.getOrNull(1) ?: "45.90.30.234"
-      CopyableValueBox(
-        label = AppStrings.get(R.string.ui_2e8400bb4b),
-        value = ipv4Second,
-        context = context,
-        copyLabel = AppStrings.get(R.string.ui_f312681126)
-      )
+      val profileIpv4 = setupIpv4Addresses(setup?.ipv4)
+      if (profileIpv4.size >= 2) {
+        CopyableValueBox(
+          label = AppStrings.get(R.string.ui_e074fca8cf),
+          value = profileIpv4[0],
+          context = context,
+          copyLabel = AppStrings.get(R.string.ui_e170a66b88)
+        )
+        CopyableValueBox(
+          label = AppStrings.get(R.string.ui_2e8400bb4b),
+          value = profileIpv4[1],
+          context = context,
+          copyLabel = AppStrings.get(R.string.ui_f312681126)
+        )
+      } else {
+        Text(
+          text = AppStrings.get(R.string.setup_ipv4_dashboard_note),
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          fontSize = 12.sp,
+          lineHeight = 16.sp
+        )
+      }
 
       Text(AppStrings.get(R.string.ui_6cda839fb5), fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurface)
 
-      val ipv6First = setupIpv6Addresses(setup).getOrNull(0).orEmpty()
-      CopyableValueBox(
-        label = AppStrings.get(R.string.ui_4eb25410e1),
-        value = ipv6First,
-        context = context,
-        copyLabel = AppStrings.get(R.string.ui_e086835b9a)
-      )
-
-      val ipv6Second = setupIpv6Addresses(setup).getOrNull(1).orEmpty()
-      CopyableValueBox(
-        label = AppStrings.get(R.string.ui_2dbf7664c8),
-        value = ipv6Second,
-        context = context,
-        copyLabel = AppStrings.get(R.string.ui_6431ef9198)
-      )
+      val profileIpv6 = setupIpv6Addresses(setup)
+      if (profileIpv6.size >= 2) {
+        CopyableValueBox(
+          label = AppStrings.get(R.string.ui_4eb25410e1),
+          value = profileIpv6[0],
+          context = context,
+          copyLabel = AppStrings.get(R.string.ui_e086835b9a)
+        )
+        CopyableValueBox(
+          label = AppStrings.get(R.string.ui_2dbf7664c8),
+          value = profileIpv6[1],
+          context = context,
+          copyLabel = AppStrings.get(R.string.ui_6431ef9198)
+        )
+      }
 
       HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 

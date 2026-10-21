@@ -326,13 +326,8 @@
     <string name="ui_af80266dc2">"Endpoints"</string>
     <string name="ui_9e84007b0d">"Configure one of these endpoints to use NextDNS with this profile."</string>
     <string name="ui_e1ba21dcd4">"Linked IP"</string>
-    <string name="ui_8ddbc3a609">"If DNS-over-TLS, DNS-over-HTTPS or IPv6 are unavailable, use these DNS servers and link your IP. This is mainly for home networks and is not recommended for mobile devices."</string>
-    <string name="ui_e0b841095a">"DNS servers"</string>
-    <string name="ui_d2b13bfcc8">"Detecting…"</string>
-    <string name="ui_6166e7d8f7">"Link IP"</string>
     <string name="ui_e351e2362e">"Hide advanced settings"</string>
     <string name="ui_533a6281d8">"Show advanced settings"</string>
-    <string name="ui_4dc480c54f">"Dynamic DNS (DDNS) update URL:"</string>
     <string name="ui_917d229d50">"Setup guide"</string>
     <string name="ui_cbba6dfad2">"Follow these instructions to configure NextDNS on a device, browser or router."</string>
     <string name="ui_4cfa2b03d5">"Value"</string>
@@ -551,6 +546,10 @@
     <string name="server_latency">"Server: %1$s (%2$s) • Latency: %3$d ms"</string>
     <string name="diagnostic_resolver_identifier">Resolver: %1$s</string>
     <string name="diagnostic_server_information_unavailable">Server and resolver information are unavailable.</string>
+    <string name="diagnostic_region_unavailable">Region information is not provided by this diagnostic.</string>
+    <string name="security_tld_catalog_unavailable">Available TLDs could not be loaded. Try again later.</string>
+    <string name="security_tld_catalog_loading">Loading available TLDs…</string>
+    <string name="security_tld_catalog_empty">No TLDs are available in the server catalog.</string>
     <string name="diagnostic_anycast_enabled">Anycast: enabled</string>
     <string name="diagnostic_anycast_disabled">Anycast: disabled</string>
     <string name="diagnostic_source">Diagnostic source: test.nextdns.io</string>
@@ -578,7 +577,6 @@
     <string name="copy_dot">"DoT address"</string>
     <string name="copy_doh">"DoH URL"</string>
     <string name="copy_dns">"DNS server"</string>
-    <string name="copy_ddns">"DDNS URL"</string>
     <string name="copy_chromeos_doh">"ChromeOS DoH address"</string>
     <string name="source_licenses_label">Source and licenses</string>
     <string name="diagnostic_unverified_title">"Selected profile could not be verified"</string>
@@ -623,5 +621,21 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Top domains in this country"</string>
     <string name="traffic_country_map_accessibility">"Interactive traffic destination map. Choose a country on the map or in the country selector to inspect DNS traffic."</string>
+    <string name="security_unverified_title">Unverified API security fields</string>
+    <string name="security_unverified_explanation">These keys came from the server. Their meaning and write support are unverified. Only Boolean values are shown; these fields cannot be changed here.</string>
+    <string name="security_unverified_boolean">Boolean value: %1$s · read-only</string>
+    <string name="security_unverified_text">Text · value hidden · read-only</string>
+    <string name="security_unverified_number">Number · value hidden · read-only</string>
+    <string name="security_unverified_object">Object · contents hidden · read-only</string>
+    <string name="security_unverified_array">Array · contents hidden · read-only</string>
+    <string name="security_unverified_null">Null · read-only</string>
+    <string name="security_unverified_omitted">%1$d additional fields omitted for safety</string>
+    <string name="value_unknown">Unknown</string>
+    <string name="setup_linked_ip_unavailable">The profile\'s linked IP cannot be verified in the public API.</string>
+    <string name="setup_profile_binding">Profile binding</string>
+    <string name="setup_linked_ip_dashboard_note">Linked IP and profile-specific IPv4 addresses are managed in your NextDNS dashboard.</string>
+    <string name="setup_detected_public_ip">Detected public IP</string>
+    <string name="setup_open_dashboard">Manage linked IP in NextDNS</string>
+    <string name="setup_ipv4_dashboard_note">Profile-specific IPv4 DNS addresses are shown in the NextDNS dashboard.</string>
 </resources>
 <!-- Locale-only presentation; API privacy fields remain unchanged. -->

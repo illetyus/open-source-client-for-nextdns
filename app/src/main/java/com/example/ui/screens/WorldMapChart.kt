@@ -57,14 +57,12 @@ fun WorldMapChart(
 ) {
   val context = LocalContext.current.applicationContext
   val mapState by produceState<WorldMapLoadState>(WorldMapLoadState.Loading, context) {
-    value = withContext(Dispatchers.IO) {
-      try {
-        WorldMapLoadState.Ready(WorldMapGeometry.load(context))
-      } catch (cancel: CancellationException) {
-        throw cancel
-      } catch (_: Exception) {
-        WorldMapLoadState.Failed
-      }
+    value = try {
+      WorldMapLoadState.Ready(loadWorldMapGeometry(context))
+    } catch (cancel: CancellationException) {
+      throw cancel
+    } catch (_: Exception) {
+      WorldMapLoadState.Failed
     }
   }
   val geometry = (mapState as? WorldMapLoadState.Ready)?.geometry
@@ -282,6 +280,9 @@ internal class WorldMapGeometry(val countries: List<WorldCountryOutline>) {
   }
 }
 
+internal suspend fun loadWorldMapGeometry(context: Context): WorldMapGeometry =
+  withContext(Dispatchers.IO) { WorldMapGeometry.load(context) }
+
 private sealed interface WorldMapLoadState {
   data object Loading : WorldMapLoadState
   data class Ready(val geometry: WorldMapGeometry) : WorldMapLoadState
@@ -350,3 +351,5 @@ private fun worldMapViewport(width: Float, height: Float): Rect {
 
 private fun localizedCountryName(code: String): String =
   Locale.forLanguageTag("und-$code").getDisplayCountry(AppStrings.locale).ifBlank { code }
+
+

@@ -149,7 +149,7 @@ fun DenylistScreen(
               
               FaviconImage(
                 domain = item.domain,
-                modifier = Modifier.size(16.dp).clip(RoundedCornerShape(3.dp)).testTag("denylist_domain_icon")
+                modifier = Modifier.size(12.dp).clip(RoundedCornerShape(2.dp)).testTag("denylist_domain_icon")
               )
               
               Text(

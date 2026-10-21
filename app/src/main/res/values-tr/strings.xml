@@ -325,13 +325,8 @@
     <string name="ui_af80266dc2">"Uç noktalar"</string>
     <string name="ui_9e84007b0d">"NextDNS\'i bu profille kullanmak için aşağıdaki uç noktalardan birini ayarlayın."</string>
     <string name="ui_e1ba21dcd4">"Bağlı IP"</string>
-    <string name="ui_8ddbc3a609">"DNS-over-TLS, DNS-over-HTTPS veya IPv6 kullanarak NextDNS\'i ayarlayamıyorsanız aşağıdaki DNS sunucularını kullanın ve IP\'nizi bağlayın. Bu yöntem çoğunlukla ev ağlarında kullanım içindir ve mobil cihazlarda önerilmez."</string>
-    <string name="ui_e0b841095a">"DNS sunucuları"</string>
-    <string name="ui_d2b13bfcc8">"Algılanıyor..."</string>
-    <string name="ui_6166e7d8f7">"IP\'yi Bağla"</string>
     <string name="ui_e351e2362e">"Gelişmiş ayarları gizle"</string>
     <string name="ui_533a6281d8">"Gelişmiş ayarları göster"</string>
-    <string name="ui_4dc480c54f">"Dinamik DNS (DDNS) Güncelleme URL\'si:"</string>
     <string name="ui_917d229d50">"Kurulum rehberi"</string>
     <string name="ui_cbba6dfad2">"Cihazınızda, tarayıcınızda veya yönlendiricinizde NextDNS\'i kurmak için aşağıdaki talimatları izleyin."</string>
     <string name="ui_4cfa2b03d5">"Değer"</string>
@@ -550,6 +545,10 @@
     <string name="server_latency">"Sunucu: %1$s (%2$s) • Gecikme: %3$d ms"</string>
     <string name="diagnostic_resolver_identifier">Çözümleyici: %1$s</string>
     <string name="diagnostic_server_information_unavailable">Sunucu ve çözümleyici bilgisi alınamıyor.</string>
+    <string name="diagnostic_region_unavailable">Bu tanı yanıtı bölge bilgisini içermiyor.</string>
+    <string name="security_tld_catalog_unavailable">Kullanılabilir TLD listesi yüklenemedi. Daha sonra tekrar deneyin.</string>
+    <string name="security_tld_catalog_loading">Kullanılabilir TLD\'ler yükleniyor…</string>
+    <string name="security_tld_catalog_empty">Sunucu kataloğunda kullanılabilir TLD yok.</string>
     <string name="diagnostic_anycast_enabled">Anycast: açık</string>
     <string name="diagnostic_anycast_disabled">Anycast: kapalı</string>
     <string name="diagnostic_source">Tanı kaynağı: test.nextdns.io</string>
@@ -577,7 +576,6 @@
     <string name="copy_dot">"DoT adresi"</string>
     <string name="copy_doh">"DoH URL"</string>
     <string name="copy_dns">"DNS sunucusu"</string>
-    <string name="copy_ddns">"DDNS URL"</string>
     <string name="copy_chromeos_doh">"ChromeOS DoH adresi"</string>
     <string name="source_licenses_label">Kaynak ve lisanslar</string>
     <string name="diagnostic_unverified_title">"Seçili profil doğrulanamadı"</string>
@@ -622,4 +620,20 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Bu ülkedeki en sık alan adları"</string>
     <string name="traffic_country_map_accessibility">"Etkileşimli trafik varış noktaları haritası. DNS trafiğini incelemek için haritadan veya ülke seçicisinden ülke seçin."</string>
+    <string name="security_unverified_title">Doğrulanmamış API güvenlik alanları</string>
+    <string name="security_unverified_explanation">Bu anahtarlar sunucu yanıtından geldi. Anlamları ve yazma desteği doğrulanmadı. Yalnızca Boolean değerleri gösterilir; buradan hiçbir alan değiştirilemez.</string>
+    <string name="security_unverified_boolean">Boolean değeri: %1$s · salt okunur</string>
+    <string name="security_unverified_text">Metin · değer gizli · salt okunur</string>
+    <string name="security_unverified_number">Sayı · değer gizli · salt okunur</string>
+    <string name="security_unverified_object">Nesne · içerik gizli · salt okunur</string>
+    <string name="security_unverified_array">Dizi · içerik gizli · salt okunur</string>
+    <string name="security_unverified_null">Null · salt okunur</string>
+    <string name="security_unverified_omitted">Güvenlik sınırı nedeniyle %1$d ek alan gösterilmedi</string>
+    <string name="value_unknown">Bilinmiyor</string>
+    <string name="setup_linked_ip_unavailable">Profilin bağlı IP\'si herkese açık API üzerinden doğrulanamıyor.</string>
+    <string name="setup_profile_binding">Profil eşlemesi</string>
+    <string name="setup_linked_ip_dashboard_note">Bağlı IP ve profile özel IPv4 adresleri NextDNS kontrol panelinden yönetilir.</string>
+    <string name="setup_detected_public_ip">Algılanan genel IP</string>
+    <string name="setup_open_dashboard">Bağlı IP\'yi NextDNS\'te yönet</string>
+    <string name="setup_ipv4_dashboard_note">Profile özel IPv4 DNS adresleri NextDNS kontrol panelinde gösterilir.</string>
 </resources>

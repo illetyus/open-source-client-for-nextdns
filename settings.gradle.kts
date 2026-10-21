@@ -25,3 +25,4 @@ dependencyResolutionManagement {
 rootProject.name = "open-source-client-for-nextdns"
 
 include(":app")
+include(":macrobenchmark")

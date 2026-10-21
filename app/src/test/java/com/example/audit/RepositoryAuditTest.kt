@@ -1,6 +1,8 @@
 package com.example.audit
 
 import android.content.Context
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
@@ -23,14 +25,42 @@ import kotlinx.coroutines.test.setMain
 import okhttp3.mockwebserver.*
 import org.junit.*
 import org.junit.Assert.*
+import org.junit.rules.RuleChain
+import org.junit.rules.TestRule
+import org.junit.runner.Description
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.junit.runners.model.Statement
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class AuditMainDispatcherRule : TestRule {
+  override fun apply(base: Statement, description: Description): Statement =
+    object : Statement() {
+      override fun evaluate() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        try {
+          base.evaluate()
+        } finally {
+          Dispatchers.resetMain()
+        }
+      }
+    }
+}
+
+class AuditComposeTestRule(
+  private val composeRule: ComposeContentTestRule = createComposeRule()
+) : TestRule, ComposeContentTestRule by composeRule {
+  override fun apply(base: Statement, description: Description): Statement =
+    RuleChain.outerRule(AuditMainDispatcherRule())
+      .around(composeRule)
+      .apply(base, description)
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class AuditFixture {
@@ -43,7 +73,6 @@ abstract class AuditFixture {
   protected fun json(body: String, code: Int = 200) = MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
 
   @Before fun prepareDisposableFixture() {
-    Dispatchers.setMain(UnconfinedTestDispatcher())
     val context = ApplicationProvider.getApplicationContext<Context>()
     context.getSharedPreferences("legal_acceptance", Context.MODE_PRIVATE).edit().clear().commit()
     preferences = NextDnsPreferences(context, object : ApiKeyProtector {
@@ -76,13 +105,13 @@ abstract class AuditFixture {
     if (::repository.isInitialized) runBlocking { repository.logout() }
     if (::server.isInitialized) server.shutdown()
     if (::preferences.isInitialized) preferences.clear()
-    Dispatchers.resetMain()
   }
 }
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = NextDnsApp::class)
 class RepositoryAuditTest : AuditFixture() {
+  @get:Rule val mainDispatcherRule = AuditMainDispatcherRule()
   @Test fun emptyAuthoritativeLogRefreshMustRemoveDeletedRemoteHistory() = runBlocking {
     var empty = false
     response = { json(if (empty) """{"data":[]}""" else
@@ -342,3 +371,4 @@ class RepositoryAuditTest : AuditFixture() {
   }
 
 }
+

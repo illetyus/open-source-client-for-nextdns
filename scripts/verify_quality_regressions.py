@@ -1,4 +1,4 @@
-"""Require executed regression cases for NDNS-001..019 and NDNS-047; emit JVM evidence."""
+"""Require executed regression cases for tracked API/UI defects and favicon handling; emit JVM evidence."""
 from pathlib import Path
 import hashlib
 import json
@@ -16,6 +16,10 @@ AUDIT_REPOSITORY = "com.example.audit.RepositoryAuditTest"
 AUDIT_UI = "com.example.audit.UiAuditTest"
 IDENTITY = "com.example.audit.InputAndIdentityTest"
 ACCOUNT = "com.example.audit.AccountSettingsFlowTest"
+FAVICON = "com.example.ui.screens.NextDnsFaviconNetworkTest"
+RETIRED_SPEED = "com.example.data.local.RetiredFeaturePreferencesTest"
+API_CONTRACT = "com.example.data.api.NextDnsApiContractTest"
+SNAPSHOT = "com.example.data.notifications.ConfigSnapshotHasherTest"
 
 REQUIRED = {
     "NDNS-001": [(REPOSITORY, name) for name in (
@@ -37,7 +41,7 @@ REQUIRED = {
     "NDNS-006": [(NETWORK, "cancellationBeforeHeadersClosesLateDeliveredResponse"),
         (NETWORK, "cancellationDuringBlockingBodyReadCancelsCallAndClosesBody"),
         (REPOSITORY, "stoppingRepositorySseCancelsTheActualNetworkCall")],
-    "NDNS-007": [(NETWORK, "ipLinkSuccessClosesUnconsumedBody"),
+    "NDNS-007": [(API_CONTRACT, "undocumentedSetupAndLinkedIpRoutesAreNotDeclared"),
         (NETWORK, "allCatalogHttpFailurePathsCloseTheirUnconsumedBodies"),
         (NETWORK, "malformedDiagnosticJsonAlsoClosesBody"),
         (NETWORK, "exceptionInsideConsumerStillClosesResponse")],
@@ -56,9 +60,9 @@ REQUIRED = {
     "NDNS-012": [(AUDIT_UI, "identicalRealisticFingerprintMustShowConnectedForSelectedProfile"),
         (AUDIT_UI, "missingFingerprintMustNotVerifyTheSelectedProfile"),
         (IDENTITY, "diagnosticIdentityUsesFingerprintWhileErrorsAndMissingIdentityRemainUnverified")],
-    "NDNS-013": [(AUDIT_UI, "endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation"),
+    "NDNS-013": [(AUDIT_UI, "endpointsMustUseTheValidatedProfileIpv6Format"),
         (AUDIT_UI, "copiedIpv6MustMatchBothDisplayedServiceAddresses"),
-        (IDENTITY, "setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback")],
+        (IDENTITY, "profileIpv6EndpointsComeFromTheValidatedProfileId")],
     "NDNS-014": [(AUDIT_UI, name) for name in (
         "failedAllowlistSubmissionMustPreserveTypedDomain", "failedDenylistSubmissionMustPreserveTypedDomain",
         "successfulAllowlistSubmissionClearsOnlyTheConfirmedText", "successfulDenylistSubmissionClearsOnlyTheConfirmedText",
@@ -83,7 +87,31 @@ REQUIRED = {
         [(IDENTITY, name) for name in (
             "internationalDomainsAndWildcardRulesNormalizeToAscii",
             "invalidLabelsUrlsIpsAndOversizedRulesAreRejected")],
-    "NDNS-047": [(ACCOUNT, "fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels")],
+"NDNS-047": [(ACCOUNT, "fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels")],
+"NDNS-060": [(REPOSITORY, "oldSearchStreamCannotLeakRowsIntoNewSearchResults")],
+"NDNS-061": [(ACCOUNT, "speedTestEntryIsAbsentFromAccountScreen"),
+    (RETIRED_SPEED, "retiredSpeedSettingsAreClearedWithoutTouchingCredentialsThemeLocaleOrLegalAcceptance")],
+"NDNS-062": [(RETIRED_SPEED, "retiredSpeedSettingsCleanupIsIdempotent")],
+"NDNS-063": [(API_CONTRACT, name) for name in (
+    "securityResponseRetainsUnknownJsonForReadOnlyDiscovery",
+    "securityUnknownFieldRetentionIsBoundedAndOverflowIsFingerprintable",
+    "oversizedSecurityResponseIsRejectedWhenLengthIsKnown",
+    "oversizedChunkedSecurityResponseIsRejectedWithoutContentLength")]+
+    [(SNAPSHOT, name) for name in (
+        "digestChangesWhenAnUnverifiedServerSecurityFieldChanges",
+        "digestRemainsOrderIndependentForNestedUnknownServerFields")]+
+    [(AUDIT_UI, "unverifiedSecurityFieldsAreDisclosedReadOnlyWithoutShowingRawValues")],
+"NDNS-054": [(FAVICON, name) for name in (
+    "validImageLoadsAndIsCachedInMemory",
+    "redirectIsRejectedWithoutRequestingItsTarget",
+    "nonImageMimeTypeIsRejected",
+    "oversizedChunkedBodyIsRejectedEvenWithoutContentLength",
+    "cleartextUrlIsRejectedBeforeAnyRequest",
+    "unexpectedHostIsRejectedBeforeAnyRequest",
+    "malformedImageBytesAreRejected",
+    "wholeCallTimeoutReturnsFallbackResult",
+    "cancellingLoadCancelsTheUnderlyingOkHttpCall")],
+    "NDNS-065": [(REPOSITORY, "unknownLogStorageLocationDoesNotMasqueradeAsThePreviousLocalValue")],
 }
 
 
@@ -170,3 +198,4 @@ def verify(root=ROOT):
 
 if __name__ == "__main__":
     verify()
+
