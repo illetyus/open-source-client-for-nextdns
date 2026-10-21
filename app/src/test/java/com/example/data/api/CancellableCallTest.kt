@@ -101,13 +101,6 @@ class CancellableCallTest {
     assertTrue(body.closed.get())
   }
 
-  @Test fun ipLinkSuccessClosesUnconsumedBody() = runBlocking {
-    val body = TrackingBody("unused")
-    val factory = Call.Factory { FixtureCall(it, body) }
-    assertTrue(NextDnsNetworkClient.linkIpAddress("aaaaaa", factory))
-    assertTrue(body.closed.get())
-  }
-
   @Test fun allCatalogHttpFailurePathsCloseTheirUnconsumedBodies() = runBlocking {
     val readers: List<suspend (Call.Factory) -> Any?> = listOf(
       { NextDnsNetworkClient.fetchAvailableBlocklistsDirect(it) },

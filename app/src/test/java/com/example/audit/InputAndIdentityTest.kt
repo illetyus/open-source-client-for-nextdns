@@ -1,6 +1,5 @@
 package com.example.audit
 
-import com.example.data.api.SetupDto
 import com.example.data.model.*
 import org.junit.Assert.*
 import org.junit.Test
@@ -28,12 +27,16 @@ class InputAndIdentityTest {
     assertNull(normalizeDomainRule("*.$maximum"))
   }
 
-  @Test fun setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback() {
-    assertEquals(emptyList<String>(), setupIpv6Addresses(null))
-    assertEquals(emptyList<String>(), setupIpv6Addresses(SetupDto(ipv6 = listOf(
-      "2a07:a8c0::abcdef", "localhost", "example.com", "192.168.1.1", "::gg", "fe80::1%eth0"))))
-    assertEquals(listOf("2a07:a8c0::ab:cdef", "2a07:a8c1::ab:cdef"),
-      setupIpv6Addresses(SetupDto(ipv6 = listOf(" 2a07:a8c0::ab:cdef ", "2a07:a8c1::ab:cdef", "2a07:a8c0::ab:cdef"))))
+  @Test fun missingSetupIpv4IsUnavailable() {
+    assertEquals(emptyList<String>(), setupIpv4Addresses(null))
+    assertEquals(emptyList<String>(), setupIpv4Addresses(emptyList()))
+    assertEquals(emptyList<String>(), setupIpv4Addresses(listOf("not-an-ip", "256.1.1.1", "192.168.1")))
+  }
+
+  @Test fun profileIpv6EndpointsComeFromTheValidatedProfileId() {
+    assertEquals(listOf("2a07:a8c0::ab:cdef", "2a07:a8c1::ab:cdef"), profileIpv6Addresses("abcdef"))
+    assertEquals(emptyList<String>(), profileIpv6Addresses("not-hex"))
+    assertEquals(emptyList<String>(), profileIpv6Addresses("abc"))
   }
 
   @Test fun diagnosticIdentityUsesFingerprintWhileErrorsAndMissingIdentityRemainUnverified() {

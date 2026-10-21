@@ -325,13 +325,8 @@
     <string name="ui_af80266dc2">"Puntos de conexión"</string>
     <string name="ui_9e84007b0d">"Configura uno de estos puntos para usar NextDNS con este perfil."</string>
     <string name="ui_e1ba21dcd4">"IP vinculada"</string>
-    <string name="ui_8ddbc3a609">"Si no puedes usar DNS-over-TLS, DNS-over-HTTPS o IPv6, usa estos servidores y vincula tu IP. Es principalmente para redes domésticas y no se recomienda en móviles."</string>
-    <string name="ui_e0b841095a">"Servidores DNS"</string>
-    <string name="ui_d2b13bfcc8">"Detectando…"</string>
-    <string name="ui_6166e7d8f7">"Vincular IP"</string>
     <string name="ui_e351e2362e">"Ocultar ajustes avanzados"</string>
     <string name="ui_533a6281d8">"Mostrar ajustes avanzados"</string>
-    <string name="ui_4dc480c54f">"URL de actualización de DNS dinámico (DDNS):"</string>
     <string name="ui_917d229d50">"Guía de configuración"</string>
     <string name="ui_cbba6dfad2">"Sigue estas instrucciones para configurar NextDNS en un dispositivo, navegador o enrutador."</string>
     <string name="ui_4cfa2b03d5">"Valor"</string>
@@ -581,7 +576,6 @@
     <string name="copy_dot">"Dirección DoT"</string>
     <string name="copy_doh">"URL DoH"</string>
     <string name="copy_dns">"Servidor DNS"</string>
-    <string name="copy_ddns">"URL DDNS"</string>
     <string name="copy_chromeos_doh">"Dirección DoH de ChromeOS"</string>
     <string name="source_licenses_label">Código fuente y licencias</string>
     <string name="diagnostic_unverified_title">"No se pudo verificar el perfil seleccionado"</string>
@@ -636,4 +630,10 @@
     <string name="security_unverified_null">Null · solo lectura</string>
     <string name="security_unverified_omitted">Se omitieron %1$d campos adicionales por seguridad</string>
     <string name="value_unknown">Desconocido</string>
+    <string name="setup_linked_ip_unavailable">La API pública no permite verificar la IP vinculada al perfil.</string>
+    <string name="setup_profile_binding">Vinculación del perfil</string>
+    <string name="setup_linked_ip_dashboard_note">La IP vinculada y las direcciones IPv4 del perfil se gestionan en el panel de NextDNS.</string>
+    <string name="setup_detected_public_ip">IP pública detectada</string>
+    <string name="setup_open_dashboard">Gestionar la IP vinculada en NextDNS</string>
+    <string name="setup_ipv4_dashboard_note">Las direcciones DNS IPv4 del perfil se muestran en el panel de NextDNS.</string>
 </resources>

@@ -51,6 +51,14 @@ class NextDnsApiContractTest {
   }
 
   @Test
+  fun undocumentedSetupAndLinkedIpRoutesAreNotDeclared() {
+    val methodNames = NextDnsApiService::class.java.declaredMethods.map { it.name }.toSet()
+
+    assertFalse("The public API contract does not document profile setup", methodNames.contains("getProfileSetup"))
+    assertFalse("The public API contract does not document linked-IP writes", methodNames.contains("updateLinkedIp"))
+  }
+
+  @Test
   fun profileCreate_acceptsIdOnlyResponse() = runTest {
     server.enqueue(
       MockResponse()

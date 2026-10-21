@@ -11,7 +11,7 @@
 **Spec:** Önceden onaylanmış docs/UX_LOGS_ICON_DESIGN_RESEARCH_DRAFT_2026-10-20.md; docs/superpowers/plans/2026-10-20-nextdns-feature-audit-and-implementation.md; docs/PHASE9_BROWSERSTACK_RELEASE_GATE.md; kullanıcının 21 Ekim 2026 tarihli “hepsini bitirmeyi planla; hız testi şimdilik iptal” kapsam kararı.
 
 **Rapor tarihi:** 21 Ekim 2026, Europe/Istanbul.
-**Yürütme durumu:** KULLANICI ONAYLADI; P00/P01 uygulanıyor. Bu belge PR'ın birleştirildiği veya yayın onayı verildiği anlamına gelmez.
+**Yürütme durumu:** KULLANICI ONAYLADI; P00/P01 tamamlandı, P02 değişiklikleri hazır ve Android CI doğrulamasını bekliyor. Bu belge PR'ın birleştirildiği veya yayın onayı verildiği anlamına gelmez.
 **Yöntem:** Mevcut izole worktree üzerinde native yürütme; her dilimde PR/CI ve değişiklik kapsamına uygun inceleme. Yeni toplu mimari dönüşüm yapılmayacak.
 
 ## Global Constraints
@@ -87,37 +87,37 @@ Yol kuralı: data/ ve ui/ ile başlayan Kotlin yolları app/src/main/java/com/ex
 **Files:** docs/PROJECT_PHASE_STATUS.md; docs/PHASE9_PUBLICATION_PREPARATION.md; docs/PHASE9_BROWSERSTACK_RELEASE_GATE.md; docs/release/readiness.json; docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md.
 **Interfaces:** Mevcut B01–B22 kimlikleri ve releaseCandidate alanları korunur; tarihsel kanıt aday kanıtından ayrılır.
 
-- [ ] GitHub main/PR başlarını yeniden oku; son CI ve çalışma ağacını kaydet.
-- [ ] Durumları JSON'dan say: başlangıç 13 PARTIAL / 9 NOT_RUN / 0 PASS. Eski “22 NOT_RUN” anlatımlarını tarihsel not olarak düzelt.
-- [ ] Mevcut 61 rotaya DOCUMENTED / OBSERVED / DECLARED_ONLY kanıt niteliği ve kaynak/fixture referansı ekle; sayımı destek garantisi gibi sunma.
-- [ ] Hız testi kapsamını CANCELLED_FOR_CURRENT_RELEASE olarak kaydet; eski araştırma ve koşu tarihini silme.
-- [ ] Çalıştır: python scripts/verify_api_capability_matrix.py ve python scripts/verify_publication_ready.py --draft. Gerçek rota/alan sayılarıyla PASS ve tutarlı şema beklenir.
-- [ ] Ayrı docs commit'i ve inceleme kaydı oluştur.
+- [x] GitHub main/PR başlarını yeniden oku; son CI ve çalışma ağacını kaydet.
+- [x] Durumları JSON'dan say: başlangıç 13 PARTIAL / 9 NOT_RUN / 0 PASS. Eski “22 NOT_RUN” anlatımlarını tarihsel not olarak düzelt.
+- [x] Mevcut 61 rotaya DOCUMENTED / OBSERVED / DECLARED_ONLY kanıt niteliği ve kaynak/fixture referansı ekle; sayımı destek garantisi gibi sunma.
+- [x] Hız testi kapsamını CANCELLED_FOR_CURRENT_RELEASE olarak kaydet; eski araştırma ve koşu tarihini silme.
+- [x] Çalıştır: python scripts/verify_api_capability_matrix.py ve python scripts/verify_publication_ready.py --draft. Gerçek rota/alan sayılarıyla PASS ve tutarlı şema beklenir.
+- [x] Ayrı docs commit'i ve inceleme kaydı oluştur.
 
 ### P01 — Hız testinin kaldırılması
 
 **Files:** Modify app/src/main/java/com/example/ui/screens/AccountScreen.kt, app/src/main/java/com/example/MainActivity.kt, beş values*/strings.xml; Remove ui/screens/SpeedTestDialog.kt, data/diagnostics/LibreSpeedClient.kt, data/diagnostics/SpeedTestSettingsStore.kt; Create data/local/RetiredFeaturePreferences.kt ve app/src/test/java/com/example/data/local/RetiredFeaturePreferencesTest.kt; update AccountSettingsFlowTest, eski hız testi testleri, scripts/verify_quality_regressions.py, scripts/tests/test_verify_quality_regressions.py ve docs/release/quality-ledger.json.
 **Interfaces:** Yeni clearRetiredSpeedTestSettings(context: Context): Boolean suspend yardımcı işlevi yalnız speed_test_local_settings tercih dosyasını temizler; IO üzerinde çalışır, başarısızlık sonraki açılışta yeniden denenebilir.
 
-- [ ] Önce failing regression yaz: speedTestEntryIsAbsentFromAccountScreen; retiredSpeedSettingsAreClearedWithoutTouchingCredentialsOrTheme; retiredSpeedRegressionNeedsRemovalEvidence.
-- [ ] İlgili JVM/Compose ve Python testlerini çalıştır; kaldırılmamış ekran/tercihler için beklenen FAIL'i doğrula.
-- [ ] Kart, showSpeedTest durumu, dialog ve istemciyi kaldır; yalnız eski sunucu/policy/backend tercihlerini dar kapsamlı, idempotent IO temizliğiyle sil.
-- [ ] Yeni speed_test kaynaklarını ve mevcut kullanıcı belgelerindeki işlev iddialarını temizle. Gerçekte eklenmemiş bir LibreSpeed bağımlılığı/lisansı varmış gibi kaldırma işlemi yapma; çözülmüş release grafiğini kontrol et.
-- [ ] NDNS-061/062 tarihsel kayıtlarını koru; mevcut sürümden kaldırılma sebebi ve kaynak commit'ini kaydet. Yalnız bu kaldırılmış işlevin artık geçersiz regresyonlarını yokluk/temizleme testine bağla; genel “skip” veya kalite eşiği düşürme yolu ekleme.
-- [ ] DEX/manifest doğrulaması: eski LibreSpeedClient ve SpeedTestDialog yürütülebilir sınıfları yok; sentetik sunucu işareti yok; ayarlar veya giriş sırasında hız testi isteği 0.
-- [ ] Testler + localization + legal DRAFT + kalite defteri kontrolü geçsin; atomik commit ile mevcut PR #27'yi güncelle.
+- [x] Önce failing regression yaz: speedTestEntryIsAbsentFromAccountScreen; retiredSpeedSettingsAreClearedWithoutTouchingCredentialsOrTheme; retiredSpeedRegressionNeedsRemovalEvidence.
+- [x] İlgili JVM/Compose ve Python testlerini çalıştır; kaldırılmamış ekran/tercihler için beklenen FAIL'i doğrula.
+- [x] Kart, showSpeedTest durumu, dialog ve istemciyi kaldır; yalnız eski sunucu/policy/backend tercihlerini dar kapsamlı, idempotent IO temizliğiyle sil.
+- [x] Yeni speed_test kaynaklarını ve mevcut kullanıcı belgelerindeki işlev iddialarını temizle. Gerçekte eklenmemiş bir LibreSpeed bağımlılığı/lisansı varmış gibi kaldırma işlemi yapma; çözülmüş release grafiğini kontrol et.
+- [x] NDNS-061/062 tarihsel kayıtlarını koru; mevcut sürümden kaldırılma sebebi ve kaynak commit'ini kaydet. Yalnız bu kaldırılmış işlevin artık geçersiz regresyonlarını yokluk/temizleme testine bağla; genel “skip” veya kalite eşiği düşürme yolu ekleme.
+- [x] DEX/manifest doğrulaması: eski LibreSpeedClient ve SpeedTestDialog yürütülebilir sınıfları yok; sentetik sunucu işareti yok; ayarlar veya giriş sırasında hız testi isteği 0.
+- [x] Testler + localization + legal DRAFT + kalite defteri kontrolü geçsin; atomik commit ile mevcut PR #27'yi güncelle.
 
 ### P02 — Kurulum ve linked-IP doğruluğu; bilinmeyen API alanları
 
 **Files:** data/api/NextDnsApiService.kt; data/repository/NextDnsRepository.kt; data/model/SetupEndpoints.kt; ui/viewmodel/NextDnsViewModel.kt; ui/screens/SetupScreen.kt; docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md; NextDnsApiContractTest.kt, CancellableCallTest.kt, RepositoryRegressionTest.kt, AccountSettingsFlowTest.kt.
-**Interfaces:** linkCurrentIp(profileId: String): Boolean mevcut sınırı korunabilir; true yalnız aynı profil için doğrulanmış değişikliktir. Doğrulanamayan yanıt false/hata verir; yerel varsayım başarı olmaz.
+**Interfaces:** Kamuya açık sözleşmesi doğrulanmayan kurulum/linked-IP istekleri ve mutasyonları kaldırılır. Ekran, doğrulanmış DNS uçlarını profil kimliğinden yerel üretir; bağlama durumu doğrulanamıyorsa NextDNS paneline yönlendirir.
 
 - [ ] Failing testler: missingSetupIpv4IsUnavailable; linkedIpLabelUsesServiceBindingNotDiagnosticClientIp; successfulHttpWithoutConfirmedBindingDoesNotReportLinked; lateLinkedIpResponseCannotConfirmAnotherProfile.
-- [ ] Mevcut SetupDto.linkedIp.ip/servers/ddns/updateToken alanlarının resmî belge veya redakte yetkili test yanıtı kanıtını ayır. updateToken sırdır; log/ekran/raporda gösterme.
-- [ ] Doğrudan link-ip adresini ve kullanılmayan POST setup/linkedIp deklarasyonunu ayrı denetle. Toplulukta görülen URL biçimi yazma sözleşmesi sayılmaz; test hesabı dışında canlı bağlama çağrısı yapma.
-- [ ] Sözleşme doğrulanırsa adresin exact HTTPS host/path'ini ve gerekli token'ını güvenli oluştur; redirect ile anahtar/token aktarımını engelle; aynı profilin güvenilir okumasıyla sonucu doğrula. Doğrulanmazsa bağlama eylemini açıklamalı kullanılamaz yap ve sahte başarı yolunu kapat; yalnız doğrulanmış resmî panel bağlantısı sunulabilir.
-- [ ] Eksik IPv4 yanıtındaki sabit .234 fallback'ini kaldır. Mevcut ağ IP'si ve hizmette kayıtlı linked-IP ayrı etiketlensin; NextDNS tanısı hesap/profil mutasyonunun kanıtı sayılmasın.
-- [ ] Yaş doğrulama ve erken erişim: kamuya açık sözleşme yoksa UNVERIFIED/read-only sınırıyla kapat; varsayımsal toggle/PATCH ekleme. Mevcut sınırlı bilinmeyen-alan güvenlik testlerini koru.
+- [x] Mevcut SetupDto.linkedIp.ip/servers/ddns/updateToken alanlarının resmî belge veya redakte yetkili test yanıtı kanıtını ayır. updateToken sırdır; log/ekran/raporda gösterme.
+- [x] Doğrudan link-ip adresini ve kullanılmayan POST setup/linkedIp deklarasyonunu ayrı denetle. Toplulukta görülen URL biçimi yazma sözleşmesi sayılmaz; test hesabı dışında canlı bağlama çağrısı yapma.
+- [x] Sözleşme doğrulanırsa adresin exact HTTPS host/path'ini ve gerekli token'ını güvenli oluştur; redirect ile anahtar/token aktarımını engelle; aynı profilin güvenilir okumasıyla sonucu doğrula. Doğrulanmazsa bağlama eylemini açıklamalı kullanılamaz yap ve sahte başarı yolunu kapat; yalnız doğrulanmış resmî panel bağlantısı sunulabilir.
+- [x] Eksik IPv4 yanıtındaki sabit .234 fallback'ini kaldır. Mevcut ağ IP'si ve hizmette kayıtlı linked-IP ayrı etiketlensin; NextDNS tanısı hesap/profil mutasyonunun kanıtı sayılmasın.
+- [x] Yaş doğrulama ve erken erişim: kamuya açık sözleşme yoksa UNVERIFIED/read-only sınırıyla kapat; varsayımsal toggle/PATCH ekleme. Mevcut sınırlı bilinmeyen-alan güvenlik testlerini koru.
 - [ ] Aynı profil, yanlış profil, eksik token, semantik hata, 401/429, timeout, cancellation ve güvenilmeyen redirect regresyonları geçsin. Rota envanterini gerçek yeni sayıya göre güncelle.
 - [ ] PR #27 gerekli düzeltmelerini incele, tam CI ve etkilenen akışların kabulünden sonra normal main entegrasyonunu tamamla. Yayın kabulü sonraki aday kapısında kalır.
 

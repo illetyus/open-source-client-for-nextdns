@@ -382,8 +382,10 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
     val syncResult = repository.loadActiveProfileDataFromApi()
 
     assertFalse("Full sync must not call the undocumented /account route", requests.any { it.contains("/account") })
+    assertFalse("Full sync must not call undocumented setup routes", requests.any { it.contains("/setup") })
     assertEquals("Every sync result must correspond to a supported profile section", SyncSection.values().toSet(), syncResult.sectionResults.keys)
     assertFalse("Account connection state is local app state, not an API sync section", syncResult.sectionResults.keys.any { it.name == "ACCOUNT" })
+    assertFalse("Setup guidance is local and is not a documented sync section", syncResult.sectionResults.keys.any { it.name == "SETUP" })
   }
 
   @Test fun fullSyncPreservesCursorPagesAlreadyLoadedFromTheLogsScreen() = runBlocking {

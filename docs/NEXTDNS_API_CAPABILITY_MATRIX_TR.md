@@ -15,7 +15,9 @@ Rota kanıt sınıfı ayrıca tutulur: `DOCUMENTED` yol veya kullandığı genel
 | Yüzey ve sözleşme | Kod eşlemesi | Durum ve sınır |
 |---|---|---|
 | Profiller: `GET /profiles`, `GET /profiles/{id}`, `POST /profiles`, `PATCH /profiles/{id}`, `DELETE /profiles/{id}` | `NextDnsApiService`; `NextDnsRepository`; profil seçimi ve yönetim ekranları | `SUPPORTED_READ_WRITE`. Liste sayfaları cursor kullanır; oluşturma, yeniden adlandırma ve silme kullanıcı eylemiyle yapılır. |
-| Profil kurulumu: `GET /profiles/{id}/setup`; `POST /profiles/{id}/setup/linkedIp` | `getProfileSetup` repository tarafından çağrılır; `updateLinkedIp` Retrofit'te kullanılmayan bir deklarasyondur. Ekrandaki linked-IP işlemi ayrı `link-ip.nextdns.io` hostuna gider. | Her iki API rotası yayımlanmış belgede yok (`DECLARED_ONLY`). Okuma ve bağlı IP yazma sözleşmesi doğrulanmış hizmet desteği olarak sunulamaz; HTTP 2xx tek başına bağlamayı kanıtlamaz. |
+| Profil kurulumu ve bağlı IP | DoH/DoT uçları profil kimliğinden üretilir; IPv6 uçları doğrulanmış altı onaltılık karakterli profil kimliğinden türetilir. Profil başına IPv4 ve bağlı IP durumu [NextDNS kontrol panelinde](https://my.nextdns.io/) gösterilir. | Kamuya açık API belgesi kurulum veya linked-IP rotası tanımlamaz. İstemci bu rotaları çağırmaz ve linked-IP durumunu tanı IP'sinden çıkarsamaz. |
+
+Kurulum kılavuzundaki `45.90.28.0` değeri NextDNS'in genel Anycast/önyükleme adresidir; profile bağlı IPv4 değeri olarak sunulmaz. Profile özel IPv4 ve linked-IP durumu API'den okunamadığı için kontrol paneline yönlendirilir. Kaynak: [NextDNS setup](https://my.nextdns.io/).
 | Güvenlik: `GET/PATCH /profiles/{id}/security`; `/security/tlds` kataloğu ve profil TLD ekleme/silme uçları | Sınırlı Moshi `SecurityDto` adaptörü ve `SecurityUpdateRequest`; `NextDnsRepository`; güvenlik ekranı | Belgelenen alanlar ve TLD'ler `SUPPORTED_READ_WRITE`. Güvenlik yanıtı 512 KiB ile sınırlıdır. Yayımlanmamış en fazla 32 üst düzey alan bellek içi DTO'da yakalanır; en fazla 24 güvenli anahtar adı/tür gösterilir, yalnız Boolean değeri görünür. Diğer ham değerler arayüze, kalıcı depoya veya API isteğine girmez. Taşan alanlar sayı ve SHA-256 özetiyle eşitleme anlık görüntüsüne katılır. Bilinmeyen alanların anlamı/yazılabilirliği ve yaş doğrulama alanı `UNVERIFIED`; hiçbir dinamik PATCH yapılmaz. |
 | Gizlilik: `GET/PATCH /profiles/{id}/privacy`; blocklist/native katalog ve profil alt kaynakları | `PrivacyDto`, mutasyon DTO'ları, `NextDnsRepository`, Gizlilik ekranı | `SUPPORTED_READ_WRITE`; kataloglar cursor ile okunur, ekleme ve silme profil alt kaynaklarından yapılır. |
 | Ebeveyn denetimi: `/parentalControl/services`, `/parentalControl/categories`; profil için `GET/PATCH /parentalControl`, kategori/hizmet alt kaynakları | `ParentalControlDto`, katalog DTO'ları, `NextDnsRepository`, ekran | `SUPPORTED_READ_WRITE`. `blockBypass` yayımlanmış ebeveyn denetimi alanıdır; yaş doğrulamasını atlama ayarı olarak yorumlanmaz. |
@@ -86,8 +88,6 @@ Bu liste kod içindeki HTTP metotlarını ve servis-relative yolları aynen kayd
 | `GET` | `/profiles/{profileId}` |
 | `DELETE` | `/profiles/{profileId}` |
 | `PATCH` | `/profiles/{profileId}` |
-| `GET` | `/profiles/{profileId}/setup` |
-| `POST` | `/profiles/{profileId}/setup/linkedIp` |
 | `GET` | `/profiles/{profileId}/security` |
 | `GET` | `/security/tlds` |
 | `PATCH` | `/profiles/{profileId}/security` |
@@ -157,8 +157,6 @@ Bu liste kod içindeki HTTP metotlarını ve servis-relative yolları aynen kayd
 | `GET` | `/profiles/{profileId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
 | `DELETE` | `/profiles/{profileId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
 | `PATCH` | `/profiles/{profileId}` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
-| `GET` | `/profiles/{profileId}/setup` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
-| `POST` | `/profiles/{profileId}/setup/linkedIp` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
 | `GET` | `/profiles/{profileId}/security` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |
 | `GET` | `/security/tlds` | `DECLARED_ONLY` | `NextDnsApiService.kt` client declaration; route absent from [S1] |
 | `PATCH` | `/profiles/{profileId}/security` | `DOCUMENTED` | [S1: Profile; Nested objects and arrays] |

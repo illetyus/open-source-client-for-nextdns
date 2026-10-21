@@ -128,20 +128,6 @@ data class SecurityTldCatalogDto(
   val spamhaus: Int? = 0
 )
 
-data class SetupLinkedIpDto(
-  val ip: String? = null,
-  val servers: List<String>? = null,
-  val ddns: String? = null,
-  val updateToken: String? = null
-)
-
-data class SetupDto(
-  val ipv4: List<String>? = null,
-  val ipv6: List<String>? = null,
-  val linkedIp: SetupLinkedIpDto? = null,
-  val dnscrypt: String? = null
-)
-
 data class ParentalControlDto(
   val services: List<ParentalServiceDto>? = null,
   val categories: List<ParentalCategoryDto>? = null,
@@ -409,20 +395,6 @@ interface NextDnsApiService {
     @Path("profileId") profileId: String,
     @Body body: NameRequest
   ): Response<NextDnsMutationResponse>
-
-  // Setup
-  @GET("profiles/{profileId}/setup")
-  suspend fun getProfileSetup(
-    @Header("X-Api-Key") apiKey: String,
-    @Path("profileId") profileId: String
-  ): Response<SetupDto>
-
-  @POST("profiles/{profileId}/setup/linkedIp")
-  suspend fun updateLinkedIp(
-    @Header("X-Api-Key") apiKey: String,
-    @Path("profileId") profileId: String,
-    @Body body: Map<String, String?> = emptyMap()
-  ): Response<ResponseBody>
 
   // Security
   @GET("profiles/{profileId}/security")
@@ -960,20 +932,6 @@ object NextDnsNetworkClient {
       throw cancel
     } catch (_: Exception) {
       null
-    }
-  }
-
-  suspend fun linkIpAddress(profileId: String, callFactory: okhttp3.Call.Factory = client): Boolean {
-    return try {
-      val request = Request.Builder()
-        .url("https://link-ip.nextdns.io/$profileId")
-        .header("Accept", "*/*")
-        .build()
-      callFactory.newCall(request).withCancellableResponse { it.isSuccessful }
-    } catch (cancel: kotlinx.coroutines.CancellationException) {
-      throw cancel
-    } catch (_: Exception) {
-      false
     }
   }
 

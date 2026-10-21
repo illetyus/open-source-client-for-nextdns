@@ -46,7 +46,7 @@ enum class NavTab(val titleResource: Int, val iconName: String) {
 }
 
 private fun NavTab.toSyncSection(): SyncSection? = when (this) {
-  NavTab.SETUP -> SyncSection.SETUP
+  NavTab.SETUP -> null
   NavTab.SECURITY -> SyncSection.SECURITY
   NavTab.PRIVACY -> SyncSection.PRIVACY
   NavTab.PARENTAL -> SyncSection.PARENTAL
@@ -127,8 +127,6 @@ class NextDnsViewModel(
   val availableParentalCategoriesCatalog = repository.availableParentalCategoriesCatalog
   val availableTldsCatalog = repository.availableTldsCatalog
   val tldCatalogLoadState = repository.tldCatalogLoadState
-  val profileSetup = repository.profileSetup
-
   private val _isAnalyticsLoading = MutableStateFlow(false)
   val isAnalyticsLoading = _isAnalyticsLoading.asStateFlow()
 
@@ -690,17 +688,6 @@ class NextDnsViewModel(
       }
     } finally {
       _isDiagnosticRunning.value = false
-    }
-  }
-
-  fun linkIpAddress(profileId: String) {
-    viewModelScope.launch {
-      val success = repository.linkCurrentIp(profileId)
-      if (success) {
-        showMessage(AppStrings.get(R.string.ui_3bf6a89441))
-      } else {
-        showMessage(AppStrings.get(R.string.ui_e3e2b2c85a), isError = true)
-      }
     }
   }
 

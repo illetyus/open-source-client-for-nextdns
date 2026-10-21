@@ -215,7 +215,6 @@ class NextDnsRepository(
     refreshRequests.clear()
     fullSyncRequest = null
     _isSyncing.value = false
-    _profileSetup.value = SetupDto()
     _testResult.value = DiagnosticTestResult()
     diagnosticRequest = null
   }
@@ -317,7 +316,6 @@ class NextDnsRepository(
     try {
       success = withContext(RefreshContext(section, token)) {
         when (section) {
-          SyncSection.SETUP -> applySetupFromApi(key, profileId)
           SyncSection.SECURITY -> applySecuritySettingsFromApi(key, profileId)
           SyncSection.PRIVACY -> applyPrivacySettingsFromApi(key, profileId)
           SyncSection.PARENTAL -> applyParentalSettingsFromApi(key, profileId)
@@ -431,9 +429,6 @@ class NextDnsRepository(
   val availableTldsCatalog = _availableTldsCatalog.asStateFlow()
   private val _tldCatalogLoadState = MutableStateFlow(TldCatalogLoadState.LOADING)
   val tldCatalogLoadState = _tldCatalogLoadState.asStateFlow()
-
-  private val _profileSetup = MutableStateFlow(SetupDto())
-  val profileSetup = _profileSetup.asStateFlow()
 
   init {
     resumeAfterTermsAccepted()
@@ -645,12 +640,6 @@ class NextDnsRepository(
     }
   }
 
-  suspend fun linkCurrentIp(profileId: String): Boolean = withSessionContext(expectedProfile = profileId) {
-    val ok = NextDnsNetworkClient.linkIpAddress(profileId)
-    runDiagnosticTest()
-    ok
-  }
-
   // =========================================================================
   // Authentication & Profile Fetching
   // =========================================================================
@@ -825,18 +814,6 @@ class NextDnsRepository(
           _isSyncing.value = false
         }
       }
-    }
-  }
-
-  private suspend fun applySetupFromApi(key: String, profileId: String): Boolean {
-    val setupResp = safeApiCall("getProfileSetup") {
-      apiService.getProfileSetup(key, profileId)
-    } ?: return false
-    if (!setupResp.isSuccessful) return false
-    val d = setupResp.body() ?: return false
-    return commitCurrentSession {
-      _profileSetup.value = d
-      true
     }
   }
 
@@ -1331,7 +1308,6 @@ class NextDnsRepository(
       _logs.value = emptyList()
       nextLogsCursor = null
       _logsPaginationState.value = LogsPaginationState()
-      _profileSetup.value = SetupDto()
       _securitySettings.value = SecuritySettings()
       _privacySettings.value = PrivacySettings()
       _parentalControlSettings.value = ParentalControlSettings()

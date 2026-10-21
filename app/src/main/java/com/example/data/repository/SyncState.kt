@@ -2,7 +2,6 @@ package com.example.data.repository
 
 /** Remote profile sections with supported NextDNS endpoints; credentials and connection diagnostics stay local. */
 enum class SyncSection {
-  SETUP,
   SECURITY,
   PRIVACY,
   PARENTAL,
