@@ -95,6 +95,15 @@ class QualityRegressionEvidenceTest(unittest.TestCase):
             set(required),
         )
 
+    def test_device_inventory_pagination_regressions_are_required(self):
+        repository = "com.example.audit.RepositoryAuditTest"
+        required = quality.REQUIRED["NDNS-073"]
+        self.assertEqual({
+            (repository, "analyticsDevicePaginationIncludesEveryFilterableDevice"),
+            (repository, "repeatedAnalyticsDeviceCursorKeepsTheLastCompleteInventory"),
+            (repository, "analyticsDevicePageLimitKeepsTheLastCompleteInventory"),
+        }, set(required))
+
 
 if __name__ == "__main__":
     unittest.main()

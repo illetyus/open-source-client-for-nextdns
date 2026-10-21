@@ -1,5 +1,6 @@
 package com.example.audit
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.*
 import androidx.test.core.app.ApplicationProvider
 import com.example.NextDnsApp
@@ -10,6 +11,10 @@ import com.example.data.api.UnverifiedSecurityField
 import com.example.data.model.DiagnosticTestResult
 import com.example.data.model.DnsLogEntry
 import com.example.data.model.DeviceMetric
+import com.example.data.model.LogsHistoryFilter
+import com.example.data.model.LogsHistoryPreset
+import com.example.data.model.LogsSort
+import com.example.data.model.LogsTimeWindow
 import com.example.data.model.NextDnsProfile
 import com.example.data.repository.LogsPaginationState
 import com.example.i18n.AppStrings
@@ -20,6 +25,7 @@ import com.example.ui.screens.DenylistScreen
 import com.example.ui.screens.EndpointsSection
 import com.example.ui.screens.LinkedIpSection
 import com.example.ui.screens.LogsHeaderControls
+import com.example.ui.screens.LogsHistoryControls
 import com.example.ui.screens.LogItemRow
 import com.example.ui.screens.LogsPaginationFooter
 import com.example.ui.screens.UnverifiedSecurityFieldsSection
@@ -165,6 +171,74 @@ class UiAuditTest : AuditFixture() {
 
     rule.onNodeWithTag("logs_device_option_device-a").performClick()
     rule.runOnIdle { org.junit.Assert.assertEquals("device-a", selected) }
+  }
+
+  @Test fun logHistoryControlsSelectDateRangeAndSortOrder() {
+    english()
+    val selected = mutableStateOf(LogsHistoryFilter())
+    rule.setContent {
+      AppTheme {
+        LogsHistoryControls(
+          selectedFilter = selected.value,
+          onSelectFilter = { selected.value = it }
+        )
+      }
+    }
+
+    rule.onNodeWithTag("logs_history_range_button").performClick()
+    rule.onNodeWithTag("logs_history_option_24h").performClick()
+    rule.runOnIdle {
+      org.junit.Assert.assertEquals(LogsHistoryPreset.LAST_24_HOURS, selected.value.preset)
+      org.junit.Assert.assertEquals(24L, java.time.Duration.between(
+        selected.value.window.fromInclusive!!,
+        selected.value.window.toExclusive!!
+      ).toHours())
+    }
+
+    rule.onNodeWithTag("logs_history_sort_toggle").performClick()
+    rule.runOnIdle { org.junit.Assert.assertEquals(LogsSort.OLDEST_FIRST, selected.value.sort) }
+  }
+
+  @Test fun customHistoryRangeRequiresBothDatesBeforeApply() {
+    english()
+    val selected = mutableStateOf(LogsHistoryFilter())
+    rule.setContent {
+      AppTheme {
+        LogsHistoryControls(
+          selectedFilter = selected.value,
+          onSelectFilter = { selected.value = it }
+        )
+      }
+    }
+
+    rule.onNodeWithTag("logs_history_range_button").performClick()
+    rule.onNodeWithTag("logs_history_option_custom").performClick()
+    rule.onNodeWithText(AppStrings.get(R.string.logs_history_choose_range)).assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.logs_history_apply)).assertIsNotEnabled()
+    rule.runOnIdle { org.junit.Assert.assertEquals(LogsHistoryPreset.AVAILABLE, selected.value.preset) }
+  }
+
+  @Test fun selectedCustomHistoryRangeIsVisibleInTheRangeButton() {
+    english()
+    val zone = java.time.ZoneId.systemDefault()
+    val selected = LogsHistoryFilter(
+      window = LogsTimeWindow.fromLocalDates(
+        java.time.LocalDate.parse("2026-02-01"),
+        java.time.LocalDate.parse("2026-02-03"),
+        zone
+      )!!,
+      preset = LogsHistoryPreset.CUSTOM
+    )
+    rule.setContent { AppTheme { LogsHistoryControls(selectedFilter = selected, onSelectFilter = {}) } }
+
+    val formatter = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
+      .withLocale(java.util.Locale.forLanguageTag("en"))
+    val expected = AppStrings.get(
+      R.string.logs_history_selected_range,
+      formatter.format(selected.window.fromInclusive!!.atZone(zone).toLocalDate()),
+      formatter.format(selected.window.toExclusive!!.minusNanos(1).atZone(zone).toLocalDate())
+    )
+    rule.onNodeWithTag("logs_history_range_button").assertTextContains(expected)
   }
 
   @Test fun olderLogActionIsVisibleAndLoadsTheNextPage() {

@@ -14,6 +14,9 @@ import com.example.data.api.NextDnsNetworkClient
 import com.example.data.api.NextDnsTestService
 import com.example.data.legal.LegalAcceptanceStore
 import com.example.data.local.NextDnsPreferences
+import com.example.data.model.LogsHistoryFilter
+import com.example.data.model.LogsSort
+import com.example.data.model.LogsTimeWindow
 import com.example.data.model.NextDnsProfile
 import com.example.data.repository.NextDnsRepository
 import com.example.data.security.ApiKeyProtector
@@ -22,6 +25,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okhttp3.mockwebserver.*
 import org.junit.*
 import org.junit.Assert.*
@@ -37,6 +45,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuditMainDispatcherRule : TestRule {
@@ -68,9 +77,21 @@ abstract class AuditFixture {
   protected lateinit var repository: NextDnsRepository
   protected lateinit var preferences: NextDnsPreferences
   protected val requests = CopyOnWriteArrayList<String>()
+  protected val streamRequests = CopyOnWriteArrayList<String>()
   protected val gates = mutableListOf<CountDownLatch>()
   @Volatile protected var response: (RecordedRequest) -> MockResponse = { json("{}", 500) }
   protected fun json(body: String, code: Int = 200) = MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
+  private val testStreamClient = OkHttpClient.Builder().addInterceptor { chain ->
+    val request = chain.request()
+    streamRequests += request.url.encodedPath
+    Response.Builder()
+      .request(request)
+      .protocol(Protocol.HTTP_1_1)
+      .code(200)
+      .message("OK")
+      .body(ByteArray(0).toResponseBody("text/event-stream".toMediaType()))
+      .build()
+  }.build()
 
   @Before fun prepareDisposableFixture() {
     val context = ApplicationProvider.getApplicationContext<Context>()
@@ -97,7 +118,7 @@ abstract class AuditFixture {
     repository = NextDnsRepository(preferences,
       apiService = retrofit.create(NextDnsApiService::class.java),
       diagnosticService = retrofit.create(NextDnsTestService::class.java),
-      diagnosticProbe = { null }, backgroundWorkEnabled = false)
+      diagnosticProbe = { null }, streamClient = testStreamClient, backgroundWorkEnabled = false)
   }
 
   @After fun cleanDisposableFixture() {
@@ -121,6 +142,197 @@ class RepositoryAuditTest : AuditFixture() {
     empty = true
     assertTrue(repository.refreshLogsFromApi())
     assertTrue("Authoritative empty response must not retain remotely deleted log history", repository.logs.value.isEmpty())
+  }
+
+  @Test fun invalidHistoryRangeIsRejectedWithoutNetworkRequest() = runBlocking {
+    val invalid = LogsHistoryFilter(
+      window = LogsTimeWindow(
+        fromInclusive = Instant.parse("2026-05-02T00:00:00Z"),
+        toExclusive = Instant.parse("2026-05-01T00:00:00Z")
+      )
+    )
+
+    assertFalse(repository.setLogsHistoryFilter(invalid))
+    assertTrue("An invalid range must not issue a request", requests.isEmpty())
+  }
+
+  @Test fun historyFilterResetsCursorAndRejectsLatePage() = runBlocking {
+    val pageStarted = CountDownLatch(1)
+    val releasePage = CountDownLatch(1).also { gates += it }
+    val requestedRanges = CopyOnWriteArrayList<List<String?>>()
+    response = { request ->
+      val url = request.requestUrl!!
+      val cursor = url.queryParameter("cursor")
+      val from = url.queryParameter("from")
+      if (from != null) {
+        requestedRanges += listOf(from, url.queryParameter("to"), url.queryParameter("sort"))
+      }
+      when {
+        cursor == "old-cursor" -> {
+          pageStarted.countDown()
+          check(releasePage.await(10, TimeUnit.SECONDS))
+          json("""{"data":[{"timestamp":1735689600000,"domain":"obsolete-page.example","status":"default"}]}""")
+        }
+        cursor == "new-cursor" -> json("""{"data":[{"timestamp":1735776000000,"domain":"next-page.example","status":"default"}]}""")
+        from != null -> json("""{"data":[{"timestamp":1735689600000,"domain":"filtered.example","status":"default"}],"meta":{"pagination":{"cursor":"new-cursor"}}}""")
+        else -> json("""{"data":[{"timestamp":1735689600000,"domain":"initial.example","status":"default"}],"meta":{"pagination":{"cursor":"old-cursor"}}}""")
+      }
+    }
+
+    assertTrue(repository.refreshLogsFromApi())
+    val obsoletePage = async(Dispatchers.IO) { repository.loadMoreLogsFromApi() }
+    assertTrue(pageStarted.await(10, TimeUnit.SECONDS))
+
+    val filter = LogsHistoryFilter(
+      window = LogsTimeWindow(
+        fromInclusive = Instant.parse("2026-01-01T00:00:00Z"),
+        toExclusive = Instant.parse("2026-02-01T00:00:00Z")
+      ),
+      sort = LogsSort.OLDEST_FIRST
+    )
+    assertTrue(repository.setLogsHistoryFilter(filter))
+    assertEquals(listOf("filtered.example"), repository.logs.value.map { it.domain })
+    assertEquals(listOf("2026-01-01T00:00:00Z", "2026-02-01T00:00:00Z", "asc"), requestedRanges.last())
+
+    releasePage.countDown()
+    obsoletePage.await()
+    assertEquals(listOf("filtered.example"), repository.logs.value.map { it.domain })
+    assertTrue(repository.loadMoreLogsFromApi())
+    assertEquals(listOf("filtered.example", "next-page.example"), repository.logs.value.map { it.domain })
+    assertTrue(requests.any { it.contains("cursor=old-cursor") })
+    assertTrue(requests.any { it.contains("cursor=new-cursor") })
+  }
+
+  @Test fun ascendingHistoryDoesNotMixLiveSse() = runBlocking {
+    response = { json("""{"data":[]}""") }
+    assertTrue(repository.setLogsHistoryFilter(
+      LogsHistoryFilter(sort = LogsSort.OLDEST_FIRST)
+    ))
+
+    repository.setLiveStreaming(true)
+    delay(100)
+
+    assertFalse(repository.isLiveStreaming.value)
+    assertFalse("Ascending history cannot open a live SSE stream", streamRequests.any { it.endsWith("/logs/stream") })
+  }
+
+  @Test fun previouslyActiveLiveStreamResumesWhenReturningToNewestAvailableHistory() = runBlocking {
+    response = { json("""{"data":[]}""") }
+    try {
+      repository.setLiveStreaming(true)
+      withTimeout(2_000) {
+        while (streamRequests.none { it.endsWith("/logs/stream") }) delay(10)
+      }
+      assertTrue(streamRequests.any { it.endsWith("/logs/stream") })
+
+      val bounded = LogsHistoryFilter(
+        window = LogsTimeWindow(
+          fromInclusive = Instant.parse("2026-01-01T00:00:00Z"),
+          toExclusive = Instant.parse("2026-02-01T00:00:00Z")
+        )
+      )
+      assertTrue(repository.setLogsHistoryFilter(bounded))
+      assertFalse(repository.isLiveStreaming.value)
+      val streamsAfterFilter = streamRequests.count { it.endsWith("/logs/stream") }
+
+      assertTrue(repository.setLogsHistoryFilter(LogsHistoryFilter()))
+      assertTrue(repository.isLiveStreaming.value)
+      withTimeout(2_000) {
+        while (streamRequests.count { it.endsWith("/logs/stream") } <= streamsAfterFilter) delay(10)
+      }
+      assertTrue(streamRequests.count { it.endsWith("/logs/stream") } > streamsAfterFilter)
+    } finally {
+      repository.stopLogsStream()
+    }
+  }
+
+  @Test fun analyticsDevicePaginationIncludesEveryFilterableDevice() = runBlocking {
+    response = { request ->
+      val url = request.requestUrl!!
+      if (url.encodedPath.endsWith("/analytics/devices") &&
+        url.queryParameter("limit") == "500" && url.queryParameter("from") == null) {
+        when (url.queryParameter("cursor")) {
+          null -> json("""{"data":[{"id":"PHONE_A","name":"Annem","queries":10}],"meta":{"pagination":{"cursor":"devices-page-2"}}}""")
+          "devices-page-2" -> json("""{"data":[{"id":"__UNIDENTIFIED__","queries":4}],"meta":{"pagination":{"cursor":null}}}""")
+          else -> json("""{"data":[]}""")
+        }
+      } else {
+        json("""{"data":[]}""")
+      }
+    }
+
+    repository.loadActiveProfileDataFromApi()
+
+    assertEquals(setOf("PHONE_A", "__UNIDENTIFIED__"), repository.logDevices.value.map { it.id }.toSet())
+    assertTrue(requests.any { it.contains("/analytics/devices") && it.contains("limit=500") })
+    assertTrue(requests.any { it.contains("cursor=devices-page-2") })
+
+    response = { request ->
+      val url = request.requestUrl!!
+      if (url.encodedPath.endsWith("/logs") && url.queryParameter("device") == "__UNIDENTIFIED__") {
+        json("""{"data":[{"timestamp":1735689600000,"domain":"unidentified.synthetic.example","status":"blocked"}]}""")
+      } else json("""{"data":[]}""")
+    }
+    assertTrue(repository.setLogsDeviceFilter("__UNIDENTIFIED__"))
+    assertEquals("unidentified.synthetic.example", repository.logs.value.single().domain)
+    assertTrue(requests.any { it.contains("device=__UNIDENTIFIED__") })
+  }
+
+  @Test fun repeatedAnalyticsDeviceCursorKeepsTheLastCompleteInventory() = runBlocking {
+    response = { request ->
+      val url = request.requestUrl!!
+      if (url.encodedPath.endsWith("/analytics/devices") && url.queryParameter("limit") == "500" &&
+        url.queryParameter("from") == null) {
+        json("""{"data":[{"id":"COMPLETE_DEVICE","name":"Complete","queries":1}],"meta":{"pagination":{"cursor":null}}}""")
+      } else {
+        json("""{"data":[]}""")
+      }
+    }
+    repository.loadActiveProfileDataFromApi()
+    response = { request ->
+      val url = request.requestUrl!!
+      if (url.encodedPath.endsWith("/analytics/devices") && url.queryParameter("limit") == "500" &&
+        url.queryParameter("from") == null) {
+        when (url.queryParameter("cursor")) {
+          null -> json("""{"data":[{"id":"PHONE_A","name":"Annem","queries":10}],"meta":{"pagination":{"cursor":"repeat"}}}""")
+          "repeat" -> json("""{"data":[{"id":"PHONE_B","name":"Other","queries":5}],"meta":{"pagination":{"cursor":"repeat"}}}""")
+          else -> json("""{"data":[]}""")
+        }
+      } else {
+        json("""{"data":[]}""")
+      }
+    }
+
+    repository.loadActiveProfileDataFromApi()
+
+    assertEquals(setOf("COMPLETE_DEVICE"), repository.logDevices.value.map { it.id }.toSet())
+  }
+
+  @Test fun analyticsDevicePageLimitKeepsTheLastCompleteInventory() = runBlocking {
+    response = { request ->
+      if (request.requestUrl!!.encodedPath.endsWith("/analytics/devices")) {
+        json("""{"data":[{"id":"COMPLETE_DEVICE","name":"Complete","queries":1}]}""")
+      } else json("""{"data":[]}""")
+    }
+    repository.loadActiveProfileDataFromApi()
+
+    val pageRequests = CopyOnWriteArrayList<String?>()
+    response = { request ->
+      val url = request.requestUrl!!
+      if (url.encodedPath.endsWith("/analytics/devices") && url.queryParameter("limit") == "500" &&
+        url.queryParameter("from") == null) {
+        pageRequests += url.queryParameter("cursor")
+        val page = pageRequests.size
+        json("""{"data":[{"id":"PARTIAL_$page","queries":$page}],"meta":{"pagination":{"cursor":"cursor-$page"}}}""")
+      } else json("""{"data":[]}""")
+    }
+
+    repository.loadActiveProfileDataFromApi()
+
+    assertEquals(10, pageRequests.size)
+    assertEquals(null, pageRequests.first())
+    assertEquals("cursor-9", pageRequests.last())
+    assertEquals(setOf("COMPLETE_DEVICE"), repository.logDevices.value.map { it.id }.toSet())
   }
 
   @Test fun inFlightLogRefreshCannotRestoreHistoryAfterSuccessfulClear() = runBlocking {

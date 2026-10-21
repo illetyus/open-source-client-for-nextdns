@@ -79,6 +79,7 @@ class NextDnsRepository(
   private var streamJob: Job? = null
   private var analyticsPollingJob: Job? = null
   private val mutationCoordinator = SectionMutationCoordinator()
+  private var resumeLogsStreamingAfterHistoryFilter = false
   @Volatile private var logsStreamSeedId: String? = null
   @Volatile private var nextLogsCursor: String? = null
 
@@ -125,6 +126,8 @@ class NextDnsRepository(
   val logsStatusFilter = _logsStatusFilter.asStateFlow()
   private val _logsSearchFilter = MutableStateFlow<String?>(null)
   val logsSearchFilter = _logsSearchFilter.asStateFlow()
+  private val _logsHistoryFilter = MutableStateFlow(LogsHistoryFilter())
+  val logsHistoryFilter = _logsHistoryFilter.asStateFlow()
 
   private val _analytics = MutableStateFlow(AnalyticsSummary())
   val analytics = _analytics.asStateFlow()
@@ -159,15 +162,18 @@ class NextDnsRepository(
   }
 
   private fun rememberLogDevice(deviceId: String?, deviceName: String?, deviceModel: String? = null) {
-    val id = deviceId?.takeIf { it.isNotBlank() && it != NEXTDNS_UNIDENTIFIED_DEVICE_ID } ?: return
+    val id = deviceId?.takeIf { it.isNotBlank() } ?: return
+    val isUnidentified = id == NEXTDNS_UNIDENTIFIED_DEVICE_ID
     val name = DeviceLabelResolver.resolve(
       deviceName,
       deviceModel,
       id,
       AppStrings.get(R.string.device_unidentified)
     )
-    _knownDeviceNameToId[name] = id
-    _knownDeviceIdToName[id] = name
+    if (!isUnidentified) {
+      _knownDeviceNameToId[name] = id
+      _knownDeviceIdToName[id] = name
+    }
     _logDevices.update { current ->
       (current.filterNot { it.id == id } + DeviceMetric(id = id, name = name, model = deviceModel.orEmpty()))
         .sortedBy { it.name.lowercase(Locale.ROOT) }
@@ -198,6 +204,9 @@ class NextDnsRepository(
     nextLogsCursor = null
     _logsDeviceFilter.value = null
     _logsStatusFilter.value = null
+    _logsSearchFilter.value = null
+    _logsHistoryFilter.value = LogsHistoryFilter()
+    resumeLogsStreamingAfterHistoryFilter = false
     _logsPaginationState.value = LogsPaginationState()
     _unverifiedSecurityFields.value = SecurityFieldDiscovery()
     analyticsRequest = null
@@ -476,16 +485,20 @@ class NextDnsRepository(
 
   private suspend fun <T> fetchAllPages(
     operationName: String,
+    maxPages: Int = 100,
     request: suspend (cursor: String?) -> Response<NextDnsApiResponse<List<T>>>
   ): List<T>? {
     val items = mutableListOf<T>()
     val seenCursors = mutableSetOf<String>()
     var cursor: String? = null
+    var pageCount = 0
 
     do {
+      if (pageCount >= maxPages) return null
       val response = safeApiCall(operationName) {
         request(cursor)
       } ?: return null
+      pageCount++
 
       val body = response.body() ?: return null
       if (!response.isSuccessful || body.hasApiErrors()) return null
@@ -493,10 +506,11 @@ class NextDnsRepository(
       items += body.data.orEmpty()
 
       val nextCursor = body.meta?.pagination?.cursor
-      cursor = if (!nextCursor.isNullOrBlank() && seenCursors.add(nextCursor)) {
-        nextCursor
+      if (nextCursor.isNullOrBlank()) {
+        cursor = null
       } else {
-        null
+        if (!seenCursors.add(nextCursor)) return null
+        cursor = nextCursor
       }
     } while (cursor != null)
 
@@ -1155,9 +1169,9 @@ class NextDnsRepository(
   }
 
   private suspend fun applyDevicesAnalyticsFromApi(key: String, profileId: String): Boolean {
-    val devResp = safeApiCall("getAnalyticsDevices") { apiService.getAnalyticsDevices(key, profileId) } ?: return false
-    if (!devResp.isSuccessful) return false
-    val dtoList = devResp.body()?.data ?: return false
+    val dtoList = fetchAllPages("getAnalyticsDevices", maxPages = 10) { cursor ->
+      apiService.getAnalyticsDevices(key, profileId, limit = 500, cursor = cursor)
+    } ?: return false
 
     commitCurrentSession {
       val devItems = dtoList.map {
@@ -1961,6 +1975,7 @@ class NextDnsRepository(
       return@withSessionContext false
     }
     val wasStreaming = _isLiveStreaming.value
+    val shouldResumeStreaming = wasStreaming || resumeLogsStreamingAfterHistoryFilter
     val changed = commitCurrentSession {
       if (!updateFilter()) return@commitCurrentSession false
       // Stop the stream using the previous query before awaiting the new REST snapshot.
@@ -1977,7 +1992,13 @@ class NextDnsRepository(
     }
     if (!changed) return@withSessionContext true
     val refreshed = refreshLogsFromApi()
-    if (wasStreaming) startLogsStream()
+    if (_logsHistoryFilter.value.supportsLiveStreaming && shouldResumeStreaming) {
+      resumeLogsStreamingAfterHistoryFilter = false
+      startLogsStream()
+    } else if (!_logsHistoryFilter.value.supportsLiveStreaming) {
+      resumeLogsStreamingAfterHistoryFilter = shouldResumeStreaming
+      _isLiveStreaming.value = false
+    }
     refreshed
   }
 
@@ -2007,6 +2028,17 @@ class NextDnsRepository(
     }
   }
 
+  suspend fun setLogsHistoryFilter(filter: LogsHistoryFilter): Boolean {
+    if (!filter.isValid()) return false
+    return refreshAfterLogFilterChange {
+      if (_logsHistoryFilter.value == filter) false
+      else {
+        _logsHistoryFilter.value = filter
+        true
+      }
+    }
+  }
+
   suspend fun refreshLogsFromApi(limit: Int = 100): Boolean = withSessionContext {
     val key = _apiKey.value
     val pid = _activeProfileId.value
@@ -2015,6 +2047,7 @@ class NextDnsRepository(
     val deviceFilter = _logsDeviceFilter.value
     val statusFilter = _logsStatusFilter.value
     val searchFilter = _logsSearchFilter.value
+    val historyFilter = _logsHistoryFilter.value
     val token = requestSequence.incrementAndGet()
     val before = commitCurrentSession {
       logsRefreshRequest = token
@@ -2023,7 +2056,11 @@ class NextDnsRepository(
       Triple(_logs.value.toList(), logsStreamSeedId, logsSnapshotGeneration)
     }
     val logsResp = safeApiCall("refreshLogsFromApi") {
-      apiService.getLogs(key, pid, limit = limit, search = searchFilter, device = deviceFilter, status = statusFilter, raw = 1)
+      apiService.getLogs(
+        key, pid, limit = limit, search = searchFilter, device = deviceFilter, status = statusFilter,
+        from = historyFilter.window.fromQueryValue(), to = historyFilter.window.toQueryValue(),
+        sort = historyFilter.sort.apiValue, raw = 1
+      )
     } ?: return@withSessionContext failLogsPageRequest(token)
 
     val body = logsResp.body()
@@ -2034,7 +2071,7 @@ class NextDnsRepository(
     commitCurrentSession {
       if (logsRefreshRequest != token || logsSnapshotGeneration != before.third ||
         _logsDeviceFilter.value != deviceFilter || _logsStatusFilter.value != statusFilter ||
-        _logsSearchFilter.value != searchFilter) return@commitCurrentSession false
+        _logsSearchFilter.value != searchFilter || _logsHistoryFilter.value != historyFilter) return@commitCurrentSession false
       // A stream may have advanced while this authoritative snapshot was in flight.
       if (logsStreamSeedId == before.second) logsStreamSeedId = body.meta?.stream?.id
       logsRefreshRequest = null
@@ -2069,6 +2106,7 @@ class NextDnsRepository(
     val deviceFilter = _logsDeviceFilter.value
     val statusFilter = _logsStatusFilter.value
     val searchFilter = _logsSearchFilter.value
+    val historyFilter = _logsHistoryFilter.value
     val token = requestSequence.incrementAndGet()
     val before = commitCurrentSession {
       if (_logsPaginationState.value.isLoading) return@commitCurrentSession null
@@ -2079,7 +2117,11 @@ class NextDnsRepository(
     } ?: return@withSessionContext false
 
     val logsResp = safeApiCall("loadMoreLogsFromApi") {
-      apiService.getLogs(key, pid, limit = limit, search = searchFilter, device = deviceFilter, status = statusFilter, cursor = cursor, raw = 1)
+      apiService.getLogs(
+        key, pid, limit = limit, search = searchFilter, device = deviceFilter, status = statusFilter,
+        from = historyFilter.window.fromQueryValue(), to = historyFilter.window.toQueryValue(),
+        sort = historyFilter.sort.apiValue, cursor = cursor, raw = 1
+      )
     } ?: return@withSessionContext failLogsPageRequest(token)
 
     val body = logsResp.body()
@@ -2090,7 +2132,7 @@ class NextDnsRepository(
     commitCurrentSession {
       if (logsRefreshRequest != token || logsSnapshotGeneration != before.second ||
         _logsDeviceFilter.value != deviceFilter || _logsStatusFilter.value != statusFilter ||
-        _logsSearchFilter.value != searchFilter) return@commitCurrentSession false
+        _logsSearchFilter.value != searchFilter || _logsHistoryFilter.value != historyFilter) return@commitCurrentSession false
       val responseCursor = body.meta?.pagination?.cursor?.takeIf { it != cursor }
       logsRefreshRequest = null
       val intervening = _logs.value.filter { current -> before.first.none { it.id == current.id } }
@@ -2122,6 +2164,13 @@ class NextDnsRepository(
   }
 
   fun setLiveStreaming(enabled: Boolean) {
+    if (enabled && !_logsHistoryFilter.value.supportsLiveStreaming) {
+      resumeLogsStreamingAfterHistoryFilter = true
+      stopLogsStream()
+      _isLiveStreaming.value = false
+      return
+    }
+    resumeLogsStreamingAfterHistoryFilter = enabled
     _isLiveStreaming.value = enabled
     if (enabled) {
       startLogsStream()
@@ -2156,6 +2205,12 @@ class NextDnsRepository(
   }
 
   fun startLogsStream() {
+    if (!_logsHistoryFilter.value.supportsLiveStreaming) {
+      stopLogsStream()
+      _isLiveStreaming.value = false
+      return
+    }
+    resumeLogsStreamingAfterHistoryFilter = true
     val snapshot = captureSession()
     val key = snapshot.apiKey
     val pid = snapshot.profileId
@@ -2414,7 +2469,6 @@ class NextDnsRepository(
       val name = DeviceLabelResolver.resolve(
         it.name, it.model, id, AppStrings.get(R.string.device_unidentified)
       )
-      rememberLogDevice(id, name, it.model)
       DeviceMetric(id = id, name = name, queries = it.queries ?: 0L, model = it.model.orEmpty())
     } ?: _analytics.value.topDevices
     updateKnownDevices(devices.map { it.name })

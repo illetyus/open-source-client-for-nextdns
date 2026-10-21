@@ -636,4 +636,15 @@
     <string name="setup_detected_public_ip">Algılanan genel IP</string>
     <string name="setup_open_dashboard">Bağlı IP\'yi NextDNS\'te yönet</string>
     <string name="setup_ipv4_dashboard_note">Profile özel IPv4 DNS adresleri NextDNS kontrol panelinde gösterilir.</string>
+    <string name="logs_history_all">Mevcut günlük geçmişi</string>
+    <string name="logs_history_last_24_hours">Son 24 saat</string>
+    <string name="logs_history_last_7_days">Son 7 gün</string>
+    <string name="logs_history_custom">Özel tarih aralığı</string>
+    <string name="logs_history_selected_range">%1$s – %2$s</string>
+    <string name="logs_history_choose_range">Tarih aralığı seç</string>
+    <string name="logs_history_apply">Uygula</string>
+    <string name="logs_history_cancel">İptal</string>
+    <string name="logs_history_live_unavailable">Canlı güncellemeler yalnızca filtresiz ve yeniden eskiye sıralı günlük görünümünde kullanılabilir.</string>
+    <string name="logs_sort_newest">Yeniden eskiye</string>
+    <string name="logs_sort_oldest">Eskiden yeniye</string>
 </resources>
