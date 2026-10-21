@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -66,8 +67,8 @@ class AnalyticsSeriesChartTest {
     }
 
     rule.onNodeWithTag("analytics_series_line_chart").assertExists()
-    rule.onNodeWithText(AppStrings.get(R.string.analytics_series_no_value)).assertIsDisplayed()
-    rule.onNodeWithTag("analytics_series_selected_point").assertExists()
+    rule.onNodeWithTag("analytics_series_selected_point")
+      .assertTextContains(AppStrings.get(R.string.analytics_series_no_value), substring = true)
     rule.onNodeWithTag("analytics_series_rows").assertExists()
   }
 
