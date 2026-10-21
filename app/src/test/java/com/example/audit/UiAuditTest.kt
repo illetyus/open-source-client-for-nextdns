@@ -14,6 +14,7 @@ import com.example.data.model.DeviceMetric
 import com.example.data.model.LogsHistoryFilter
 import com.example.data.model.LogsHistoryPreset
 import com.example.data.model.LogsSort
+import com.example.data.model.LogsTimeWindow
 import com.example.data.model.NextDnsProfile
 import com.example.data.repository.LogsPaginationState
 import com.example.i18n.AppStrings
