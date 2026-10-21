@@ -84,6 +84,17 @@ class QualityRegressionEvidenceTest(unittest.TestCase):
             required,
         )
 
+    def test_profile_ipv6_regression_uses_current_validated_profile_cases(self):
+        required = quality.REQUIRED["NDNS-013"]
+        self.assertEqual(
+            {
+                ("com.example.audit.UiAuditTest", "endpointsMustUseTheValidatedProfileIpv6Format"),
+                ("com.example.audit.UiAuditTest", "copiedIpv6MustMatchBothDisplayedServiceAddresses"),
+                ("com.example.audit.InputAndIdentityTest", "profileIpv6EndpointsComeFromTheValidatedProfileId"),
+            },
+            set(required),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

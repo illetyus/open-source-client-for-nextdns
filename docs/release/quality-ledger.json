@@ -906,9 +906,9 @@
         "B19"
       ],
       "reproductionTests": [
-        "endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation",
+        "endpointsMustUseTheValidatedProfileIpv6Format",
         "copiedIpv6MustMatchBothDisplayedServiceAddresses",
-        "setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback"
+        "profileIpv6EndpointsComeFromTheValidatedProfileId"
       ],
       "evidence": "docs/release/bug-fixes-2026-10-19/fix-results.json",
       "deviceRetestStatus": "NOT_RUN",

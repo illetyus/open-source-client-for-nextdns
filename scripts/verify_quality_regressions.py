@@ -60,9 +60,9 @@ REQUIRED = {
     "NDNS-012": [(AUDIT_UI, "identicalRealisticFingerprintMustShowConnectedForSelectedProfile"),
         (AUDIT_UI, "missingFingerprintMustNotVerifyTheSelectedProfile"),
         (IDENTITY, "diagnosticIdentityUsesFingerprintWhileErrorsAndMissingIdentityRemainUnverified")],
-    "NDNS-013": [(AUDIT_UI, "endpointsMustUseServiceIpv6InsteadOfInvalidProfileConcatenation"),
+    "NDNS-013": [(AUDIT_UI, "endpointsMustUseTheValidatedProfileIpv6Format"),
         (AUDIT_UI, "copiedIpv6MustMatchBothDisplayedServiceAddresses"),
-        (IDENTITY, "setupEndpointsAreValidatedServiceLiteralsWithoutAnInventedFallback")],
+        (IDENTITY, "profileIpv6EndpointsComeFromTheValidatedProfileId")],
     "NDNS-014": [(AUDIT_UI, name) for name in (
         "failedAllowlistSubmissionMustPreserveTypedDomain", "failedDenylistSubmissionMustPreserveTypedDomain",
         "successfulAllowlistSubmissionClearsOnlyTheConfirmedText", "successfulDenylistSubmissionClearsOnlyTheConfirmedText",
