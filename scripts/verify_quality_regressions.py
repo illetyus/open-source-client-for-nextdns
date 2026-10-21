@@ -41,7 +41,7 @@ REQUIRED = {
     "NDNS-006": [(NETWORK, "cancellationBeforeHeadersClosesLateDeliveredResponse"),
         (NETWORK, "cancellationDuringBlockingBodyReadCancelsCallAndClosesBody"),
         (REPOSITORY, "stoppingRepositorySseCancelsTheActualNetworkCall")],
-    "NDNS-007": [(NETWORK, "ipLinkSuccessClosesUnconsumedBody"),
+    "NDNS-007": [(API_CONTRACT, "undocumentedSetupAndLinkedIpRoutesAreNotDeclared"),
         (NETWORK, "allCatalogHttpFailurePathsCloseTheirUnconsumedBodies"),
         (NETWORK, "malformedDiagnosticJsonAlsoClosesBody"),
         (NETWORK, "exceptionInsideConsumerStillClosesResponse")],

@@ -73,6 +73,17 @@ class QualityRegressionEvidenceTest(unittest.TestCase):
             "com.example.ui.screens.SpeedTestLifecycleTest",
         }))
 
+    def test_removed_link_ip_flow_uses_absence_regression(self):
+        required = quality.REQUIRED["NDNS-007"]
+        self.assertNotIn(
+            ("com.example.data.api.CancellableCallTest", "ipLinkSuccessClosesUnconsumedBody"),
+            required,
+        )
+        self.assertIn(
+            ("com.example.data.api.NextDnsApiContractTest", "undocumentedSetupAndLinkedIpRoutesAreNotDeclared"),
+            required,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

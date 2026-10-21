@@ -53,9 +53,11 @@ class NextDnsApiContractTest {
   @Test
   fun undocumentedSetupAndLinkedIpRoutesAreNotDeclared() {
     val methodNames = NextDnsApiService::class.java.declaredMethods.map { it.name }.toSet()
+    val networkMethodNames = NextDnsNetworkClient::class.java.declaredMethods.map { it.name }.toSet()
 
     assertFalse("The public API contract does not document profile setup", methodNames.contains("getProfileSetup"))
     assertFalse("The public API contract does not document linked-IP writes", methodNames.contains("updateLinkedIp"))
+    assertFalse("No direct linked-IP mutation client is included", networkMethodNames.contains("linkIpAddress"))
   }
 
   @Test
