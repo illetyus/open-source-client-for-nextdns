@@ -1,5 +1,8 @@
 package com.example.data.repository
 
+import com.example.R
+import com.example.i18n.AppStrings
+
 import android.util.Log
 import com.example.BuildConfig
 import com.example.NextDnsApp
