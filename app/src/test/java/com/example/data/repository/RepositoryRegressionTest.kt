@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.example.NextDnsApp
+import com.example.R
 import com.example.data.api.NextDnsApiService
 import com.example.data.api.NextDnsNetworkClient
 import com.example.data.api.NextDnsTestResponse
@@ -13,6 +14,7 @@ import com.example.data.api.NextDnsTestService
 import com.example.data.local.NextDnsPreferences
 import com.example.data.model.NextDnsProfile
 import com.example.data.security.ApiKeyProtector
+import com.example.i18n.AppStrings
 import com.example.ui.viewmodel.NextDnsViewModel
 import kotlinx.coroutines.*
 import okhttp3.mockwebserver.Dispatcher
@@ -480,6 +482,25 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
     assertFalse(repository.configSettings.value.web3)
     repository.loadLocalProfileData("aaaaaa")
     assertFalse(repository.configSettings.value.web3)
+  }
+
+  @Test fun unknownLogStorageLocationDoesNotMasqueradeAsThePreviousLocalValue() = runBlocking {
+    response = { json("""{"data":{"logs":{"location":"eu","retention":1234}}}""") }
+    assertTrue(repository.refreshSection(SyncSection.SETTINGS))
+    assertEquals("Avrupa Birliği (AB)", repository.configSettings.value.logStorageLocation)
+    assertEquals(AppStrings.get(R.string.value_unknown), repository.configSettings.value.logRetention)
+
+    response = { json("""{"data":{"logs":{"location":"apac"}}}""") }
+    assertTrue(repository.refreshSection(SyncSection.SETTINGS))
+    assertEquals(AppStrings.get(R.string.value_unknown), repository.configSettings.value.logStorageLocation)
+
+    response = { json("""{"data":{"logs":{"enabled":true}}}""") }
+    assertTrue(repository.refreshSection(SyncSection.SETTINGS))
+    assertEquals(AppStrings.get(R.string.value_unknown), repository.configSettings.value.logStorageLocation)
+
+    response = { json("""{"data":{"logs":{"location":"us"}}}""") }
+    assertTrue(repository.refreshSection(SyncSection.SETTINGS))
+    assertEquals("Amerika Birleşik Devletleri (ABD)", repository.configSettings.value.logStorageLocation)
   }
 
   @Test fun diagnosticTimeoutDoesNotReplaceLastSuccessWithFreshSuccess() = runBlocking {

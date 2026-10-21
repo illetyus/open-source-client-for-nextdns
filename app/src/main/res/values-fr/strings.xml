@@ -666,4 +666,5 @@
     <string name="security_unverified_array">Liste · contenu masqué · lecture seule</string>
     <string name="security_unverified_null">Null · lecture seule</string>
     <string name="security_unverified_omitted">%1$d champs supplémentaires masqués pour des raisons de sécurité</string>
+    <string name="value_unknown">Inconnu</string>
 </resources>

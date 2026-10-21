@@ -666,4 +666,5 @@
     <string name="security_unverified_array">Dizi · içerik gizli · salt okunur</string>
     <string name="security_unverified_null">Null · salt okunur</string>
     <string name="security_unverified_omitted">Güvenlik sınırı nedeniyle %1$d ek alan gösterilmedi</string>
+    <string name="value_unknown">Bilinmiyor</string>
 </resources>

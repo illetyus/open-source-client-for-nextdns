@@ -125,7 +125,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 2. Performance and UI-fluidity measurements
 
-**Current status:** The world-map asset read is dispatched to `Dispatchers.IO`; CI #346 passed the release-emulator StrictMode audit and compiled the release-like Macrobenchmark target. It has not been run on a physical device. Authenticated home/logs/analytics journeys, Perfetto traces, recomposition analysis, and same-device baseline/candidate results remain incomplete. BrowserStack credentials are absent from this process and the Windows user environment.
+**Current status:** The world-map asset read is dispatched to `Dispatchers.IO`; CI #346 passed the release-emulator StrictMode audit and compiled the release-like Macrobenchmark target. ADB server startup succeeds with elevated execution, but `adb devices -l` reports no attached device and no emulator binary is available in PATH. Authenticated home/logs/analytics journeys, Perfetto traces, recomposition analysis, and same-device baseline/candidate results remain incomplete. BrowserStack credentials are absent from this process and the Windows user environment.
 
 **Root Cause Analysis:** The repository has no repeatable performance baseline for Compose recompositions, UI frame timing/jank, startup, or main-thread I/O. Source inspection and passing UI tests do not quantify these properties.
 
@@ -177,7 +177,7 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 4. User-controlled open-source internet speed test
 
-**Current status:** A native, user-configured LibreSpeed-compatible client and localized UI are implemented in PR work. No public test server is selected or bundled. Live-device measurement remains pending until an operator-approved HTTPS endpoint is supplied and its policy is reviewed.
+**Current status:** A native, user-configured LibreSpeed-compatible client and localized UI are implemented in PR work. The user explicitly deferred live speed testing; no test-server request was sent, and no public server is selected or bundled. Mocked contract tests do not establish endpoint policy, permission, capacity, or measured throughput.
 
 **Root Cause Analysis:** A library license alone does not authorize use of a third-party test server. M-Lab's current AUP requires a published privacy policy for third-party clients, and its public test page says that test data, including client IP addresses, is published indefinitely. The LibreSpeed server documentation provides configurable PHP endpoints, so the client can implement that contract without choosing a public host.
 
@@ -256,21 +256,21 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 7. Server-driven early-access security settings
 
-**Current status:** Deferred at the evidence gate. No sanitized user-authorized response demonstrates an unknown field, so no dynamic label, control, or PATCH behavior is invented. The capability matrix records the limitation.
+**Current status:** Bounded Moshi discovery, safe read-only presentation, snapshot change detection, and synthetic JSON regressions are implemented. No sanitized user-authorized response demonstrates an unknown field on the user's profile, so no field meaning or PATCH behavior is invented. The capability matrix records the distinction between synthetic parser coverage and live-account evidence.
 
-**Root Cause Analysis:** The fixed `SecurityDto` enumerates published fields, so Moshi discards unknown response keys. Hardcoding guessed names would be unsafe, but discarding server-provided fields prevents future capability discovery.
+**Root Cause Analysis:** A fixed DTO would discard unknown response keys. Hardcoding guessed names would be unsafe, so a bounded adapter now captures them for safe, read-only discovery without assigning undocumented meaning.
 
 **Scope of Change:** Preserve unknown JSON values from the documented security response. Expose only safely typed, explicitly identified server-returned values; keep unsupported types read-only/diagnostic. Unknown write support remains conditional on endpoint verification.
 
 **Implementation Steps:**
-- [ ] Add a narrowly scoped Moshi adapter or raw security JSON model that captures unknown keys without changing known typed fields.
-- [ ] Add a server-field presentation model that distinguishes documented fields from unknown fields and avoids fabricated labels/descriptions.
-- [ ] For an unknown Boolean field, permit a write only if the existing security PATCH endpoint demonstrably accepts a single-field patch and the repository verifies it with a subsequent GET; otherwise show it read-only.
-- [ ] Include dynamic fields in sync snapshots and error handling without allowing app-local values to enter the API payload.
+- [x] Add a narrowly scoped Moshi adapter that captures bounded unknown keys while preserving known typed fields.
+- [x] Add a neutral server-field presentation model; show safe field names/types read-only and expose only Boolean values.
+- [x] Keep all unknown fields read-only. No real-account field or single-field PATCH/read-back evidence authorizes a write.
+- [x] Include unknown fields in sync change fingerprints without persisting response values or adding them to mutation payloads.
 
-**Testing Strategy:** Moshi fixture tests for known keys, unknown Boolean/string/number/object/list/null; PATCH serialization tests; mocked acceptance/rejection/read-back behavior; snapshot hash tests.
+**Testing Strategy:** Moshi fixture tests for known keys and unknown Boolean/string/number/object/list/null; PATCH serialization exclusion; bounded overflow/digest; snapshot hash; and read-only Compose disclosure tests. All use synthetic fixtures, not a personal profile response.
 
-**Acceptance Criteria:** Unknown response fields are not silently lost; no setting name is invented; known behavior is unchanged; a UI mutation is offered only for an observed Boolean field with a passing PATCH/read-back contract.
+**Acceptance Criteria:** Unknown response fields are bounded and not silently lost; no setting name or meaning is invented; known behavior is unchanged; unknown fields remain read-only until field-specific API evidence exists.
 
 **Backward Compatibility Considerations:** Older profiles missing new fields retain current defaults and controls.
 
@@ -308,15 +308,15 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 
 ### 9. Comprehensive API capability inventory
 
-**Current status:** `docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md` maps published endpoints to this client, distinguishes local/diagnostic/undocumented data, and records the API beta caveat. Its checked inventory lists all 61 Retrofit routes; `scripts/verify_api_capability_matrix.py` passes locally and CI #346 passed the route-to-matrix check.
+**Current status:** `docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md` maps all 61 Retrofit routes and each of the 39 documented profile-example leaf fields to DTOs, repository/UI behavior, and read/write status. Its checker now asserts both inventories; it passes locally. `settings.logs.retention` and `settings.logs.location` are `PARTIAL` because the public docs do not define their complete accepted value sets.
 
-**Root Cause Analysis:** Existing API calls are distributed across Retrofit declarations, repository methods, and screens; there is no single audited mapping of supported/read-only/writable/missing/unsupported options.
+**Root Cause Analysis:** Existing API calls and profile fields are distributed across Retrofit declarations, DTOs, repository methods, and screens; an endpoint-only inventory cannot show which individual fields are read, written, missing, or only partially supported.
 
 **Scope of Change:** Produce a versioned matrix for profile/setup, security, privacy, parental control, allow/deny lists, settings, logs, analytics, diagnostics, and app-local data.
 
 **Implementation Steps:**
 - [x] Enumerate current official API endpoints, methods, query parameters, response fields, and cursor semantics from `https://nextdns.github.io/api/`.
-- [x] Cross-map each field to `NextDnsApiService`, DTOs, repository reads/writes, UI, and tests.
+- [x] Cross-map all 39 documented profile-example leaf fields to DTOs, repository reads/writes, UI, limitations, and relevant tests.
 - [x] Classify each row `SUPPORTED_READ_WRITE`, `SUPPORTED_READ_ONLY`, `PARTIAL`, `MISSING`, or `UNVERIFIED`; include evidence link and limitations.
 - [x] Add and retain repository/UI regression tests for critical endpoint/request invariants, including absence of `/account` and no mutation of app-local preferences.
 - [x] Add a CI inventory check that requires the matrix's explicit method/path list to equal the Retrofit annotations.
@@ -367,8 +367,8 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 1. **Audit and research:** this plan, API inventory, official-source evidence, test-gap list, and clean pre-change baseline.
 2. **PR 1 — data and chart correctness:** device labels, diagnostic wording, log filters/reasons/history, GAFAM chart; run API/repository/Compose tests and lint.
 3. **PR 2 — capability transparency:** API field inventory and age-setting status; dynamic security fields only after parser/PATCH evidence; run contract and compatibility tests.
-4. **PR 3 — performance:** benchmark harness, StrictMode audit, same-device baseline/candidate report; run CI and device measurements.
-5. **PR 4 — speed test:** native client/UI are included in draft PR #27; verify the authorized HTTPS server and its policy before release.
+4. **PR 3 — performance:** benchmark harness and StrictMode audit are in PR #27; same-device baseline/candidate report and authenticated journeys remain blocked on a device/fixture.
+5. **PR 4 — speed test:** live test deferred at the user's request; do not contact a server. Native client/UI and offline contract tests remain in PR #27; revisit only after the user requests resumption and an authorized server is available.
 6. **PR 5 — favicon lifecycle:** verify current first-party route, cache/provenance policy, and any retention disclosure before changing runtime behavior.
 7. **Review and deployment readiness:** security diff review, full test/lint/build, CI status, BrowserStack or named-device evidence, API matrix, error ledger, and a release-readiness decision. Open PRs but do not imply public release or merge without the project’s approved release gate.
 
@@ -406,3 +406,12 @@ Explicitly mark any assumptions, uncertainties, or undocumented features; sugges
 - ADB 1.0.41 / platform-tools 37.0.1 failed to start on both the default port 5037 and an unused alternate port 5038 (`could not read ok from ADB Server`). No listener or ADB override variable was present. BrowserStack App Automate opened the `/request_access` page without exposing an upload/run flow; the expected credential-variable names were absent at Process, User, and Machine scopes. No test build was submitted and no access cause is inferred.
 - The user deferred live speed testing. No server endpoint is configured or contacted. Its mocked contract, consent, cancellation, and response-validation tests remain covered by CI.
 - The physical performance gate remains open: no same-device `main`/candidate comparison, authenticated home/logs/analytics journey, collected Perfetto trace, or recomposition analysis is available. Macrobenchmark CI compilation and release-emulator StrictMode checks are not substitutes for those measurements. PR #27 stays draft; no merge or release readiness is claimed. Legal documents remain `DRAFT`; the original app icon is still a separate publication gate.
+
+### Continued execution — 21 October 2026
+
+- The current official [NextDNS API profile schema](https://nextdns.github.io/api/) was rechecked. It documents the profile fields used by the capability table but contains no age-verification bypass field; `parentalControl.blockBypass` remains a distinct option. No credentials or personal profile responses were used.
+- The capability matrix now maps each of the profile example's 39 leaf fields to DTO, repository/UI behavior, and write/read boundary. `scripts/verify_api_capability_matrix.py` passes locally and checks both all 61 Retrofit routes and all 39 fields.
+- NDNS-065 records a settings-sync accuracy bug: an unknown non-null `settings.logs.location` had been shown as the previous local location. The repository now shows the localized unknown-value label for an unrecognized server code while preserving the current value when the field is absent. A regression covers known, unknown, missing, and known-again responses.
+- Local Gradle validation was retried for the focused regression. The wrapper first received access denied for its cache lock; elevated execution then failed to establish a Windows loopback connection. No test result is claimed from that attempt; PR CI must execute the regression.
+- The user explicitly deferred live speed testing. No test endpoint was contacted; only the existing offline contract, consent, cancellation, and response-validation tests remain in scope.
+- ADB can start with elevated execution, but no Android device is attached and no emulator binary is available. Physical Macrobenchmark, authenticated journeys, and Perfetto/recomposition evidence remain open. BrowserStack, legal review, and the separate original-icon publication gate also remain open; legal documents stay `DRAFT`.

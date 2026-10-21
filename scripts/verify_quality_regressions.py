@@ -115,6 +115,7 @@ REQUIRED = {
     "malformedImageBytesAreRejected",
     "wholeCallTimeoutReturnsFallbackResult",
     "cancellingLoadCancelsTheUnderlyingOkHttpCall")],
+    "NDNS-065": [(REPOSITORY, "unknownLogStorageLocationDoesNotMasqueradeAsThePreviousLocalValue")],
 }
 
 

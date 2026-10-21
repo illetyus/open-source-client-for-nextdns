@@ -666,4 +666,5 @@
     <string name="security_unverified_array">Lista · contenido oculto · solo lectura</string>
     <string name="security_unverified_null">Null · solo lectura</string>
     <string name="security_unverified_omitted">Se omitieron %1$d campos adicionales por seguridad</string>
+    <string name="value_unknown">Desconocido</string>
 </resources>

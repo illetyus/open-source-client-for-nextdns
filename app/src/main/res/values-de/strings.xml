@@ -666,4 +666,5 @@
     <string name="security_unverified_array">Liste · Inhalt verborgen · schreibgeschützt</string>
     <string name="security_unverified_null">Null · schreibgeschützt</string>
     <string name="security_unverified_omitted">Aus Sicherheitsgründen wurden %1$d weitere Felder ausgelassen</string>
+    <string name="value_unknown">Unbekannt</string>
 </resources>

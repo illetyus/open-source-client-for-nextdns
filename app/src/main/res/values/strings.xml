@@ -667,5 +667,6 @@
     <string name="security_unverified_array">Array · contents hidden · read-only</string>
     <string name="security_unverified_null">Null · read-only</string>
     <string name="security_unverified_omitted">%1$d additional fields omitted for safety</string>
+    <string name="value_unknown">Unknown</string>
 </resources>
 <!-- Locale-only presentation; API privacy fields remain unchanged. -->

@@ -1,8 +1,5 @@
 package com.example.data.repository
 
-import com.example.R
-import com.example.i18n.AppStrings
-
 import android.util.Log
 import com.example.BuildConfig
 import com.example.NextDnsApp
@@ -1150,13 +1147,14 @@ class NextDnsRepository(
     val s = body.data ?: return false
 
     return commitCurrentSession {
-      val locName = when (s.logs?.location) {
+      val locName = when (val location = s.logs?.location) {
+        null -> _configSettings.value.logStorageLocation
         "ch" -> "İsviçre (CH)"
         "eu" -> "Avrupa Birliği (AB)"
         "us" -> "Amerika Birleşik Devletleri (ABD)"
-        else -> _configSettings.value.logStorageLocation
+        else -> AppStrings.get(R.string.value_unknown)
       }
-      val retName = LogRetentionCodec.toLabel(s.logs?.retention) ?: "Bilinmiyor"
+      val retName = LogRetentionCodec.toLabel(s.logs?.retention) ?: AppStrings.get(R.string.value_unknown)
 
       val updated = _configSettings.value.copy(
         logsEnabled = s.logs?.enabled ?: _configSettings.value.logsEnabled,
