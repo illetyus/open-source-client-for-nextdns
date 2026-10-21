@@ -35,12 +35,16 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.AnalyticsSummary
+import com.example.data.model.AnalyticsSeriesQuery
+import com.example.data.model.SeriesMetric
 import com.example.data.model.DeviceLabelResolver
 import com.example.data.model.DeviceMetric
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.NextDnsViewModel
 import java.text.NumberFormat
+import java.time.Duration
+import java.time.Instant
 
 @Composable
 fun AnalyticsScreen(
@@ -52,14 +56,45 @@ fun AnalyticsScreen(
   val analyticsLastSuccessAt by viewModel.analyticsLastSuccessAt.collectAsStateWithLifecycle()
   val analyticsErrorMessage by viewModel.analyticsErrorMessage.collectAsStateWithLifecycle()
   val isAnalyticsLoading by viewModel.isAnalyticsLoading.collectAsStateWithLifecycle()
+  val analyticsSeries by viewModel.analyticsSeries.collectAsStateWithLifecycle()
 
   var selectedDeviceFilter by remember { mutableStateOf<String?>(null) }
-  var selectedTimeFilter by remember { mutableStateOf("Son 30 gün") }
+  var selectedTimeFilter by remember { mutableStateOf("24h") }
+  var selectedSeriesMetric by remember { mutableStateOf(SeriesMetric.STATUS) }
+  var selectedDomainStatus by remember { mutableStateOf<String?>(null) }
+  var rootGrouped by remember { mutableStateOf(false) }
+  val seriesRange = remember(selectedTimeFilter) {
+    val to = Instant.now()
+    val duration = when (selectedTimeFilter) {
+      "24h" -> Duration.ofHours(24)
+      "7d" -> Duration.ofDays(7)
+      "30d" -> Duration.ofDays(30)
+      else -> Duration.ofDays(90)
+    }
+    val intervalSeconds = if (duration <= Duration.ofHours(24)) 3_600L else 86_400L
+    Triple(to.minus(duration), to, intervalSeconds)
+  }
 
   val lifecycleOwner = LocalLifecycleOwner.current
 
   LaunchedEffect(activeProfile?.id) {
     viewModel.refreshAnalytics(selectedDeviceFilter, selectedTimeFilter)
+  }
+
+  LaunchedEffect(activeProfile?.id, selectedDeviceFilter, selectedTimeFilter, selectedSeriesMetric, selectedDomainStatus, rootGrouped) {
+    val profileId = activeProfile?.id?.takeIf(String::isNotBlank) ?: return@LaunchedEffect
+    viewModel.refreshAnalyticsSeries(
+      AnalyticsSeriesQuery(
+        profileId = profileId,
+        deviceId = selectedDeviceFilter,
+        fromInclusive = seriesRange.first,
+        toExclusive = seriesRange.second,
+        metric = selectedSeriesMetric,
+        intervalSeconds = seriesRange.third,
+        domainStatus = selectedDomainStatus.takeIf { selectedSeriesMetric == SeriesMetric.DOMAINS },
+        root = rootGrouped && selectedSeriesMetric == SeriesMetric.DOMAINS
+      )
+    )
   }
 
   DisposableEffect(lifecycleOwner, activeProfile?.id) {
@@ -89,7 +124,7 @@ fun AnalyticsScreen(
   var showTimeFilterMenu by remember { mutableStateOf(false) }
 
   val numFormat = remember { NumberFormat.getInstance(AppStrings.locale) }
-  val timesList = listOf("Son 24 saat", "Son 7 gün", "Son 30 gün", "Son 3 ay")
+  val timesList = listOf("24h", "7d", "30d", "90d")
 
   val devicesList = remember(analytics.topDevices) {
     analytics.topDevices.filter { it.id.isNotBlank() }.distinctBy { it.id }
@@ -126,6 +161,18 @@ fun AnalyticsScreen(
           viewModel.refreshAnalytics(selectedDeviceFilter, it)
         },
         isLoading = isAnalyticsLoading
+      )
+    }
+
+    item {
+      AnalyticsSeriesChart(
+        state = analyticsSeries,
+        selectedMetric = selectedSeriesMetric,
+        domainStatus = selectedDomainStatus,
+        rootGrouped = rootGrouped,
+        onMetricSelected = { selectedSeriesMetric = it },
+        onDomainStatusSelected = { selectedDomainStatus = it },
+        onRootGroupedChanged = { rootGrouped = it }
       )
     }
 
@@ -390,7 +437,7 @@ private fun AnalyticsFilterBar(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-          Text(UiLabels.canonical(selectedTimeFilter), color = MaterialTheme.colorScheme.onSurface, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
+          Text(analyticsTimeFilterLabel(selectedTimeFilter), color = MaterialTheme.colorScheme.onSurface, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
           Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         }
       }
@@ -403,7 +450,7 @@ private fun AnalyticsFilterBar(
       ) {
         timesList.forEach { tm ->
           DropdownMenuItem(
-            text = { Text(UiLabels.canonical(tm), color = if (tm == selectedTimeFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontSize = 12.sp) },
+            text = { Text(analyticsTimeFilterLabel(tm), color = if (tm == selectedTimeFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontSize = 12.sp) },
             onClick = {
               onSelectTime(tm)
               onToggleTimeFilterMenu(false)
@@ -422,6 +469,16 @@ private fun AnalyticsFilterBar(
     }
   }
 }
+
+@Composable
+private fun analyticsTimeFilterLabel(filter: String): String = AppStrings.get(
+  when (filter) {
+    "24h" -> R.string.last_24_hours
+    "7d" -> R.string.last_7_days
+    "90d" -> R.string.last_3_months
+    else -> R.string.last_30_days
+  }
+)
 
 @Composable
 private fun AnalyticsOverviewCards(

@@ -38,7 +38,8 @@ data class ApiErrorSource(
 
 data class ApiMeta(
   val pagination: ApiPaginationMeta? = null,
-  val stream: ApiStreamMeta? = null
+  val stream: ApiStreamMeta? = null,
+  val series: ApiSeriesMeta? = null
 )
 
 data class ApiPaginationMeta(
@@ -798,6 +799,25 @@ interface NextDnsApiService {
     @Query("limit") limit: Int? = null,
     @Query("cursor") cursor: String? = null
   ): Response<NextDnsApiResponse<List<AnalyticsIpVersionItem>>>
+
+  @GET("profiles/{profileId}/analytics/{endpoint};series")
+  suspend fun getAnalyticsSeries(
+    @Header("X-Api-Key") apiKey: String,
+    @Path("profileId") profileId: String,
+    @Path("endpoint") endpoint: String,
+    @Query("device") device: String? = null,
+    @Query("from") from: String,
+    @Query("to") to: String,
+    @Query("interval") intervalSeconds: Long,
+    @Query("alignment") alignment: String = "end",
+    @Query("timezone") timezone: String = "GMT",
+    @Query("partials") partials: String = "none",
+    @Query("limit") limit: Int = 50,
+    @Query("cursor") cursor: String? = null,
+    @Query("status") status: String? = null,
+    @Query("root") root: Boolean? = null,
+    @Query("type") type: String? = null
+  ): Response<NextDnsApiResponse<List<AnalyticsSeriesDto>>>
 
   // Settings
   @GET("profiles/{profileId}/settings")

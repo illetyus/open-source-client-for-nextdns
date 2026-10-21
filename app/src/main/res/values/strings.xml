@@ -648,5 +648,32 @@
     <string name="logs_history_live_unavailable">Live updates are available only for the unfiltered, newest-first log view.</string>
     <string name="logs_sort_newest">Newest first</string>
     <string name="logs_sort_oldest">Oldest first</string>
+    <string name="analytics_series_title">Query history over time</string>
+    <string name="analytics_series_time_zone">Times are shown in UTC (GMT), matching the service response.</string>
+    <string name="analytics_series_empty">No time-series data is available for this selection.</string>
+    <string name="analytics_series_load_failed">The time series could not be loaded. Try a shorter period or another metric.</string>
+    <string name="analytics_series_invalid_query">This time-series selection is not valid. Choose a shorter period.</string>
+    <string name="analytics_series_metric_status">Query status</string>
+    <string name="analytics_series_metric_devices">Devices</string>
+    <string name="analytics_series_metric_domains">Domains</string>
+    <string name="analytics_series_metric_reasons">Block reasons</string>
+    <string name="analytics_series_metric_countries">Countries</string>
+    <string name="analytics_series_metric_gafam">GAFAM</string>
+    <string name="analytics_series_metric_dnssec">DNSSEC validation</string>
+    <string name="analytics_series_metric_encryption">DNS encryption</string>
+    <string name="analytics_series_metric_protocols">Protocols</string>
+    <string name="analytics_series_metric_ips">IP addresses</string>
+    <string name="analytics_series_metric_query_types">Query types</string>
+    <string name="analytics_series_metric_ip_versions">IP versions</string>
+    <string name="analytics_series_domain_all">All statuses</string>
+    <string name="analytics_series_domain_default">Default</string>
+    <string name="analytics_series_domain_blocked">Blocked</string>
+    <string name="analytics_series_domain_allowed">Allowed</string>
+    <string name="analytics_series_group_root">Group by root domain</string>
+    <string name="analytics_series_selected_entity">Selected: %1$s</string>
+    <string name="analytics_series_point_detail">%1$s UTC — %2$s queries</string>
+    <string name="analytics_series_no_value">No data</string>
+    <string name="analytics_series_table_heading">Recent time buckets</string>
+    <string name="analytics_series_chart_accessibility">Interactive time-series chart for %1$s. Select a point to inspect its time and query count.</string>
 </resources>
 <!-- Locale-only presentation; API privacy fields remain unchanged. -->

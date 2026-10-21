@@ -109,18 +109,20 @@ Yol kuralı: data/ ve ui/ ile başlayan Kotlin yolları app/src/main/java/com/ex
 
 ### P02 — Kurulum ve linked-IP doğruluğu; bilinmeyen API alanları
 
-**Files:** data/api/NextDnsApiService.kt; data/repository/NextDnsRepository.kt; data/model/SetupEndpoints.kt; ui/viewmodel/NextDnsViewModel.kt; ui/screens/SetupScreen.kt; docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md; NextDnsApiContractTest.kt, CancellableCallTest.kt, RepositoryRegressionTest.kt, AccountSettingsFlowTest.kt.
+**Files:** data/api/NextDnsApiService.kt; data/repository/NextDnsRepository.kt; data/model/SetupEndpoints.kt; ui/viewmodel/NextDnsViewModel.kt; ui/screens/SetupScreen.kt; docs/NEXTDNS_API_CAPABILITY_MATRIX_TR.md; NextDnsApiContractTest.kt, CancellableCallTest.kt, RepositoryRegressionTest.kt, AccountSettingsFlowTest.kt, SetupEndpointsTest.kt.
 **Interfaces:** Kamuya açık sözleşmesi doğrulanmayan kurulum/linked-IP istekleri ve mutasyonları kaldırılır. Ekran, doğrulanmış DNS uçlarını profil kimliğinden yerel üretir; bağlama durumu doğrulanamıyorsa NextDNS paneline yönlendirir.
 
-- [ ] Failing testler: missingSetupIpv4IsUnavailable; linkedIpLabelUsesServiceBindingNotDiagnosticClientIp; successfulHttpWithoutConfirmedBindingDoesNotReportLinked; lateLinkedIpResponseCannotConfirmAnotherProfile.
+- [x] Kapsamı güncel davranışa göre doğrula: `missingSetupIpv4IsUnavailable`, `linkedIpLabelUsesServiceBindingNotDiagnosticClientIp`, `undocumentedSetupAndLinkedIpRoutesAreNotDeclared`; `SetupEndpointsTest` eksik IPv4, IPv4 literal/tekrarlı değer ve altı karakterli profil kimliği sınırlarını kapsar. Belgelenmeyen mutasyon rotaları kaldırıldığı için `successfulHttpWithoutConfirmedBindingDoesNotReportLinked` ve `lateLinkedIpResponseCannotConfirmAnotherProfile` uygulanabilir testler değildir.
 - [x] Mevcut SetupDto.linkedIp.ip/servers/ddns/updateToken alanlarının resmî belge veya redakte yetkili test yanıtı kanıtını ayır. updateToken sırdır; log/ekran/raporda gösterme.
 - [x] Doğrudan link-ip adresini ve kullanılmayan POST setup/linkedIp deklarasyonunu ayrı denetle. Toplulukta görülen URL biçimi yazma sözleşmesi sayılmaz; test hesabı dışında canlı bağlama çağrısı yapma.
 - [x] Sözleşme doğrulanırsa adresin exact HTTPS host/path'ini ve gerekli token'ını güvenli oluştur; redirect ile anahtar/token aktarımını engelle; aynı profilin güvenilir okumasıyla sonucu doğrula. Doğrulanmazsa bağlama eylemini açıklamalı kullanılamaz yap ve sahte başarı yolunu kapat; yalnız doğrulanmış resmî panel bağlantısı sunulabilir.
 - [x] Eksik IPv4 yanıtındaki sabit .234 fallback'ini kaldır. Mevcut ağ IP'si ve hizmette kayıtlı linked-IP ayrı etiketlensin; NextDNS tanısı hesap/profil mutasyonunun kanıtı sayılmasın.
 - [x] Yaş doğrulama ve erken erişim: kamuya açık sözleşme yoksa UNVERIFIED/read-only sınırıyla kapat; varsayımsal toggle/PATCH ekleme. Mevcut sınırlı bilinmeyen-alan güvenlik testlerini koru.
-- [ ] Aynı profil, yanlış profil, eksik token, semantik hata, 401/429, timeout, cancellation ve güvenilmeyen redirect regresyonları geçsin. Rota envanterini gerçek yeni sayıya göre güncelle.
-- [ ] PR #27 gerekli düzeltmelerini incele, tam CI ve etkilenen akışların kabulünden sonra normal main entegrasyonunu tamamla. Yayın kabulü sonraki aday kapısında kalır.
+- [x] Güvenli hata yollarını doğrula: belgelenmeyen kurulum/linked-IP rotaları tanımlı değildir, credentialed istemci redirect izlemez, geç gelen/cancel edilmiş yanıtlar kapatılır ve kurulum adresleri yalnız doğrulanmış profil kimliğinden/literal IPv4 değerlerinden oluşur. Rota matrisi doğrulayıcısı 60 Retrofit rotasını sayar; kaldırılan mutasyon rotaları için durum kodu taklit eden ağ testi eklenmedi.
+- [x] PR #27 düzeltmeleri CI #365 / run 39544925225 başarılı olduktan sonra `a7a1394483fbed0823fc278310073b0920f8ac81` ile main'e alındı; PR #29 test eklemesi CI #372 başarılı olduktan sonra `e7283df8a90436636b2818b08ed732f0808b7a77` ile birleştirildi. Yayın kabulü sonraki aday kapısında kalır.
 
+
+**Durum:** Teknik/API doğruluğu ve P02 regresyonları tamamlandı; PR #27 ve PR #29 CI doğrulamaları geçti ve iki PR main'e birleştirildi. Resmî sözleşmesi olmayan setup/linked-IP yazma akışı kullanılmıyor.
 ### P03 — Günlüklerde tarih ve sıralama
 
 **Files:** Create data/model/LogsHistoryFilter.kt ve app/src/test/java/com/example/data/model/LogsHistoryFilterTest.kt; Modify data/repository/NextDnsRepository.kt, ui/viewmodel/NextDnsViewModel.kt, ui/screens/LogsScreen.kt, beş dil kaynakları; mevcut RepositoryRegressionTest.kt, NextDnsApiContractTest.kt, UiAuditTest.kt testlerini genişlet.
@@ -140,20 +142,20 @@ data class LogsHistoryFilter(val window: LogsTimeWindow = LogsTimeWindow(), val 
 - [x] Tarih aralığı/asc sıralamada canlı akış kapanır ve açıklama görünür; daha önce açıksa uyumlu varsayılan görünüme dönüşte yeniden açılır.
 - [x] Var olan saklama sınırı/boş yanıt davranışı korundu; cihaz geçmişi filtrelemesinde ham API ID'leri ve `__UNIDENTIFIED__` korunur.
 - [x] `/analytics/devices` `limit=500` ve cursor ile en çok 10 sayfaya kadar okunur. Tekrarlanan cursor ve sayfa sınırında son tam envanter korunur; bu yollar için regresyon eklendi.
-- [ ] Hedefli Android testleri ve tam CI, lint/localization; ayrı PR incelemesi ve main entegrasyonu.
+- [x] Hedefli Android testleri ve tam CI, lint/localization; PR #28 incelemesi ve main entegrasyonu tamamlandı.
 
-**Durum:** Uygulama ve test kodu hazır; yerel Android test raporu üretilemediği için PR CI doğrulaması bekleniyor. Statik API/lokalizasyon/yayın taslağı kapıları geçti.
+**Durum:** PR #28, CI #371 / run 39551411091 başarılı olduktan sonra 1ed99979b66de99c49270e96e6e97ac81deea7d7 ile main'e birleştirildi. Android Lint, JVM/Compose testleri, Debug ve unsigned Release derlemeleri ile güvenlik kapıları geçti.
 
 ### P04 — Analitik zaman serileri
 
-**Files:** Create data/model/AnalyticsSeries.kt, data/api/AnalyticsSeriesDto.kt, ui/screens/AnalyticsSeriesChart.kt; Modify ApiMeta ve NextDnsApiService, data/repository/NextDnsRepository.kt, NextDnsViewModel.kt, AnalyticsScreen.kt; Create app/src/test/java/com/example/data/model/AnalyticsSeriesTest.kt, app/src/test/java/com/example/data/api/AnalyticsSeriesContractTest.kt, app/src/test/java/com/example/data/repository/AnalyticsSeriesRepositoryTest.kt ve app/src/test/java/com/example/ui/screens/AnalyticsSeriesChartTest.kt.
+**Files:** Create data/model/AnalyticsSeries.kt, data/api/AnalyticsSeriesDto.kt, ui/screens/AnalyticsSeriesChart.kt; Modify ApiMeta ve NextDnsApiService, data/repository/NextDnsRepository.kt, NextDnsViewModel.kt, AnalyticsScreen.kt; Create app/src/test/java/com/example/data/model/AnalyticsSeriesTest.kt, app/src/test/java/com/example/data/api/AnalyticsSeriesContractTest.kt, app/src/test/java/com/example/audit/AnalyticsSeriesRepositoryTest.kt ve app/src/test/java/com/example/ui/screens/AnalyticsSeriesChartTest.kt.
 **Interfaces:** Repository suspend fetchAnalyticsSeries(query: AnalyticsSeriesQuery): Boolean; ViewModel StateFlow<AnalyticsSeriesState>. Metric enum'u yalnız aşağıdaki 12 görünüm yapılandırmasını kabul eder; COUNTRIES/GAFAM aynı destinations yolunun type parametresini belirler.
 ~~~kotlin
 data class AnalyticsSeriesQuery(
   val profileId: String, val deviceId: String?,
   val fromInclusive: Instant, val toExclusive: Instant,
-  val metric: SeriesMetric, val interval: String,
-  val domainStatus: String? = null, val rootDomains: Boolean = false
+  val metric: SeriesMetric, val intervalSeconds: Long,
+  val domainStatus: String? = null, val root: Boolean = false
 )
 data class SeriesPoint(val at: Instant, val queries: Long?)
 data class SeriesRow(val key: String, val label: String, val points: List<SeriesPoint>)
@@ -165,10 +167,10 @@ data class AnalyticsSeriesState(
 ~~~
 ApiMeta'ya nullable series: ApiSeriesMeta eklenir; ApiSeriesMeta times: List<String> ve interval: Long taşır. Mevcut pagination/stream alanları korunur. Retrofit GET profiles/{profileId}/analytics/{endpoint};series kullanır; endpoint ve type yalnız enum eşlemesinden gelir, kullanıcıdan serbest path alınmaz.
 
-- [ ] Failing fixture testleri: officialQueryTypesSeriesPreservesTimesAndCounts; missingBucketIsNotZero; mismatchedSeriesLengthsAreRejected; negativeOrOverflowCountIsRejected; obsoleteProfileSeriesCannotOverwriteCurrentState.
+- [ ] Failing fixture testleri: officialQueryTypesSeriesPreservesTimesAndCounts; missingBucketIsNotZero; mismatchedSeriesLengthsAreRejected; negativeAndOverflowCountsAreRejected; obsoleteProfileSeriesCannotOverwriteCurrentState; groupedDomainSeriesUsesTheRootDomainForKeyAndLabel.
 - [ ] Sadece allowlist metric yolları kullan: status, devices, domains, reasons, destinations, dnssec, encryption, protocols, ips, queryTypes, ipVersions. Destinations countries ve gafam ayrı görünüm tipleridir.
 - [ ] Belgeli entity alanlarını endpoint bazında eşle: status; id/name/model; domain/root; id/name; code veya company; validated; encrypted; protocol; ip; type/name; version. queries dizi, meta.series.times ISO zamanlar ve interval saniye olarak parse edilir [S1].
-- [ ] Varsayılan son 24 saat için interval=1h, son 7/30 gün için interval=1d; from/to açık zaman aralığı olsun. alignment=end, timezone=GMT ve partials=none resmî varsayılanları korunur; gerçek meta.times kullanılır, cihaz saatinden yapay bucket üretilmez.
+- [ ] Varsayılan son 24 saat için interval=3600 saniye, son 7/30/90 gün için interval=86400 saniye; from/to açık zaman aralığı olsun. alignment=end, timezone=GMT ve partials=none resmî varsayılanları korunur; gerçek meta.times kullanılır, cihaz saatinden yapay bucket üretilmez.
 - [ ] Yalnız seçilen grafiği iste; 11 aileyi her ekranda topluca çağırma. Yeni filtre/profil önceki işi iptal etsin; entity cursor sayfalaması üst sınırla çalışsın. En fazla 500 zaman bucket'ı / 50 entity yerel güvenlik sınırı; taşma durumunda aralığı daraltma mesajı ver, veri kesilmesini tam veri gibi gösterme.
 - [ ] Erişilebilir çizgi/sütun grafik + okunabilir veri tablosu sun; null veri boşluk, gerçek 0 sıfır olarak ayrı kalsın. Renk tek bilgi taşıyıcısı olmasın; büyük font/dark tema ve saat dilimi etiketi testli olsun.
 - [ ] Ülke haritası ve altı parçalı GAFAM grafiğini regresyona al; mevcut özet verisi ile seri sorgusu ayrı zaman kapsamından karıştırılmasın.

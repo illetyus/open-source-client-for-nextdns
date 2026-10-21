@@ -138,6 +138,10 @@ class NextDnsRepository(
   private val _analyticsErrorMessage = MutableStateFlow<String?>(null)
   val analyticsErrorMessage = _analyticsErrorMessage.asStateFlow()
 
+  private val _analyticsSeries = MutableStateFlow(AnalyticsSeriesState())
+  val analyticsSeries = _analyticsSeries.asStateFlow()
+  private var analyticsSeriesGeneration = 0L
+
   private val _knownDeviceNameToId = java.util.concurrent.ConcurrentHashMap<String, String>()
   private val _knownDeviceIdToName = java.util.concurrent.ConcurrentHashMap<String, String>()
 
@@ -210,6 +214,8 @@ class NextDnsRepository(
     _logsPaginationState.value = LogsPaginationState()
     _unverifiedSecurityFields.value = SecurityFieldDiscovery()
     analyticsRequest = null
+    analyticsSeriesGeneration++
+    _analyticsSeries.value = AnalyticsSeriesState()
     logsRefreshRequest = null
     logsSnapshotGeneration++
     logsFilterGeneration++
@@ -2611,6 +2617,71 @@ class NextDnsRepository(
         latitude = item.geo?.latitude,
         longitude = item.geo?.longitude
       )
+    }
+  }
+
+  suspend fun fetchAnalyticsSeries(query: AnalyticsSeriesQuery): Boolean {
+    if (query.validationError() != null) {
+      _analyticsSeries.value = AnalyticsSeriesState(
+        query = query,
+        errorMessage = AppStrings.get(R.string.analytics_series_invalid_query)
+      )
+      return false
+    }
+    val snapshot = captureSession()
+    if (snapshot.apiKey.isBlank() || snapshot.profileId != query.profileId) return false
+    return withSessionContext(snapshot = snapshot) {
+      val generation = commitCurrentSession {
+        analyticsSeriesGeneration++
+        _analyticsSeries.value = AnalyticsSeriesState(query = query, loading = true)
+        analyticsSeriesGeneration
+      }
+      val response = safeApiCall("getAnalyticsSeries") {
+        apiService.getAnalyticsSeries(
+          apiKey = snapshot.apiKey,
+          profileId = query.profileId,
+          endpoint = query.metric.endpoint,
+          device = query.deviceId,
+          from = java.time.format.DateTimeFormatter.ISO_INSTANT.format(query.fromInclusive),
+          to = java.time.format.DateTimeFormatter.ISO_INSTANT.format(query.toExclusive),
+          intervalSeconds = query.intervalSeconds,
+          limit = AnalyticsSeriesQuery.MAX_ENTITIES,
+          status = query.domainStatus,
+          root = query.root.takeIf { query.metric == SeriesMetric.DOMAINS },
+          type = query.metric.type
+        )
+      }
+      val body = response?.body()
+      val parsed = if (response?.isSuccessful == true && body != null && !body.hasApiErrors()) {
+        runCatching {
+          require(body.meta?.pagination?.cursor.isNullOrBlank()) {
+            "Analytics series has more entities than the configured bound"
+          }
+          AnalyticsSeriesMapper.parse(query, body.meta?.series, body.data)
+        }.getOrNull()
+      } else null
+      commitCurrentSession {
+        if (generation != analyticsSeriesGeneration || _activeProfileId.value != query.profileId) {
+          return@commitCurrentSession false
+        }
+        if (parsed == null) {
+          _analyticsSeries.value = AnalyticsSeriesState(
+            query = query,
+            loading = false,
+            errorMessage = AppStrings.get(R.string.analytics_series_load_failed)
+          )
+          false
+        } else {
+          _analyticsSeries.value = AnalyticsSeriesState(
+            query = query,
+            rows = parsed,
+            intervalSeconds = body?.meta?.series?.interval,
+            loading = false,
+            fetchedAt = java.time.Instant.now()
+          )
+          true
+        }
+      }
     }
   }
 

@@ -68,11 +68,11 @@ class NextDnsViewModel(
 
   private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
   val themeMode = _themeMode.asStateFlow()
-  
+
   fun setThemeMode(mode: ThemeMode) {
       _themeMode.value = mode
   }
-  
+
   // Initialize theme mode from DataStore
   init {
       viewModelScope.launch {
@@ -111,6 +111,7 @@ class NextDnsViewModel(
   val logsHistoryFilter = repository.logsHistoryFilter
   val logDevices = repository.logDevices
   val analytics = repository.analytics
+  val analyticsSeries = repository.analyticsSeries
   val analyticsLastSuccessAt = repository.analyticsLastSuccessAt
   val analyticsErrorMessage = repository.analyticsErrorMessage
   val allKnownDevices = repository.allKnownDevices
@@ -174,6 +175,7 @@ class NextDnsViewModel(
   private var authenticationJob: Job? = null
   private var analyticsRefreshJob: Job? = null
   private var analyticsRefreshGeneration = 0L
+  private var analyticsSeriesRefreshJob: Job? = null
 
   private val _uiMessage = MutableStateFlow<UiMessage?>(null)
   val uiMessage = _uiMessage.asStateFlow()
@@ -643,6 +645,13 @@ class NextDnsViewModel(
       } finally {
         if (generation == analyticsRefreshGeneration) _isAnalyticsLoading.value = false
       }
+    }
+  }
+
+  fun refreshAnalyticsSeries(query: AnalyticsSeriesQuery) {
+    analyticsSeriesRefreshJob?.cancel()
+    analyticsSeriesRefreshJob = viewModelScope.launch {
+      repository.fetchAnalyticsSeries(query)
     }
   }
 

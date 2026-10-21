@@ -105,5 +105,21 @@ class QualityRegressionEvidenceTest(unittest.TestCase):
         }, set(required))
 
 
+    def test_analytics_time_filter_values_are_stable_and_localized(self):
+        repository = Path(__file__).resolve().parents[2]
+        screen = (repository / "app/src/main/java/com/example/ui/screens/AnalyticsScreen.kt").read_text(encoding="utf-8")
+        self.assertTrue('listOf("24h", "7d", "30d", "90d")' in screen, "period filters must use stable API keys")
+        self.assertIn('mutableStateOf("24h")', screen)
+        self.assertIn('R.string.last_24_hours', screen)
+        self.assertIn('R.string.last_7_days', screen)
+        self.assertIn('R.string.last_30_days', screen)
+        self.assertIn('R.string.last_3_months', screen)
+        self.assertNotIn('listOf("Son 24 saat"', screen)
+
+        for locale in ("values", "values-tr", "values-de", "values-fr", "values-es"):
+            strings = (repository / f"app/src/main/res/{locale}/strings.xml").read_text(encoding="utf-8")
+            for resource in ("last_24_hours", "last_7_days", "last_30_days", "last_3_months"):
+                self.assertIn(f'<string name="{resource}">', strings, f"{locale} is missing {resource}")
+
 if __name__ == "__main__":
     unittest.main()
