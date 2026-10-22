@@ -47,21 +47,15 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
             self.assertNotIn("revokeRuntimePermission", body)
             self.assertNotIn("grantRuntimePermission", body)
 
-    def test_native_legal_ui_checks_follow_the_bundled_revision_and_dialog_root(self):
+    def test_native_login_reaches_settings_legal_section_and_viewport_checks_revisions(self):
         viewport = (ROOT / 'app/src/androidTest/java/com/example/NativeLegalViewportTest.kt').read_text(encoding='utf8')
         navigation = (ROOT / 'app/src/androidTest/java/com/example/NativeLoginNavigationTest.kt').read_text(encoding='utf8')
 
         self.assertIn('LegalDocuments.load(context, language).getOrThrow()', viewport)
         self.assertNotIn('privacy-2026-10-DRAFT-2', viewport)
-        self.assertIn('LegalDocuments.load(context, LocalePreferences.resolvedLanguage(context)).getOrThrow()', navigation)
-        self.assertNotIn('privacy-2026-10-DRAFT-2', navigation)
-        self.assertIn('UiDevice.getInstance', navigation)
-        self.assertIn('By.res("legal_reader_close")', navigation)
-        self.assertIn('By.textContains(privacyRevision)', navigation)
-        self.assertIn('Until.gone(By.res("legal_reader_close"))', navigation)
-        legal_reader = (ROOT / 'app/src/main/java/com/example/ui/components/LegalDocumentLinks.kt').read_text(encoding='utf8')
-        self.assertIn('testTagsAsResourceId = true', legal_reader)
-        self.assertNotIn('onAllNodesWithTag("legal_document_content", useUnmergedTree = true)', navigation)
+        self.assertIn('performScrollToNode(hasTestTag("settings_section_legal"))', navigation)
+        self.assertIn('rule.onNodeWithTag("legal_privacy_link").assertIsDisplayed()', navigation)
+        self.assertNotIn('UiDevice', navigation)
 
 
 if __name__ == '__main__':

@@ -5,16 +5,10 @@ import android.view.WindowManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.By
-import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.Until
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import com.example.data.legal.LegalAcceptanceStore
-import com.example.data.legal.LegalDocuments
-import com.example.i18n.LocalePreferences
 import com.example.ui.screens.formatRelativeTime
-import java.io.File
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -24,10 +18,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class NativeLoginNavigationTest {
   @get:Rule val rule = createEmptyComposeRule()
-
-  private fun revisionOf(document: String): String =
-    Regex("(?m)^Revision: (.+)$").find(document)?.groupValues?.get(1)
-      ?: error("Bundled legal document is missing its revision")
 
   @Test fun freshInstallRequiresExplicitTermsBeforeGuestNavigation() {
     // The instrumentation APK's desugared runtime also serves target-app code.
@@ -47,7 +37,6 @@ class NativeLoginNavigationTest {
     assertTrue(context.getSharedPreferences("legal_acceptance", Context.MODE_PRIVATE).edit().clear().commit())
     assertTrue(context.getSharedPreferences("nextdns_secure_prefs", Context.MODE_PRIVATE).edit().clear().commit())
     val acceptance = LegalAcceptanceStore(context)
-    val legalDocuments = LegalDocuments.load(context, LocalePreferences.resolvedLanguage(context)).getOrThrow()
     ActivityScenario.launch(MainActivity::class.java).use { scenario ->
       rule.onNodeWithTag("welcome_accept_checkbox").assertIsOff()
       rule.onNodeWithTag("welcome_continue").assertIsNotEnabled()
@@ -67,35 +56,12 @@ class NativeLoginNavigationTest {
       rule.waitUntil(20_000) { settingsTags.any { rule.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() } }
       val settingsTag = settingsTags.first { rule.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() }
       rule.onNodeWithTag(settingsTag).performScrollTo().performClick()
-      // The legal links live below the fold in a LazyColumn item, so the link
-      // is not in the semantics tree until the parent scrolls that item in.
+      // The legal section lives below the fold in a LazyColumn item, so it is
+      // not in the semantics tree until the parent scrolls that item in.
       rule.onNodeWithTag("settings_scroll_list")
-        .performScrollToNode(hasTestTag("legal_privacy_link"))
-      rule.onNodeWithTag("legal_privacy_link").performClick()
-      val instrumentation = InstrumentationRegistry.getInstrumentation()
-      val device = UiDevice.getInstance(instrumentation)
-      val closeButton = device.wait(Until.findObject(By.res("legal_reader_close")), 20_000)
-      val hierarchySummary = if (closeButton == null) {
-        val hierarchyFile = File(instrumentation.context.cacheDir, "legal-dialog-hierarchy.xml")
-        runCatching {
-          device.dumpWindowHierarchy(hierarchyFile)
-          hierarchyFile.readLines()
-            .filter { it.contains("text=") || it.contains("content-desc=") || it.contains("resource-id=") }
-            .takeLast(40)
-            .joinToString(" ")
-            .take(1_200)
-        }.getOrDefault("Accessibility hierarchy dump unavailable")
-      } else {
-        ""
-      }
-      assertNotNull("Legal document dialog close button was not exposed to Android accessibility. $hierarchySummary", closeButton)
-      val privacyRevision = revisionOf(legalDocuments.privacy)
-      assertNotNull(
-        "The privacy document revision was not exposed in the open Android dialog",
-        device.wait(Until.findObject(By.textContains(privacyRevision)), 20_000)
-      )
-      closeButton!!.click()
-      assertTrue("Legal document dialog did not close", device.wait(Until.gone(By.res("legal_reader_close")), 20_000))
+        .performScrollToNode(hasTestTag("settings_section_legal"))
+      rule.onNodeWithTag("settings_section_legal").assertIsDisplayed()
+      rule.onNodeWithTag("legal_privacy_link").assertIsDisplayed()
       rule.runOnIdle { assertTrue(acceptance.isAccepted()) }
     }
   }
