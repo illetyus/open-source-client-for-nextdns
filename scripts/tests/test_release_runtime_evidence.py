@@ -21,6 +21,23 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "exactly 17 tests"):
                     validate_runtime_summary(self.summary(tests=old_count))
 
+    def test_release_runtime_verifier_keeps_all_p06_classes_and_aggregates_runs(self):
+        verifier = Path(__file__).resolve().parents[1] / "verify_release_runtime.py"
+        source = verifier.read_text(encoding="utf-8")
+        for class_name in (
+            "NativeApiFixtureTest",
+            "NativeLegalViewportTest",
+            "NativeLoginNavigationTest",
+            "NativeNotificationPermissionTest",
+            "ReleaseSecurityRuntimeTest",
+            "WorldMapStrictModeTest",
+        ):
+            with self.subTest(class_name=class_name):
+                self.assertIn(f"com.example.{class_name}", source)
+        self.assertIn("sum(summaries) == REQUIRED_RUNTIME_TESTS", source)
+        self.assertIn("statuses.count('1') == REQUIRED_RUNTIME_TESTS and statuses.count('0') == REQUIRED_RUNTIME_TESTS", source)
+        self.assertIn("'tests':REQUIRED_RUNTIME_TESTS", source)
+
     def test_rejects_failed_or_skipped_runtime_evidence(self):
         with self.assertRaisesRegex(ValueError, "zero failures"):
             validate_runtime_summary(self.summary(failures=1))
