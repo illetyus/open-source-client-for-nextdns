@@ -65,8 +65,16 @@ class NativeNotificationPermissionTest {
       assertTrue(NotificationCenter.canPost(context, NotificationCenter.CHANNEL_DAILY_SUMMARY))
       assertTrue(NotificationCenter.postConfigChanged(context))
       assertTrue(NotificationCenter.postDailySummary(context, 9876543L, 1234567L))
-      awaitCondition("Both notifications must actually reach Android") { manager.activeNotifications.size == 2 }
-      val posted = manager.activeNotifications.map { it.notification }
+      val expectedIds = setOf(
+        NotificationCenter.NOTIFICATION_CONFIG_CHANGED,
+        NotificationCenter.NOTIFICATION_DAILY_SUMMARY
+      )
+      awaitCondition("Both notifications must actually reach Android") {
+        manager.activeNotifications.map { it.id }.containsAll(expectedIds)
+      }
+      val delivered = manager.activeNotifications.filter { it.id in expectedIds }
+      assertEquals(expectedIds, delivered.map { it.id }.toSet())
+      val posted = delivered.map { it.notification }
       if (Build.VERSION.SDK_INT >= 26) {
         assertEquals(setOf(NotificationCenter.CHANNEL_CONFIG_CHANGES, NotificationCenter.CHANNEL_DAILY_SUMMARY), posted.map { it.channelId }.toSet())
       }
