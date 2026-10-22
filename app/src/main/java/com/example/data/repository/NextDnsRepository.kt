@@ -753,7 +753,9 @@ class NextDnsRepository(
       }
       loadActiveProfileDataFromApi(key, target)
       withSessionContext(expectedKey = key, expectedProfile = target) {
-        safeApiCall("reconcileNotifications") { NotificationWorkScheduler.reconcile(NextDnsApp.instance) }
+        if (backgroundWorkEnabled) {
+          safeApiCall("reconcileNotifications") { NotificationWorkScheduler.reconcile(NextDnsApp.instance) }
+        }
         ensureOperationActive()
       }
       Result.success(mapped.size)

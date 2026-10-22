@@ -29,5 +29,7 @@ dependencies {
   implementation(libs.androidx.test.uiautomator)
   implementation(libs.androidx.tracing.perfetto)
   implementation(libs.androidx.tracing.perfetto.binary)
+  implementation("com.squareup.okhttp3:mockwebserver:4.10.0")
+  implementation("com.squareup.okhttp3:okhttp-tls:4.10.0")
 }
 

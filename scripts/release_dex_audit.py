@@ -65,12 +65,14 @@ def audit_dex(data):
     retired_product_type_prefixes = (
         b'Lcom/example/data/diagnostics/LibreSpeedClient',
         b'Lcom/example/ui/screens/SpeedTestDialog',
+        b'Lcom/example/BenchmarkFixtureActivity',
     )
     for descriptor in sorted(descriptors):
         if descriptor.lstrip(b'[').startswith(prefixes):
             raise TestCodeFound('Forbidden test type: ' + descriptor.decode('ascii', errors='replace'))
         if descriptor.lstrip(b'[').startswith(retired_product_type_prefixes):
-            raise TestCodeFound('Retired product type: ' + descriptor.decode('ascii'))
+            reason = 'Benchmark fixture type' if descriptor.startswith(b'Lcom/example/BenchmarkFixtureActivity') else 'Retired product type'
+            raise TestCodeFound(reason + ': ' + descriptor.decode('ascii'))
     for marker in (b'$jacoco', b'RELEASE_AUDIT_SYNTHETIC_CANARY_20261009',
                    b'garbage.php', b'empty.php'):
         if marker in data:

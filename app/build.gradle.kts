@@ -58,6 +58,7 @@ android {
       initWith(getByName("release"))
       signingConfig = signingConfigs.getByName("debug")
       isDebuggable = false
+      applicationIdSuffix = ".benchmark"
       matchingFallbacks += listOf("release")
     }
     debug {
@@ -170,5 +171,6 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
   add("benchmarkImplementation", libs.androidx.compose.runtime.tracing)
+  add("benchmarkImplementation", "com.squareup.okhttp3:okhttp-tls:4.10.0")
   "ksp"(libs.moshi.kotlin.codegen)
 }

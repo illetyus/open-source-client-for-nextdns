@@ -22,6 +22,13 @@ class RetiredFeatureDexAuditTest(unittest.TestCase):
         with self.assertRaisesRegex(audit.TestCodeFound, "Retired product type"):
             audit.audit_dex(b"synthetic dex")
 
+    @patch.object(audit, "type_descriptors", return_value={
+        b"Lcom/example/BenchmarkFixtureActivity$BenchmarkApiDispatcher;"
+    })
+    def test_release_rejects_performance_benchmark_fixture_types(self, _):
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex")
+
     @patch.object(audit, "type_descriptors", return_value={b"Lcom/example/MainActivity;"})
     def test_release_allows_cleanup_preference_name_without_speed_backend(self, _):
         self.assertEqual(1, audit.audit_dex(b"speed_test_local_settings"))

@@ -49,16 +49,21 @@ This document describes the security assumptions and mitigations for
 - The API key is masked by default.
 - Revealed API keys automatically hide again after 10 seconds.
 - Screen capture is blocked while the API key is revealed.
-- Clipboard content is marked sensitive.
-- The clipboard is cleared after 30 seconds if it still contains the copied API key.
+- Clipboard content is marked sensitive and a process-local callback attempts to clear it
+  after 30 seconds if it still contains the copied API key. This is best-effort: process
+  termination or Android clipboard-access restrictions may leave it present longer.
 
 ### Dependency and third-party network minimization
 
 Unused Firebase AI, Firebase App Check, Google Services, Secrets Gradle, Room, Coil,
 Credential Manager, Google ID, camera, location and permission-library entries are removed.
 
-Remote favicon and JavaScript chart requests are removed so DNS/domain analytics are not
-sent to icon services or loaded through a JavaScript-enabled WebView.
+Rule and catalog screens may request decorative icons from `favicons.nextdns.io`. The
+normalized hostname is included as reversible hexadecimal text in the HTTPS path; this
+does not send the API key, and DNS log rows use a local icon. The endpoint is not part of
+the documented NextDNS API and its retention practices have not been verified. The draft
+privacy notice describes this transfer. Charts are rendered locally with Compose; the
+main application does not use a JavaScript-enabled WebView.
 
 ## Residual risks
 
@@ -67,6 +72,8 @@ sent to icon services or loaded through a JavaScript-enabled WebView.
 - Android Keystore protects key material but cannot make a compromised runtime trustworthy.
 - NextDNS API availability and undocumented endpoints remain external dependencies.
 - A public log-download URL should be treated as temporarily sensitive until it expires.
+- Copied API-key cleanup depends on the app process and Android clipboard access; users
+  should treat the 30-second clear as best-effort and clear the clip manually when needed.
 - Screenshots taken before the secure-display flag is enabled are outside the app's control.
 
 ## Security invariants
