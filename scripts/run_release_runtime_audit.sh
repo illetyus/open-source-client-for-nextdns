@@ -51,7 +51,8 @@ adb shell settings put global animator_duration_scale 0
 adb install -r "$out/release-runtime.apk"
 adb install -r "$out/release-runtime-test.apk"
 adb logcat -c
-timeout 240 adb shell am instrument -w -r -e class com.example.ReleaseSecurityRuntimeTest,com.example.WorldMapStrictModeTest \
+timeout 240 adb shell am instrument -w -r -e class \
+  com.example.NativeApiFixtureTest,com.example.NativeLegalViewportTest,com.example.NativeLoginNavigationTest,com.example.NativeNotificationPermissionTest,com.example.ReleaseSecurityRuntimeTest,com.example.WorldMapStrictModeTest \
   com.aistudio.nextdns.mgrqvt.test/androidx.test.runner.AndroidJUnitRunner > "$out/instrumentation.txt"
 adb logcat -d -v threadtime > "$out/logcat.txt"
 python3 scripts/verify_release_runtime.py
