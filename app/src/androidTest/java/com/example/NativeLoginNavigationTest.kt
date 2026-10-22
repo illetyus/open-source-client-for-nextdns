@@ -14,6 +14,7 @@ import com.example.data.legal.LegalAcceptanceStore
 import com.example.data.legal.LegalDocuments
 import com.example.i18n.LocalePreferences
 import com.example.ui.screens.formatRelativeTime
+import java.io.File
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -71,9 +72,23 @@ class NativeLoginNavigationTest {
       rule.onNodeWithTag("settings_scroll_list")
         .performScrollToNode(hasTestTag("legal_privacy_link"))
       rule.onNodeWithTag("legal_privacy_link").performClick()
-      val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+      val instrumentation = InstrumentationRegistry.getInstrumentation()
+      val device = UiDevice.getInstance(instrumentation)
       val closeButton = device.wait(Until.findObject(By.res("legal_reader_close")), 20_000)
-      assertNotNull("Legal document dialog close button was not exposed to Android accessibility", closeButton)
+      val hierarchySummary = if (closeButton == null) {
+        val hierarchyFile = File(instrumentation.context.cacheDir, "legal-dialog-hierarchy.xml")
+        runCatching {
+          device.dumpWindowHierarchy(hierarchyFile)
+          hierarchyFile.readLines()
+            .filter { it.contains("text=") || it.contains("content-desc=") || it.contains("resource-id=") }
+            .takeLast(40)
+            .joinToString(" ")
+            .take(1_200)
+        }.getOrDefault("Accessibility hierarchy dump unavailable")
+      } else {
+        ""
+      }
+      assertNotNull("Legal document dialog close button was not exposed to Android accessibility. $hierarchySummary", closeButton)
       val privacyRevision = revisionOf(legalDocuments.privacy)
       assertNotNull(
         "The privacy document revision was not exposed in the open Android dialog",
