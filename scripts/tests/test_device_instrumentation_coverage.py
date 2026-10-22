@@ -55,8 +55,10 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         self.assertNotIn('privacy-2026-10-DRAFT-2', viewport)
         self.assertIn('LegalDocuments.load(context, LocalePreferences.resolvedLanguage(context)).getOrThrow()', navigation)
         self.assertNotIn('privacy-2026-10-DRAFT-2', navigation)
-        self.assertIn('onNodeWithTag("legal_reader_close")', navigation)
-        self.assertIn('onNodeWithTag("legal_document_content")', navigation)
+        self.assertIn('UiDevice.getInstance', navigation)
+        self.assertIn('By.text(closeLabel)', navigation)
+        self.assertIn('By.textContains(privacyRevision)', navigation)
+        self.assertIn('Until.gone(By.text(closeLabel))', navigation)
         self.assertNotIn('onAllNodesWithTag("legal_document_content", useUnmergedTree = true)', navigation)
 
 

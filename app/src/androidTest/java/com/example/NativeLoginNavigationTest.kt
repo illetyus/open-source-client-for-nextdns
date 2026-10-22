@@ -5,8 +5,12 @@ import android.view.WindowManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import com.example.R
 import com.example.data.legal.LegalAcceptanceStore
 import com.example.data.legal.LegalDocuments
 import com.example.i18n.LocalePreferences
@@ -68,12 +72,18 @@ class NativeLoginNavigationTest {
       rule.onNodeWithTag("settings_scroll_list")
         .performScrollToNode(hasTestTag("legal_privacy_link"))
       rule.onNodeWithTag("legal_privacy_link").performClick()
-      rule.waitUntil(20_000) {
-        rule.onAllNodesWithTag("legal_reader_close").fetchSemanticsNodes().isNotEmpty()
-      }
-      rule.onNodeWithTag("legal_document_content")
-        .assertTextContains(revisionOf(legalDocuments.privacy), substring = true)
-      rule.onNodeWithTag("legal_reader_close").performClick()
+      val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+      var closeLabel = ""
+      scenario.onActivity { closeLabel = it.getString(R.string.legal_close_label) }
+      val closeButton = device.wait(Until.findObject(By.text(closeLabel)), 20_000)
+      assertNotNull("Legal document dialog close button was not exposed to Android accessibility", closeButton)
+      val privacyRevision = revisionOf(legalDocuments.privacy)
+      assertNotNull(
+        "The privacy document revision was not exposed in the open Android dialog",
+        device.wait(Until.findObject(By.textContains(privacyRevision)), 20_000)
+      )
+      closeButton!!.click()
+      assertTrue("Legal document dialog did not close", device.wait(Until.gone(By.text(closeLabel)), 20_000))
       rule.runOnIdle { assertTrue(acceptance.isAccepted()) }
     }
   }
