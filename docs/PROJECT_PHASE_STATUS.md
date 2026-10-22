@@ -2,7 +2,7 @@
 
 ### Güncel çalışma durumu — 22 Ekim 2026
 
-PR #32 (`8635c1c28619ba11f82f343651555ac5c1d4a917`) 17/17 Android API 35 release-emülatör testini içeren CI run `39811062359` sonrası `main`'e alındı; yeni `main` başı `c3dc9183aaa8b787a2107ee792660c3aa1563d27`. P07 PR #33 açık ve güncel başı `c938057f4497fa8a532e30b88ee56156fa89ab9a`; bu son başlık için CI doğrulaması bekleniyor. Yerel Python suite 24/24, API matrisi 60 rota/39 profil alanı ve hukuki DRAFT bütünlük denetimleri geçti. `docs/release/readiness.json` içindeki B01–B22 cihaz kanıtı 13 PARTIAL, 9 NOT_RUN, 0 PASS durumundadır. Hız testi bu sürüm için iptal edilmiştir; eski istemci ve canlı sunucu araştırması tarihsel kayıttır. Hukuki belgeler `DRAFT`, yayıncı kimliği/iletişim doğrulaması yoktur ve yayın yapılmamıştır.
+PR #32 (`8635c1c28619ba11f82f343651555ac5c1d4a917`) 17/17 Android API 35 release-emülatör testini içeren CI run `39811062359` sonrası `main`'e alındı; yeni `main` başı `c3dc9183aaa8b787a2107ee792660c3aa1563d27`. P07 PR #33 açık; son başlık için CI doğrulaması bekleniyor. Yerel Python suite 24/24, API matrisi 60 rota/39 profil alanı ve hukuki DRAFT bütünlük denetimleri geçti. `docs/release/readiness.json` içindeki B01–B22 cihaz kanıtı 13 PARTIAL, 9 NOT_RUN, 0 PASS durumundadır. Hız testi bu sürüm için iptal edilmiştir; eski istemci ve canlı sunucu araştırması tarihsel kayıttır. Hukuki belgeler `DRAFT`, yayıncı kimliği/iletişim doğrulaması yoktur ve yayın yapılmamıştır.
 
 Bu kayıt önceki fazların kapsamını korur. Bir alt işin kaynak koduna eklenmesi, Faz 9'un veya yayın kapılarının tamamlandığı anlamına gelmez. PR sayfaları ilgili entegrasyon ve CI kanıtını taşır; gerçek cihaz sonuçları `release/readiness.json` içinde ayrı tutulur.
 
