@@ -8,6 +8,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -33,7 +35,10 @@ fun LegalDocumentLinks(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val bundle = remember(context) { LegalDocuments.load(context).getOrNull() }
     Dialog(onDismissRequest = { selectedTerms = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-      Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+      Surface(
+        Modifier.fillMaxSize().semantics { testTagsAsResourceId = true },
+        color = MaterialTheme.colorScheme.background
+      ) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(20.dp),
           verticalArrangement = Arrangement.spacedBy(12.dp)) {
           Text(stringResource(if (initial) R.string.legal_terms_label else R.string.legal_privacy_label),
