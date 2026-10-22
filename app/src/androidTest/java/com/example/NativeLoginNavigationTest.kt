@@ -61,7 +61,12 @@ class NativeLoginNavigationTest {
       rule.onNodeWithTag("settings_scroll_list")
         .performScrollToNode(hasTestTag("legal_privacy_link"))
       rule.onNodeWithTag("legal_privacy_link").performClick()
-      rule.onNodeWithTag("legal_document_content").assertTextContains("privacy-2026-10-DRAFT-2", substring = true)
+      rule.waitUntil(20_000) {
+        rule.onAllNodesWithTag("legal_document_content", useUnmergedTree = true)
+          .fetchSemanticsNodes().isNotEmpty()
+      }
+      rule.onNodeWithTag("legal_document_content", useUnmergedTree = true)
+        .assertTextContains("privacy-2026-10-DRAFT-2", substring = true)
       rule.onNodeWithTag("legal_reader_close").performClick()
       rule.runOnIdle { assertTrue(acceptance.isAccepted()) }
     }
