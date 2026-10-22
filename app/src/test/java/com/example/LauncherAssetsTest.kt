@@ -99,7 +99,10 @@ class LauncherAssetsTest {
           val color = parser.getAttributeValue("http://schemas.android.com/apk/res/android", "strokeColor")
           if (width != null && data != null && color != null) strokedPaths += Triple(width.toFloat(), data, color)
           val fill = parser.getAttributeValue("http://schemas.android.com/apk/res/android", "fillColor")
-          if (fill != null && fill != "@android:color/transparent" && data != null) filledPaths += data to fill
+          if (fill != null && data != null) {
+            val fillColor = if (fill == "@android:color/transparent") Color.TRANSPARENT else Color.parseColor(fill)
+            if (Color.alpha(fillColor) > 0) filledPaths += data to fill
+          }
         }
         parser.next()
       }
