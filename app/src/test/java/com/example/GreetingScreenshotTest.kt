@@ -54,7 +54,7 @@ class GreetingScreenshotTest {
     ).assertIsDisplayed()
     val profile = composeTestRule.onNodeWithText(AppStrings.get(R.string.ui_18d49619ba)).assertIsDisplayed()
     composeTestRule.onNodeWithText(AppStrings.get(R.string.ui_6d063986da)).assertDoesNotExist()
-    composeTestRule.onNodeWithTag("home_nextdns_connection_button").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("home_nextdns_connection_button").assertDoesNotExist()
     composeTestRule.onNodeWithContentDescription("NextDNS Logo").assertDoesNotExist()
 
     val layouts = mutableListOf<TextLayoutResult>()

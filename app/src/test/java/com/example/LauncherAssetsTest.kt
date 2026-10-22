@@ -110,11 +110,16 @@ class LauncherAssetsTest {
     assertEquals("The compact mark should have one thin connector", 1, strokedPaths.size)
     assertTrue("The connector should remain visually light", strokedPaths.single().first in 2f..3f)
     assertEquals("M38,39 C45,39 47,50 54,54 C61,58 63,69 70,69", strokedPaths.single().second)
-    assertEquals("The connector should use project slate", "#455A64", strokedPaths.single().third)
+    assertEquals(
+      "The connector should use project slate",
+      Color.rgb(69, 90, 100),
+      Color.parseColor(strokedPaths.single().third)
+    )
     assertEquals("Three filled nodes should complete the mark", 3, filledPaths.size)
-    assertEquals(listOf("#607D8B", "#263238", "#607D8B"), filledPaths.map { it.second })
-    assertTrue("The mark must not reuse NextDNS blue or green", filledPaths.none {
-      it.second.equals("#0055FF", ignoreCase = true) || it.second.equals("#008000", ignoreCase = true)
+    val nodeColors = filledPaths.map { Color.parseColor(it.second) }
+    assertEquals(listOf(Color.rgb(96, 125, 139), Color.rgb(38, 50, 56), Color.rgb(96, 125, 139)), nodeColors)
+    assertTrue("The mark must not reuse NextDNS blue or green", nodeColors.none {
+      it == Color.rgb(0, 85, 255) || it == Color.rgb(0, 128, 0)
     })
   }
 
