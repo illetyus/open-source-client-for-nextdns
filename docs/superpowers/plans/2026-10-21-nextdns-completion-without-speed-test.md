@@ -11,7 +11,7 @@
 **Spec:** Önceden onaylanmış docs/UX_LOGS_ICON_DESIGN_RESEARCH_DRAFT_2026-10-20.md; docs/superpowers/plans/2026-10-20-nextdns-feature-audit-and-implementation.md; docs/PHASE9_BROWSERSTACK_RELEASE_GATE.md; kullanıcının 21 Ekim 2026 tarihli “hepsini bitirmeyi planla; hız testi şimdilik iptal” kapsam kararı.
 
 **Rapor tarihi:** 22 Ekim 2026, Europe/Istanbul.
-**Yürütme durumu:** KULLANICI ONAYLADI; P00–P04 uygulama dilimleri main'e PR/CI ile alındı. P05 UI/ikon/privacy düzeltmeleri `feat/p05-ui-branding` dalında; P05 PR CI doğrulaması bekliyor. P06–P11 ve yayın kapıları açık. Bu belge yayın onayı değildir.
+**Yürütme durumu:** KULLANICI ONAYLADI; P00–P04 uygulama dilimleri main'e PR/CI ile alındı. P05 UI/ikon/privacy düzeltmeleri PR #31'de; commit `39fe9b3ed11847dcc4df46b550d22976dffd6213` için CI `39741292906` başarılı. P05'te plan/hata defteri kanıt güncellemesi ve entegrasyon; P06–P11 ve yayın kapıları açık. Bu belge yayın onayı değildir.
 **Yöntem:** Mevcut izole worktree üzerinde native yürütme; her dilimde PR/CI ve değişiklik kapsamına uygun inceleme. Yeni toplu mimari dönüşüm yapılmayacak.
 
 ## Global Constraints
@@ -187,12 +187,12 @@ ApiMeta'ya nullable series: ApiSeriesMeta eklenir; ApiSeriesMeta times: List<Str
 
 | Bildirilen sorun | Uygulama ve regresyon kanıtı | Durum |
 |---|---|---|
-| Tanı düğmesi çalışmıyor veya yanlış profili bağlı gösteriyor | `accountDiagnosticButtonRunsANewDiagnosticRequest`, `accountDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected`, `DiagnosticAndDeviceMenuTest.diagnosticBannerRequiresSuccessfulMeasurementOfSelectedProfile` | Mevcut korumalar main'de; yeni tıklama/yerleşim testi P05 CI bekliyor |
+| Tanı düğmesi çalışmıyor veya yanlış profili bağlı gösteriyor | `accountDiagnosticButtonRunsANewDiagnosticRequest`, `accountDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected`, `DiagnosticAndDeviceMenuTest.diagnosticBannerRequiresSuccessfulMeasurementOfSelectedProfile` | Mevcut korumalar main'de; yeni tıklama/yerleşim testi P05 CI `39741292906` ile geçti |
 | Eşitleme yerel bağlantı tercihlerini servis ayarı sanıyor | `fullRefreshReadsNextDnsStateWithoutPostingLocalPreferences`; yalnız sunucu GET'leri doğrulanıyor | Main'de, P04 CI geçti |
 | Bazı cihazların günlükleri ve eski kayıtlar görünmüyor | `analyticsDevicePaginationIncludesEveryFilterableDevice`, cursor tekrar/sayfa sınırı testleri, `LogsHistoryFilterTest` | P03 main'de; geçmiş NextDNS saklama/cursor sınırıyla kısıtlı |
 | İzin/engel listesi simgeleri gereğinden büyük | `allowAndDenyListFaviconsUseCompactSize`, `localTrackingProtectionIconUsesTheSmallerSize` | Main'de; 12 dp |
 | Trafik varış haritası yalnız metin gösteriyor | `tappingAColoredCountryShowsItsNameAndTrafficShare`, erişilebilir ülke seçici testi | Main'de etkileşimli yerel harita |
-| Hesap bölümü ve misafir/hukuk bağlantıları dağınık | `accountSectionsPutConnectionAndProfilesBeforeMetricsAndSync`, `connectionAreaOpensFromNavigationWithoutExtraTopBarButton`, `loginDoesNotScatterLegalLinksOutsideTheGroupedWelcomeFlow` | Hesap/nav sıralaması P05 CI bekliyor; misafir/legal testi main'de |
+| Hesap bölümü ve misafir/hukuk bağlantıları dağınık | `accountSectionsPutConnectionAndProfilesBeforeMetricsAndSync`, `connectionAreaOpensFromNavigationWithoutExtraTopBarButton`, `loginDoesNotScatterLegalLinksOutsideTheGroupedWelcomeFlow` | P05 hesap/nav testleri ve main'deki misafir/legal testi geçti |
 | Ayarlar sırası karışık | `settingsExposeServiceLegalAppPreferenceAndDeleteGroupsOnce` | Servis → uygulama tercihleri → hukuki belgeler → servis profil silme sırası main'de testli |
 
 - [x] Kullanıcı şikâyetleri tek kabul tablosuna bağlandı; her satır test veya açıkça belirtilen CI/cihaz kapısına bağlı.
@@ -201,9 +201,10 @@ ApiMeta'ya nullable series: ApiSeriesMeta eklenir; ApiSeriesMeta times: List<Str
 - [x] Beyaz alanda merkezî minimal özgün launcher simgesi; adaptive/monochrome/legacy ve mağaza çıktıları tek üreticiden güncellendi. Gerçek OEM maskesi ve bağımsız marka izlenimi incelemesi P06 cihaz kapısında bekliyor.
 - [x] Favicon sabit HTTPS host, hostname doğrulama, API anahtarı eklememe, yönlendirme kapatma, yanıt/süre sınırı, bellek önbelleği ve yerel fallback ile best-effort kalıyor. `FaviconImage` günlük ekranında kullanılmıyor; günlük domainleri ikon hostuna gönderilmiyor. Privacy DRAFT ve araştırma metni bu kapsamla güncellendi.
 - [x] Özgün ikon ve offline Natural Earth haritası için kaynak/lisans notları mevcut; yeni ikon harici görsel/font/bağımlılık eklemiyor. Çözülmüş dependency/NOTICE paketi main CI'da doğrulanmış.
-- [ ] P05 değişiklikleri için taze Android Compose/JVM testleri, screenshot, lint, localization, lisans ve security CI; beş gözle inceleme ve main entegrasyonu tamamlanmalı.
+- [x] PR #31 son kaynak başlığında taze Android Compose/JVM testleri, screenshot, lint, localization, lisans, paket ve security CI geçti; beş eksenli kaynak incelemesinde birleştirmeyi engelleyen bulgu yok.
+- [ ] Kanıt güncelleme commit'i için son CI ve normal PR akışıyla main entegrasyonu tamamlanmalı.
 
-**P05 durumu (22 Ekim):** Hesap tanı eylemi/sekmesi ve kart sırası, minimal launcher varlığı ve güncel ikon/Privacy DRAFT provenance değişiklikleri `feat/p05-ui-branding` dalında. Üretici betiği ve 16 Python testi geçti; Android quality-evidence verifier yerelde JVM raporları olmadığı için çalışamadı. PR CI bekleniyor. İnsan dil/erişilebilirlik incelemesi ile OEM ikon kontrolü açık kalır.
+**P05 durumu (22 Ekim):** Hesap tanı eylemi/sekmesi ve kart sırası, minimal launcher varlığı ve güncel ikon/Privacy DRAFT provenance değişiklikleri PR #31'de. Başlık `39fe9b3ed11847dcc4df46b550d22976dffd6213` için CI `39741292906` başarılı: 253 JVM/Compose testi, 0 başarısız/0 atlanan, 12 ekran görüntüsü ve 627 coverage sınıfı; Android Lint, API matrisi, beş dil, legal DRAFT, Debug/unsigned Release, Macrobenchmark derlemesi, bağımlılık/Privacy SDK, NOTICE, package/signature, DEX, Codecov, Snyk High ve imzalı-payload emülatör güvenlik kapıları geçti. Snyk Monitor PR koşusunda beklendiği üzere atlandı. İlk aynı-başlık CI denemesi release AndroidTest paketleme aşamasında Gradle yapılandırma-önbelleği/AAPT2 servis geri yükleme yarışıyla durdu; kaynak değişikliği olmadan başarısız iş yeniden çalıştırılınca geçti. P05 dokümantasyon güncellemesi ve main entegrasyonu sürüyor. Anadili/erişilebilirlik incelemesi ve OEM ikon kontrolü açık kalır.
 
 ### P06 — Cihaz erişimi ve B01–B22 kabulü
 
@@ -217,6 +218,8 @@ ApiMeta'ya nullable series: ApiSeriesMeta eklenir; ApiSeriesMeta times: List<Str
 - [ ] SUBMITTED yalnız gönderimdir. Sonuç, cihaz/OS, test adı, crash/ANR, maskelenmiş log, ekran/video ve hash eşleşmesini incele; hata → defter → düzeltme → yeni adayda ilgili tekrar testi.
 - [ ] Yeni evidence alanlarını scriptin beklediği commit/apkSha256/url/device/androidVersion nesnelerine dönüştür; eski dosya-yolu kanıtlarını ayrı tarihsel alanda tut. B14 gerçek üretim/inceleme imzalı APK kanıtı içerir.
 - [ ] Teknik DRAFT adayında mümkün vakaları çalıştır; son hukuk/varlık değişikliklerinden sonra final adayda B01–B22'nin tamamını yeniden sonlandır. Kaynak/erişim eksikliği WAITING/BLOCKED kaydıdır, PASS değildir.
+
+**P06 ön hazırlık (22 Ekim):** BrowserStack App Automate oturumu tarayıcıda açık ve hesap ekranı 100 ücretsiz dakika gösteriyor; buna rağmen `scripts/run_browserstack_espresso.py --preflight` yerel çalışma ortamında BrowserStack kullanıcı adı/erişim anahtarı yapılandırılmadığı için `NOT RUN` döndürdü. Bu değerler okunmadı veya çıktılanmadı. Yerel ADB sunucusu da mevcut oturumda çalışmadı ve bağlı cihaz görünmedi. CI APK'sini BrowserStack'e yüklemek için indirme girişimi tarayıcının indirme güvenlik kontrolünden izin alamadı; bu kontrol aşılmadı, dosya aktarılmadı ve BrowserStack koşusu gönderilmedi. B01–B22'ye PASS eklenmedi.
 
 ### P07 — Fiziksel cihazda performans ve akıcılık
 
