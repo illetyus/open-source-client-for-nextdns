@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.semantics
@@ -20,6 +21,7 @@ import com.example.data.legal.LegalDocuments
 
 /** Read-only access remains available after the first acceptance; it stores no consent. */
 @Composable
+@OptIn(ExperimentalComposeUiApi::class)
 fun LegalDocumentLinks(modifier: Modifier = Modifier) {
   var selectedTerms by remember { mutableStateOf<Boolean?>(null) }
   Column(modifier.fillMaxWidth()) {
