@@ -56,7 +56,11 @@ class NativeLoginNavigationTest {
       rule.waitUntil(20_000) { settingsTags.any { rule.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() } }
       val settingsTag = settingsTags.first { rule.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() }
       rule.onNodeWithTag(settingsTag).performScrollTo().performClick()
-      rule.onNodeWithTag("legal_privacy_link").performScrollTo().performClick()
+      // The legal links live below the fold in a LazyColumn item, so the link
+      // is not in the semantics tree until the parent scrolls that item in.
+      rule.onNodeWithTag("settings_scroll_list")
+        .performScrollToNode(hasTestTag("legal_privacy_link"))
+      rule.onNodeWithTag("legal_privacy_link").performClick()
       rule.onNodeWithTag("legal_document_content").assertTextContains("privacy-2026-10-DRAFT-2", substring = true)
       rule.onNodeWithTag("legal_reader_close").performClick()
       rule.runOnIdle { assertTrue(acceptance.isAccepted()) }
