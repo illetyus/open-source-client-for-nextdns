@@ -27,7 +27,7 @@ fun navigationLayoutForWidth(widthDp: Float): NavigationLayoutMode = when {
 val nextDnsNavigationGroups: List<NavigationGroup> = listOf(
   NavigationGroup(
     titleResource = R.string.ui_0f1322006d,
-    tabs = listOf(NavTab.SETUP)
+    tabs = listOf(NavTab.SETUP, NavTab.ACCOUNT)
   ),
   NavigationGroup(
     titleResource = R.string.ui_110e26ffd4,

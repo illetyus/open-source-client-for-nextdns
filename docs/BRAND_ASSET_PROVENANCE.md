@@ -1,19 +1,19 @@
-# Faz 9.3 — özgün ağ düğümleri simgesi
+# Launcher and store icon provenance
 
-9 Ekim 2026: Kullanıcının seçtiği DNS/ağ düğümleri fikri, proje içinde beş daire ve dört bağlantı çizgisinden oluşan özgün vektör geometriyle uygulandı. Kaynak `docs/brand/network-nodes.svg`; tekrar üretim aracı `scripts/generate_launcher_assets.py`. Harici logo, görsel, font veya stok varlık kullanılmadı. Projenin özgün varlıkları Apache-2.0 kapsamındadır.
+## Current asset — 21 October 2026
 
-Koyu zemin, turkuaz bağlantılar, açık düğümler ve amber merkez; NextDNS kalkanı veya harf biçimi kullanılmaz. Önceki launcher kalkanı ve eski WebP dosyaları değiştirildi. Başlık/giriş ekranındaki dekoratif kalkan da yeni düğüm biçimini kullanır; güvenlik sekmelerinin genel Material simgeleri bu marka varlığı değildir.
+The launcher and store icon use an original, compact three-node network mark centered on a white field. Its geometry has one slate connector and three steel/slate nodes. It contains no shield, letterform, official NextDNS logo, NextDNS color reference, external image, or font. The canonical geometry and generator are in `scripts/generate_launcher_assets.py`; the generator produces `docs/brand/launcher-icon.svg`, Android adaptive foreground and monochrome vectors, API 24–25 density PNGs, and `docs/brand/store-icon-512.png`. The adaptive background is white.
 
-Adaptive katman 108dp, motif merkezde 66dp güvenli alan içinde; Android 13+ temalı ikon için tek renk katman bulunur. API 24–25 için 48/72/96/144/192px PNG'ler ve yuvarlak karşılıkları vardır. Mağaza simgesi 512px RGBA PNG; mağazanın uyguladığı köşe/ gölge işlemleri kaynakta taklit edilmez.
+The launcher mark is separate from the in-product network artwork. The original project asset is distributed under Apache-2.0. This provenance record does not establish trademark clearance or approval by NextDNS. The client remains independent and unofficial. OEM masks and themed-icon treatment still require device review under B11–B12.
 
-Kaynaklar: [Android adaptive icons](https://developer.android.com/develop/ui/compose/system/icon_design_adaptive), [Google Play icon specifications](https://developer.android.com/distribute/google-play/resources/icon-design-specifications).
+## Historical records
 
-Bu değişiklik, eski kalkanın benzerlik riskini gideren görsel ayrıştırmadır; marka araştırmasının tamamlandığı veya NextDNS'ten onay alındığı iddiası değildir. Uygulama bağımsız ve gayriresmîdir. Launcher maskeleri ve temalı görünümün gerçek cihaz kontrolü B11–B12 kapsamında kalır.
+### 9 October 2026 — first network-node launcher
 
-## 20 Ekim 2026 — launcher simgesi yönü güncellendi
+The initial launcher used five circles and four connector lines, with a dark field, turquoise connectors, pale nodes, and an amber center. It was original project geometry with no external image, font, or stock asset. It was superseded by later user-directed launcher designs; it is not the current launcher. The original source was recorded as `docs/brand/network-nodes.svg` and the generation tool as `scripts/generate_launcher_assets.py`.
 
-Launcher/store simgesi, kullanıcının tercihiyle beyaz zemin üzerinde merkezî, özgün bir kalkan ve geniş açılı DNS sinyal çizgileri olarak yenilendi. Ön plan ve tek renk adaptive katmanlar Android vektörüdür; `scripts/generate_launcher_assets.py` aynı geometriyle API 24–25 PNG türevlerini ve `docs/brand/store-icon-512.png` dosyasını üretir. Uygulama içindeki ağ düğümü işareti `ic_client_network.xml` olarak korunmuştur.
+### 20 October 2026 — interim shield design, superseded 21 October
 
-Mavi `#0055FF` ve yeşil `#008000`, yalnızca NextDNS'in resmî web sitesinde görülen renkler için referanstır. Resmî logo dosyası kullanılmadı; kalkan/sinyal geometrisi projeye özgüdür. Bu görsel benzerlik ve marka izni incelemesini tamamlamaz. Bağımsız/gayriresmî konumlandırma sürer; launcher/OEM maskesi ve temalı ikon gerçek cihazda ayrıca kontrol edilmelidir.
+An interim user-directed version used a white field, a centered project-drawn shield, and curved DNS signal strokes. Blue `#0055FF` and green `#008000` were only references to colors visible on the official NextDNS website; no official logo file was used. The geometry did not establish trademark clearance or brand permission. A follow-up narrowed the signal strokes. This design was replaced on 21 October and is not present in the current launcher or store icon.
 
-20 Ekim takip düzeltmesinde sinyaller, önceki uzun açılı parantezlerin yerine daha kısa dikey alan kaplayan, ince ve yumuşak kavisli bir çift olarak çizildi. Kalkanın merkezi ve NextDNS'e ait olmayan proje geometrisi korunur.
+Platform references: [Android adaptive icons](https://developer.android.com/develop/ui/compose/system/icon_design_adaptive), [Google Play icon design specifications](https://developer.android.com/distribute/google-play/resources/icon-design-specifications).

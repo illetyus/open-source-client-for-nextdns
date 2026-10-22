@@ -46,7 +46,7 @@ class LauncherAssetsTest {
     assertNotNull(context.getDrawable(R.drawable.ic_client_network))
   }
 
-  @Test fun launcherUsesAWhiteFieldAndABroadCenteredBlueShieldWithDnsSignals() {
+  @Test fun launcherUsesAWhiteFieldAndACompactCenteredIndependentNetworkMark() {
     val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
     val icon = context.getDrawable(R.mipmap.ic_launcher)!!
 
@@ -72,29 +72,34 @@ class LauncherAssetsTest {
         }
       }
       val markWidth = maxX - minX + 1
-      assertTrue("The shield and broad signal marks should fill more of the adaptive safe area (width=$markWidth, x=$minX..$maxX)", markWidth in 60..84)
+      val markHeight = maxY - minY + 1
+      assertTrue("The minimal mark should remain compact (width=$markWidth, x=$minX..$maxX)", markWidth in 36..48)
+      assertTrue("The minimal mark should remain compact (height=$markHeight, y=$minY..$maxY)", markHeight in 36..48)
       assertTrue("The launcher mark should be vertically centered", kotlin.math.abs((minY + maxY) / 2 - 54) <= 2)
       val center = foreground.getPixel(54, 54)
-      assertTrue("A vivid blue shield should sit at the center", Color.blue(center) > 220 && Color.red(center) < 30 && Color.green(center) in 65..110)
+      assertEquals("The central node should use the independent slate ink", Color.rgb(38, 50, 56), center)
     } else {
       val legacy = (icon as BitmapDrawable).bitmap
       assertWhite(legacy.getPixel(1, 1))
       val center = legacy.getPixel(legacy.width / 2, legacy.height / 2)
-      assertTrue("Legacy launcher assets should also use the centered blue shield", Color.blue(center) > 220 && Color.red(center) < 30 && Color.green(center) in 65..110)
+      assertEquals("Legacy launcher assets should also use the centered slate node", Color.rgb(38, 50, 56), center)
     }
   }
 
-  @Test fun launcherUsesOneCompactWideAnglePairOfCurvedDnsLinesAroundTheShield() {
+  @Test fun launcherUsesThreeOriginalNetworkNodesAndNoNextDnsBrandColors() {
     val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
     val parser = context.resources.getXml(R.drawable.ic_launcher_foreground)
-    val signalPaths = mutableListOf<Triple<Float, String, String>>()
+    val strokedPaths = mutableListOf<Triple<Float, String, String>>()
+    val filledPaths = mutableListOf<Pair<String, String>>()
     try {
       while (parser.eventType != XmlPullParser.END_DOCUMENT) {
         if (parser.eventType == XmlPullParser.START_TAG && parser.name == "path") {
           val width = parser.getAttributeValue("http://schemas.android.com/apk/res/android", "strokeWidth")
           val data = parser.getAttributeValue("http://schemas.android.com/apk/res/android", "pathData")
           val color = parser.getAttributeValue("http://schemas.android.com/apk/res/android", "strokeColor")
-          if (width != null && data != null && color != null) signalPaths += Triple(width.toFloat(), data, color)
+          if (width != null && data != null && color != null) strokedPaths += Triple(width.toFloat(), data, color)
+          val fill = parser.getAttributeValue("http://schemas.android.com/apk/res/android", "fillColor")
+          if (fill != null && fill != "@android:color/transparent" && data != null) filledPaths += data to fill
         }
         parser.next()
       }
@@ -102,16 +107,15 @@ class LauncherAssetsTest {
       parser.close()
     }
 
-    assertEquals("The compact icon should use one signal bracket on each side", 2, signalPaths.size)
-    assertTrue("Signal strokes should stay visually lighter than the shield", signalPaths.all { it.first <= 2.5f })
-    assertEquals(
-      setOf("M34,36 C20,43 20,65 34,72", "M74,36 C88,43 88,65 74,72"),
-      signalPaths.map { it.second }.toSet()
-    )
-    assertTrue(
-      "Signal arcs should use NextDNS green",
-      signalPaths.all { Color.parseColor(it.third) == Color.rgb(0, 128, 0) }
-    )
+    assertEquals("The compact mark should have one thin connector", 1, strokedPaths.size)
+    assertTrue("The connector should remain visually light", strokedPaths.single().first in 2f..3f)
+    assertEquals("M38,39 C45,39 47,50 54,54 C61,58 63,69 70,69", strokedPaths.single().second)
+    assertEquals("The connector should use project slate", "#455A64", strokedPaths.single().third)
+    assertEquals("Three filled nodes should complete the mark", 3, filledPaths.size)
+    assertEquals(listOf("#607D8B", "#263238", "#607D8B"), filledPaths.map { it.second })
+    assertTrue("The mark must not reuse NextDNS blue or green", filledPaths.none {
+      it.second.equals("#0055FF", ignoreCase = true) || it.second.equals("#008000", ignoreCase = true)
+    })
   }
 
   private fun render(drawable: Drawable, size: Int): Bitmap =

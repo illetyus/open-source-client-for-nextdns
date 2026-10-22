@@ -343,7 +343,109 @@ fun AccountScreen(
       }
     }
 
-    // 2. Real Live Usage / Query Metrics Card
+    // 4. Live DNS Diagnostics
+    item {
+      val resolverValue = testResult.resolver
+      val anycastValue = testResult.anycast
+      val diagnosticState = diagnosticConnectionState(activeProfile, testResult, isDiagnosticRunning)
+      val diagnosticLabel = when (diagnosticState) {
+        DiagnosticConnectionState.TESTING -> AppStrings.get(R.string.ui_5ed3c5cf66)
+        DiagnosticConnectionState.ERROR -> AppStrings.get(R.string.ui_19b9ff3444)
+        DiagnosticConnectionState.UNCONFIGURED -> AppStrings.get(R.string.ui_a13d9a7458)
+        DiagnosticConnectionState.MATCHED_PROFILE -> AppStrings.get(R.string.ui_8c25d923c8)
+        DiagnosticConnectionState.UNVERIFIED_PROFILE -> AppStrings.get(R.string.diagnostic_unverified_title)
+        DiagnosticConnectionState.NO_SELECTED_PROFILE -> AppStrings.get(R.string.diagnostic_detected_title)
+      }
+      val statusColor = when (diagnosticState) {
+        DiagnosticConnectionState.MATCHED_PROFILE -> MaterialTheme.colorScheme.tertiary
+        DiagnosticConnectionState.TESTING -> MaterialTheme.colorScheme.primary
+        DiagnosticConnectionState.ERROR,
+        DiagnosticConnectionState.UNCONFIGURED,
+        DiagnosticConnectionState.UNVERIFIED_PROFILE -> MaterialTheme.colorScheme.error
+        DiagnosticConnectionState.NO_SELECTED_PROFILE -> MaterialTheme.colorScheme.onSurfaceVariant
+      }
+      NextDnsCard(
+        title = AppStrings.get(R.string.ui_33cbc60e2e),
+        subtitle = AppStrings.get(R.string.ui_ed7561918d)
+      ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column {
+              Text(
+                text = diagnosticLabel,
+                color = statusColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.5.sp
+              )
+              diagnosticCheckedAt?.let { checkedAt ->
+                Text(
+                  text = AppStrings.get(R.string.diagnostic_source),
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  fontSize = 11.5.sp,
+                  modifier = Modifier.testTag("diagnostic_source")
+                )
+                Text(
+                  text = AppStrings.get(R.string.diagnostic_checked_at, checkedAt),
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  fontSize = 11.5.sp,
+                  modifier = Modifier.testTag("diagnostic_checked_at")
+                )
+              }
+              if (testResult.serverPoP.isNotBlank()) {
+                Text(
+                  text = AppStrings.get(R.string.server_latency, testResult.serverPoP, testResult.protocol, testResult.latencyMs),
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  fontSize = 11.5.sp
+                )
+              }
+              Text(
+                text = AppStrings.get(R.string.diagnostic_region_unavailable),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 11.5.sp,
+                modifier = Modifier.testTag("diagnostic_region_unavailable")
+              )
+              if (!resolverValue.isNullOrBlank()) {
+                Text(
+                  text = AppStrings.get(R.string.diagnostic_resolver_identifier, resolverValue),
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  fontSize = 11.5.sp
+                )
+              }
+              if (anycastValue != null) {
+                Text(
+                  text = AppStrings.get(
+                    if (anycastValue) R.string.diagnostic_anycast_enabled else R.string.diagnostic_anycast_disabled
+                  ),
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  fontSize = 11.5.sp
+                )
+              }
+              if (testResult.serverPoP.isBlank() && testResult.resolver.isNullOrBlank()) {
+                Text(
+                  text = AppStrings.get(R.string.diagnostic_server_information_unavailable),
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  fontSize = 11.5.sp
+                )
+              }
+            }
+
+            NextDnsButton(
+              text = if (isDiagnosticRunning) AppStrings.get(R.string.ui_5ed3c5cf66) else AppStrings.get(R.string.ui_e4f71092ee),
+              onClick = { viewModel.runDiagnostic(showToast = true) },
+              modifier = Modifier.testTag("account_run_diagnostic"),
+              icon = Icons.Default.Refresh,
+              enabled = !isDiagnosticRunning
+            )
+          }
+        }
+      }
+    }
+
+    // 5. Real Live Usage / Query Metrics Card
     item {
       NextDnsCard(
         title = AppStrings.get(R.string.ui_c636e5398b),
@@ -446,7 +548,7 @@ fun AccountScreen(
       }
     }
 
-    // Full sync control and per-section outcome report.
+    // 6. Full sync control and per-section outcome report.
     item {
       NextDnsCard(
         title = AppStrings.get(R.string.sync_status_title),
@@ -523,108 +625,7 @@ fun AccountScreen(
         }
       }
     }
-    // 5. Live DNS Diagnostics
-    item {
-      val resolverValue = testResult.resolver
-      val anycastValue = testResult.anycast
-      val diagnosticState = diagnosticConnectionState(activeProfile, testResult, isDiagnosticRunning)
-      val diagnosticLabel = when (diagnosticState) {
-        DiagnosticConnectionState.TESTING -> AppStrings.get(R.string.ui_5ed3c5cf66)
-        DiagnosticConnectionState.ERROR -> AppStrings.get(R.string.ui_19b9ff3444)
-        DiagnosticConnectionState.UNCONFIGURED -> AppStrings.get(R.string.ui_a13d9a7458)
-        DiagnosticConnectionState.MATCHED_PROFILE -> AppStrings.get(R.string.ui_8c25d923c8)
-        DiagnosticConnectionState.UNVERIFIED_PROFILE -> AppStrings.get(R.string.diagnostic_unverified_title)
-        DiagnosticConnectionState.NO_SELECTED_PROFILE -> AppStrings.get(R.string.diagnostic_detected_title)
-      }
-      val statusColor = when (diagnosticState) {
-        DiagnosticConnectionState.MATCHED_PROFILE -> MaterialTheme.colorScheme.tertiary
-        DiagnosticConnectionState.TESTING -> MaterialTheme.colorScheme.primary
-        DiagnosticConnectionState.ERROR,
-        DiagnosticConnectionState.UNCONFIGURED,
-        DiagnosticConnectionState.UNVERIFIED_PROFILE -> MaterialTheme.colorScheme.error
-        DiagnosticConnectionState.NO_SELECTED_PROFILE -> MaterialTheme.colorScheme.onSurfaceVariant
-      }
-      NextDnsCard(
-        title = AppStrings.get(R.string.ui_33cbc60e2e),
-        subtitle = AppStrings.get(R.string.ui_ed7561918d)
-      ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Column {
-              Text(
-                text = diagnosticLabel,
-                color = statusColor,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.5.sp
-              )
-              diagnosticCheckedAt?.let { checkedAt ->
-                Text(
-                  text = AppStrings.get(R.string.diagnostic_source),
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  fontSize = 11.5.sp,
-                  modifier = Modifier.testTag("diagnostic_source")
-                )
-                Text(
-                  text = AppStrings.get(R.string.diagnostic_checked_at, checkedAt),
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  fontSize = 11.5.sp,
-                  modifier = Modifier.testTag("diagnostic_checked_at")
-                )
-              }
-              if (testResult.serverPoP.isNotBlank()) {
-                Text(
-                  text = AppStrings.get(R.string.server_latency, testResult.serverPoP, testResult.protocol, testResult.latencyMs),
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  fontSize = 11.5.sp
-                )
-              }
-              Text(
-                text = AppStrings.get(R.string.diagnostic_region_unavailable),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 11.5.sp,
-                modifier = Modifier.testTag("diagnostic_region_unavailable")
-              )
-              if (!resolverValue.isNullOrBlank()) {
-                Text(
-                  text = AppStrings.get(R.string.diagnostic_resolver_identifier, resolverValue),
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  fontSize = 11.5.sp
-                )
-              }
-              if (anycastValue != null) {
-                Text(
-                  text = AppStrings.get(
-                    if (anycastValue) R.string.diagnostic_anycast_enabled else R.string.diagnostic_anycast_disabled
-                  ),
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  fontSize = 11.5.sp
-                )
-              }
-              if (testResult.serverPoP.isBlank() && testResult.resolver.isNullOrBlank()) {
-                Text(
-                  text = AppStrings.get(R.string.diagnostic_server_information_unavailable),
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  fontSize = 11.5.sp
-                )
-              }
-            }
-
-            NextDnsButton(
-              text = if (isDiagnosticRunning) AppStrings.get(R.string.ui_5ed3c5cf66) else AppStrings.get(R.string.ui_e4f71092ee),
-              onClick = { viewModel.runDiagnostic(showToast = true) },
-              icon = Icons.Default.Refresh,
-              enabled = !isDiagnosticRunning
-            )
-          }
-        }
-      }
-    }
-
-    // 6. Account Management / Web Link & Logout
+    // 7. Account Management / Web Link & Logout
     item {
       NextDnsCard(
         title = AppStrings.get(R.string.ui_c917752692),
