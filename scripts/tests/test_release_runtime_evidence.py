@@ -13,11 +13,13 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
         return value
 
     def test_accepts_current_complete_runtime_evidence(self):
-        validate_runtime_summary(self.summary())
+        validate_runtime_summary(self.summary(tests=17))
 
     def test_rejects_old_runtime_test_count(self):
-        with self.assertRaisesRegex(ValueError, "exactly 12 tests"):
-            validate_runtime_summary(self.summary(tests=10))
+        for old_count in (10, 12):
+            with self.subTest(old_count=old_count):
+                with self.assertRaisesRegex(ValueError, "exactly 17 tests"):
+                    validate_runtime_summary(self.summary(tests=old_count))
 
     def test_rejects_failed_or_skipped_runtime_evidence(self):
         with self.assertRaisesRegex(ValueError, "zero failures"):
