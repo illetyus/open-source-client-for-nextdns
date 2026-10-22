@@ -47,6 +47,18 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
             self.assertNotIn("revokeRuntimePermission", body)
             self.assertNotIn("grantRuntimePermission", body)
 
+    def test_native_legal_ui_checks_follow_the_bundled_revision_and_dialog_root(self):
+        viewport = (ROOT / 'app/src/androidTest/java/com/example/NativeLegalViewportTest.kt').read_text(encoding='utf8')
+        navigation = (ROOT / 'app/src/androidTest/java/com/example/NativeLoginNavigationTest.kt').read_text(encoding='utf8')
+
+        self.assertIn('LegalDocuments.load(context, language).getOrThrow()', viewport)
+        self.assertNotIn('privacy-2026-10-DRAFT-2', viewport)
+        self.assertIn('LegalDocuments.load(context, LocalePreferences.resolvedLanguage(context)).getOrThrow()', navigation)
+        self.assertNotIn('privacy-2026-10-DRAFT-2', navigation)
+        self.assertIn('onNodeWithTag("legal_reader_close")', navigation)
+        self.assertIn('onNodeWithTag("legal_document_content")', navigation)
+        self.assertNotIn('onAllNodesWithTag("legal_document_content", useUnmergedTree = true)', navigation)
+
 
 if __name__ == '__main__':
     unittest.main()

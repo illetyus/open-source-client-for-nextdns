@@ -8,6 +8,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import com.example.data.legal.LegalAcceptanceStore
+import com.example.data.legal.LegalDocuments
+import com.example.i18n.LocalePreferences
 import com.example.ui.screens.formatRelativeTime
 import org.junit.Assert.*
 import org.junit.Rule
@@ -18,6 +20,10 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class NativeLoginNavigationTest {
   @get:Rule val rule = createEmptyComposeRule()
+
+  private fun revisionOf(document: String): String =
+    Regex("(?m)^Revision: (.+)$").find(document)?.groupValues?.get(1)
+      ?: error("Bundled legal document is missing its revision")
 
   @Test fun freshInstallRequiresExplicitTermsBeforeGuestNavigation() {
     // The instrumentation APK's desugared runtime also serves target-app code.
@@ -37,6 +43,7 @@ class NativeLoginNavigationTest {
     assertTrue(context.getSharedPreferences("legal_acceptance", Context.MODE_PRIVATE).edit().clear().commit())
     assertTrue(context.getSharedPreferences("nextdns_secure_prefs", Context.MODE_PRIVATE).edit().clear().commit())
     val acceptance = LegalAcceptanceStore(context)
+    val legalDocuments = LegalDocuments.load(context, LocalePreferences.resolvedLanguage(context)).getOrThrow()
     ActivityScenario.launch(MainActivity::class.java).use { scenario ->
       rule.onNodeWithTag("welcome_accept_checkbox").assertIsOff()
       rule.onNodeWithTag("welcome_continue").assertIsNotEnabled()
@@ -62,11 +69,10 @@ class NativeLoginNavigationTest {
         .performScrollToNode(hasTestTag("legal_privacy_link"))
       rule.onNodeWithTag("legal_privacy_link").performClick()
       rule.waitUntil(20_000) {
-        rule.onAllNodesWithTag("legal_document_content", useUnmergedTree = true)
-          .fetchSemanticsNodes().isNotEmpty()
+        rule.onAllNodesWithTag("legal_reader_close").fetchSemanticsNodes().isNotEmpty()
       }
-      rule.onNodeWithTag("legal_document_content", useUnmergedTree = true)
-        .assertTextContains("privacy-2026-10-DRAFT-2", substring = true)
+      rule.onNodeWithTag("legal_document_content")
+        .assertTextContains(revisionOf(legalDocuments.privacy), substring = true)
       rule.onNodeWithTag("legal_reader_close").performClick()
       rule.runOnIdle { assertTrue(acceptance.isAccepted()) }
     }

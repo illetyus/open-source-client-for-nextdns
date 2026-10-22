@@ -11,6 +11,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.data.legal.LegalAcceptanceStore
+import com.example.data.legal.LegalDocuments
 import com.example.i18n.LocalePreferences
 import org.junit.Assert.*
 import org.junit.Rule
@@ -21,6 +22,10 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class NativeLegalViewportTest {
   @get:Rule val rule = createEmptyComposeRule()
+
+  private fun revisionOf(document: String): String =
+    Regex("(?m)^Revision: (.+)$").find(document)?.groupValues?.get(1)
+      ?: error("Bundled legal document is missing its revision")
 
   @Test fun fiveLanguagesAtLargeFontRemainReadableAcrossPortraitAndLandscape() {
     val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -38,6 +43,7 @@ class NativeLegalViewportTest {
       assertTrue(context.getSharedPreferences("nextdns_secure_prefs", Context.MODE_PRIVATE).edit().clear().commit())
       for (language in LocalePreferences.supportedLanguages) {
         assertTrue(LocalePreferences.setSelection(context, language))
+        val documents = LegalDocuments.load(context, language).getOrThrow()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
           for (orientation in listOf(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)) {
             scenario.onActivity { it.requestedOrientation = orientation }
@@ -55,9 +61,9 @@ class NativeLegalViewportTest {
             rule.onNodeWithTag("welcome_document_text").assertTextContains("DRAFT", substring = true)
             rule.onNodeWithTag("welcome_privacy").performScrollTo().performClick()
             rule.onNodeWithTag("welcome_document_viewport").performScrollTo().assertIsDisplayed()
-            rule.onNodeWithTag("welcome_document_text").assertTextContains("privacy-2026-10-DRAFT-2", substring = true)
+            rule.onNodeWithTag("welcome_document_text").assertTextContains(revisionOf(documents.privacy), substring = true)
             rule.onNodeWithTag("welcome_terms").performScrollTo().performClick()
-            rule.onNodeWithTag("welcome_document_text").assertTextContains("terms-2026-10-DRAFT-2", substring = true)
+            rule.onNodeWithTag("welcome_document_text").assertTextContains(revisionOf(documents.terms), substring = true)
             rule.onNodeWithTag("welcome_accept_checkbox").performScrollTo().assertIsDisplayed().assertIsOff()
             rule.onNodeWithTag("welcome_continue").performScrollTo().assertIsDisplayed().assertIsNotEnabled()
             rule.runOnIdle { assertFalse(LegalAcceptanceStore(context).isAccepted()) }
