@@ -21,6 +21,8 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         }
         invoked_classes = set(re.findall(r'com\.example\.([A-Za-z0-9_]+)', runner))
         self.assertLessEqual(required_classes, invoked_classes)
+        for class_name in required_classes:
+            self.assertIn(f'com.example.{class_name}', verifier)
         self.assertIn('OK (17 tests)', verifier)
         self.assertIn("statuses.count('1') == 17 and statuses.count('0') == 17", verifier)
         self.assertIn("'tests':17", verifier)
