@@ -39,12 +39,12 @@ class AdaptiveNavigationTest {
   }
 
   @Test
-  fun navigationGroupsCoverEveryPrimaryTabButKeepConnectionInTheHeader() {
+  fun navigationGroupsCoverEveryTabAndKeepSettingsLast() {
     val groupedTabs = nextDnsNavigationGroups.flatMap { it.tabs }
 
-    val primaryTabs = NavTab.values().toSet() - NavTab.ACCOUNT
-    assertEquals(primaryTabs, groupedTabs.toSet())
-    assertEquals(primaryTabs.size, groupedTabs.size)
+    val allTabs = NavTab.values().toSet()
+    assertEquals(allTabs, groupedTabs.toSet())
+    assertEquals(allTabs.size, groupedTabs.size)
     assertEquals(listOf(NavTab.SETTINGS), nextDnsNavigationGroups.last().tabs)
   }
 }

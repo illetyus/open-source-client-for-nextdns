@@ -10,8 +10,8 @@
 
 **Spec:** Önceden onaylanmış docs/UX_LOGS_ICON_DESIGN_RESEARCH_DRAFT_2026-10-20.md; docs/superpowers/plans/2026-10-20-nextdns-feature-audit-and-implementation.md; docs/PHASE9_BROWSERSTACK_RELEASE_GATE.md; kullanıcının 21 Ekim 2026 tarihli “hepsini bitirmeyi planla; hız testi şimdilik iptal” kapsam kararı.
 
-**Rapor tarihi:** 21 Ekim 2026, Europe/Istanbul.
-**Yürütme durumu:** KULLANICI ONAYLADI; P00/P01 tamamlandı, P02 değişiklikleri hazır ve Android CI doğrulamasını bekliyor. Bu belge PR'ın birleştirildiği veya yayın onayı verildiği anlamına gelmez.
+**Rapor tarihi:** 22 Ekim 2026, Europe/Istanbul.
+**Yürütme durumu:** KULLANICI ONAYLADI; P00–P04 uygulama dilimleri main'e PR/CI ile alındı. P05 UI/ikon/privacy düzeltmeleri PR #31'de; commit `39fe9b3ed11847dcc4df46b550d22976dffd6213` için CI `39741292906` başarılı. P05'te plan/hata defteri kanıt güncellemesi ve entegrasyon; P06–P11 ve yayın kapıları açık. Bu belge yayın onayı değildir.
 **Yöntem:** Mevcut izole worktree üzerinde native yürütme; her dilimde PR/CI ve değişiklik kapsamına uygun inceleme. Yeni toplu mimari dönüşüm yapılmayacak.
 
 ## Global Constraints
@@ -167,26 +167,44 @@ data class AnalyticsSeriesState(
 ~~~
 ApiMeta'ya nullable series: ApiSeriesMeta eklenir; ApiSeriesMeta times: List<String> ve interval: Long taşır. Mevcut pagination/stream alanları korunur. Retrofit GET profiles/{profileId}/analytics/{endpoint};series kullanır; endpoint ve type yalnız enum eşlemesinden gelir, kullanıcıdan serbest path alınmaz.
 
-- [ ] Failing fixture testleri: officialQueryTypesSeriesPreservesTimesAndCounts; missingBucketIsNotZero; mismatchedSeriesLengthsAreRejected; negativeAndOverflowCountsAreRejected; obsoleteProfileSeriesCannotOverwriteCurrentState; groupedDomainSeriesUsesTheRootDomainForKeyAndLabel.
-- [ ] Sadece allowlist metric yolları kullan: status, devices, domains, reasons, destinations, dnssec, encryption, protocols, ips, queryTypes, ipVersions. Destinations countries ve gafam ayrı görünüm tipleridir.
-- [ ] Belgeli entity alanlarını endpoint bazında eşle: status; id/name/model; domain/root; id/name; code veya company; validated; encrypted; protocol; ip; type/name; version. queries dizi, meta.series.times ISO zamanlar ve interval saniye olarak parse edilir [S1].
-- [ ] Varsayılan son 24 saat için interval=3600 saniye, son 7/30/90 gün için interval=86400 saniye; from/to açık zaman aralığı olsun. alignment=end, timezone=GMT ve partials=none resmî varsayılanları korunur; gerçek meta.times kullanılır, cihaz saatinden yapay bucket üretilmez.
-- [ ] Yalnız seçilen grafiği iste; 11 aileyi her ekranda topluca çağırma. Yeni filtre/profil önceki işi iptal etsin; entity cursor sayfalaması üst sınırla çalışsın. En fazla 500 zaman bucket'ı / 50 entity yerel güvenlik sınırı; taşma durumunda aralığı daraltma mesajı ver, veri kesilmesini tam veri gibi gösterme.
-- [ ] Erişilebilir çizgi/sütun grafik + okunabilir veri tablosu sun; null veri boşluk, gerçek 0 sıfır olarak ayrı kalsın. Renk tek bilgi taşıyıcısı olmasın; büyük font/dark tema ve saat dilimi etiketi testli olsun.
-- [ ] Ülke haritası ve altı parçalı GAFAM grafiğini regresyona al; mevcut özet verisi ile seri sorgusu ayrı zaman kapsamından karıştırılmasın.
-- [ ] Her metric parser'ı ve ağ yolu contract testinden geçsin; tam CI ve ayrı PR ile entegre et.
+- [x] Contract/fixture testleri: `officialQueryTypesSeriesPreservesTimesAndCounts`, `missingBucketIsNotZero`, `mismatchedSeriesLengthsAreRejected`, `negativeAndOverflowCountsAreRejected`, `obsoleteProfileSeriesCannotOverwriteCurrentState`, `groupedDomainSeriesUsesTheRootDomainForKeyAndLabel` ve Retrofit route/parameter doğrulaması.
+- [x] Belgeli metric allowlist uygulanır: status, devices, domains, reasons, destinations, dnssec, encryption, protocols, ips, queryTypes, ipVersions. Destinations countries ve gafam ayrı görünüm tipleridir; model testi listelenmemiş endpointi reddeder.
+- [x] Belgeli entity alanları metric bazında eşlenir; `queries[]`, `meta.series.times` ISO zamanları ve saniye cinsinden `interval` kullanılır. Fixture contract testleri alan eşlemelerini doğrular [S1].
+- [x] 24 saat için `interval=3600`, 7/30/90 gün için `interval=86400`; `from` dahil ve `to` hariç aralık, `alignment=end`, `timezone=GMT`, `partials=none` ve gerçek `meta.times` kullanılır.
+- [x] Yalnız seçili seri çağrılır; profil değişince eski sonuç reddedilir. Sorgu 500 zaman kovası / 50 entity sınırlarıyla doğrulanır; eksik veya kesilmiş sayfa tam veri gibi sunulmaz.
+- [x] Erişilebilir çizgi grafik ve okunabilir tablo sunulur; null veri boşluğu ile gerçek 0 ayrıdır, etiketler renk dışında da bilgi taşır; chart/table regression testleri mevcuttur.
+- [ ] Büyük font, dark tema, saat dilimi etiketi ve TalkBack gerçek erişilebilirlik incelemesi doğrulansın; P05/P06 UI ve cihaz kapılarında tamamlanacak.
+- [x] Ülke haritası ve altı parçalı GAFAM grafiği regresyon testleriyle korunur; özet ve seçili seri ayrı sorgulanır.
+- [x] Metric parser ve ağ yolu contract testleri tam PR CI'da geçti; PR #30, run `39557875934` başarılı olduktan sonra `83c1a585946c1fce2e6b7e8269d2c63b0b5fe17f` main commit'ine alındı. Main run `39559334680` da lint, Compose/JVM testleri, debug/release derleme ve lisans/güvenlik kapılarını başarıyla tamamladı.
+
+**P04 durumu:** API/zaman serisi uygulaması main'de. Büyük font/dark/TalkBack ve timezone sunumunun UI/cihaz kanıtı P05/P06 altında ayrıca açık tutuluyor.
 
 ### P05 — Son UI, dil, ikon ve favicon kalite dilimi
 
-**Files:** İlgili Home/Account/Setup/Settings/LegalWelcome/Logs/Analytics ekranları ve testleri; beş dil kaynakları; ic_launcher_* varlıkları; scripts/generate_launcher_assets.py; docs/BRAND_ASSET_PROVENANCE.md; docs/brand/launcher-icon-provenance.md; THIRD_PARTY_NOTICES ve Privacy taslağı.
+**Files:** İlgili Home/Account/Setup/Settings/LegalWelcome/Logs/Analytics ekranları ve testleri; beş dil kaynakları; ic_launcher_* varlıkları; scripts/generate_launcher_assets.py; docs/BRAND_ASSET_PROVENANCE.md; docs/brand/launcher-icon-provenance.md; Privacy taslağı.
 
-- [ ] Kullanıcı şikâyetlerini tek kabul tablosuna bağla: doğru tanı/profil durumu, eşitlemede servis/yerel ayrımı, tüm cihaz logları, günlük geçmişi, küçük liste ikonları, etkileşimli harita ve düzenli misafir/ayar akışları.
-- [ ] Settings'te servis ayarlarının önce, uygulama tercihleri ve hukuki belgelerin alt gruplarda olması; yerel veriyi temizleme ile servis profilini silmenin karışmaması gerçek ekran akışında doğrulansın.
-- [ ] Beş dilde profesyonel/anadili incelemesiyle belirsiz etiketleri düzelt; font %200, TalkBack, tablet/yatay ve dark tema testlerini ekle. Tarih/sayı ve erişilebilirlik açıklamaları da dil kapsamındadır.
-- [ ] Beyaz alanda ortalanmış minimal, özgün launcher işaretini mevcut kullanıcı tercihiyle sonlandır; adaptive/monochrome/legacy yoğunlukları ve mağaza ikonu aynı kaynaktan üretilsin. OEM maskelerinde kırpılma ve resmî NextDNS uygulaması izlenimi bağımsız gözle incelensin.
-- [ ] Favicon kaynağı belgelenmemiş best-effort hizmet olarak kalsın; API anahtarı/redirect/transfer sınırları ve local fallback testleri korunur. DNS log domainleri favicon hostuna gönderilmez. Kullanım/mahremiyet koşulu çözümlenmezse yeni sağlayıcıya sessiz geçmek yerine yerel ikonla yayın güvenliğini sağla.
-- [ ] Yerel ikon/harita varlıkları ve son çözülmüş bağımlılıklar için kaynak/lisans/NOTICE kaydını son paketle karşılaştır; otomatik “marka riski yok” onayı verme.
-- [ ] Anlamlı Compose/görüntü ve cihaz regresyonları + localization/lisans kapıları geçsin; ayrı inceleme/PR.
+**Kabul tablosu — kullanıcı tarafından bildirilen sorunlar:**
+
+| Bildirilen sorun | Uygulama ve regresyon kanıtı | Durum |
+|---|---|---|
+| Tanı düğmesi çalışmıyor veya yanlış profili bağlı gösteriyor | `accountDiagnosticButtonRunsANewDiagnosticRequest`, `accountDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected`, `DiagnosticAndDeviceMenuTest.diagnosticBannerRequiresSuccessfulMeasurementOfSelectedProfile` | Mevcut korumalar main'de; yeni tıklama/yerleşim testi P05 CI `39741292906` ile geçti |
+| Eşitleme yerel bağlantı tercihlerini servis ayarı sanıyor | `fullRefreshReadsNextDnsStateWithoutPostingLocalPreferences`; yalnız sunucu GET'leri doğrulanıyor | Main'de, P04 CI geçti |
+| Bazı cihazların günlükleri ve eski kayıtlar görünmüyor | `analyticsDevicePaginationIncludesEveryFilterableDevice`, cursor tekrar/sayfa sınırı testleri, `LogsHistoryFilterTest` | P03 main'de; geçmiş NextDNS saklama/cursor sınırıyla kısıtlı |
+| İzin/engel listesi simgeleri gereğinden büyük | `allowAndDenyListFaviconsUseCompactSize`, `localTrackingProtectionIconUsesTheSmallerSize` | Main'de; 12 dp |
+| Trafik varış haritası yalnız metin gösteriyor | `tappingAColoredCountryShowsItsNameAndTrafficShare`, erişilebilir ülke seçici testi | Main'de etkileşimli yerel harita |
+| Hesap bölümü ve misafir/hukuk bağlantıları dağınık | `accountSectionsPutConnectionAndProfilesBeforeMetricsAndSync`, `connectionAreaOpensFromNavigationWithoutExtraTopBarButton`, `loginDoesNotScatterLegalLinksOutsideTheGroupedWelcomeFlow` | P05 hesap/nav testleri ve main'deki misafir/legal testi geçti |
+| Ayarlar sırası karışık | `settingsExposeServiceLegalAppPreferenceAndDeleteGroupsOnce` | Servis → uygulama tercihleri → hukuki belgeler → servis profil silme sırası main'de testli |
+
+- [x] Kullanıcı şikâyetleri tek kabul tablosuna bağlandı; her satır test veya açıkça belirtilen CI/cihaz kapısına bağlı.
+- [x] Settings ekranında servis ayarları önce, uygulama tercihleri ve hukuki belgeler sonra, servis profili silme en sonda yer alıyor; `settingsExposeServiceLegalAppPreferenceAndDeleteGroupsOnce` sıralamayı, `NextDnsPreferencesClearTest.signOutRemovesCredentialAndCachedProfileAtomically` yerel temizliği ve `RepositoryRegressionTest.deletingSelectedProfileVerifiesRemovalBeforeSelectingReplacement` ve `deletingLastProfileVerifiesEmptyListAndClearsSelection` servis tarafındaki profil silmeyi ayrıca doğrular.
+- [ ] Beş dilde profesyonel/anadili incelemesi; %200 font ölçeği, TalkBack, tablet/yatay ve dark tema akışları doğrulansın. Statik kaynak/l10n CI kapısı insan incelemesinin yerine geçmez.
+- [x] Beyaz alanda merkezî minimal özgün launcher simgesi; adaptive/monochrome/legacy ve mağaza çıktıları tek üreticiden güncellendi. Gerçek OEM maskesi ve bağımsız marka izlenimi incelemesi P06 cihaz kapısında bekliyor.
+- [x] Favicon sabit HTTPS host, hostname doğrulama, API anahtarı eklememe, yönlendirme kapatma, yanıt/süre sınırı, bellek önbelleği ve yerel fallback ile best-effort kalıyor. `FaviconImage` günlük ekranında kullanılmıyor; günlük domainleri ikon hostuna gönderilmiyor. Privacy DRAFT ve araştırma metni bu kapsamla güncellendi.
+- [x] Özgün ikon ve offline Natural Earth haritası için kaynak/lisans notları mevcut; yeni ikon harici görsel/font/bağımlılık eklemiyor. Çözülmüş dependency/NOTICE paketi main CI'da doğrulanmış.
+- [x] PR #31 son kaynak başlığında taze Android Compose/JVM testleri, screenshot, lint, localization, lisans, paket ve security CI geçti; beş eksenli kaynak incelemesinde birleştirmeyi engelleyen bulgu yok.
+- [ ] Kanıt güncelleme commit'i için son CI ve normal PR akışıyla main entegrasyonu tamamlanmalı.
+
+**P05 durumu (22 Ekim):** Hesap tanı eylemi/sekmesi ve kart sırası, minimal launcher varlığı ve güncel ikon/Privacy DRAFT provenance değişiklikleri PR #31'de. Başlık `39fe9b3ed11847dcc4df46b550d22976dffd6213` için CI `39741292906` başarılı: 253 JVM/Compose testi, 0 başarısız/0 atlanan, 12 ekran görüntüsü ve 627 coverage sınıfı; Android Lint, API matrisi, beş dil, legal DRAFT, Debug/unsigned Release, Macrobenchmark derlemesi, bağımlılık/Privacy SDK, NOTICE, package/signature, DEX, Codecov, Snyk High ve imzalı-payload emülatör güvenlik kapıları geçti. Snyk Monitor PR koşusunda beklendiği üzere atlandı. İlk aynı-başlık CI denemesi release AndroidTest paketleme aşamasında Gradle yapılandırma-önbelleği/AAPT2 servis geri yükleme yarışıyla durdu; kaynak değişikliği olmadan başarısız iş yeniden çalıştırılınca geçti. P05 dokümantasyon güncellemesi ve main entegrasyonu sürüyor. Anadili/erişilebilirlik incelemesi ve OEM ikon kontrolü açık kalır.
 
 ### P06 — Cihaz erişimi ve B01–B22 kabulü
 
@@ -200,6 +218,8 @@ ApiMeta'ya nullable series: ApiSeriesMeta eklenir; ApiSeriesMeta times: List<Str
 - [ ] SUBMITTED yalnız gönderimdir. Sonuç, cihaz/OS, test adı, crash/ANR, maskelenmiş log, ekran/video ve hash eşleşmesini incele; hata → defter → düzeltme → yeni adayda ilgili tekrar testi.
 - [ ] Yeni evidence alanlarını scriptin beklediği commit/apkSha256/url/device/androidVersion nesnelerine dönüştür; eski dosya-yolu kanıtlarını ayrı tarihsel alanda tut. B14 gerçek üretim/inceleme imzalı APK kanıtı içerir.
 - [ ] Teknik DRAFT adayında mümkün vakaları çalıştır; son hukuk/varlık değişikliklerinden sonra final adayda B01–B22'nin tamamını yeniden sonlandır. Kaynak/erişim eksikliği WAITING/BLOCKED kaydıdır, PASS değildir.
+
+**P06 ön hazırlık (22 Ekim):** BrowserStack App Automate oturumu tarayıcıda açık ve hesap ekranı 100 ücretsiz dakika gösteriyor; buna rağmen `scripts/run_browserstack_espresso.py --preflight` yerel çalışma ortamında BrowserStack kullanıcı adı/erişim anahtarı yapılandırılmadığı için `NOT RUN` döndürdü. Bu değerler okunmadı veya çıktılanmadı. Yerel ADB sunucusu da mevcut oturumda çalışmadı ve bağlı cihaz görünmedi. CI APK'sini BrowserStack'e yüklemek için indirme girişimi tarayıcının indirme güvenlik kontrolünden izin alamadı; bu kontrol aşılmadı, dosya aktarılmadı ve BrowserStack koşusu gönderilmedi. B01–B22'ye PASS eklenmedi.
 
 ### P07 — Fiziksel cihazda performans ve akıcılık
 

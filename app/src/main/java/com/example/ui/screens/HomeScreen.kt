@@ -298,24 +298,6 @@ fun HomeScreen(
               }
             }
 
-            IconButton(
-              onClick = { viewModel.selectTab(NavTab.ACCOUNT) },
-              modifier = Modifier
-                .size(48.dp)
-                .testTag("home_nextdns_connection_button")
-            ) {
-              Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = AppStrings.get(R.string.account_profile_action),
-                tint = if (currentTab == NavTab.ACCOUNT) {
-                  MaterialTheme.colorScheme.primary
-                } else {
-                  MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                modifier = Modifier.size(24.dp)
-              )
-            }
-
           }
 
           if (navigationMode == NavigationLayoutMode.COMPACT) {

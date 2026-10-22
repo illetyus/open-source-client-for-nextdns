@@ -97,12 +97,34 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithText(AppStrings.get(R.string.ui_f5e0e67ae0)).assertIsDisplayed()
     val metricsTop = rule.onNodeWithText(AppStrings.get(R.string.ui_c636e5398b))
       .fetchSemanticsNode().boundsInRoot.top
+    val diagnosticTop = rule.onNodeWithText(AppStrings.get(R.string.ui_33cbc60e2e))
+      .fetchSemanticsNode().boundsInRoot.top
     val syncTop = rule.onNodeWithText(AppStrings.get(R.string.ui_8b96719687))
       .fetchSemanticsNode().boundsInRoot.top
 
     assertTrue("Account status and key should appear before profiles", keyTop < profilesTop)
-    assertTrue("Profiles should appear before usage metrics", profilesTop < metricsTop)
+    assertTrue("Connection diagnostics should follow profile selection", profilesTop < diagnosticTop)
+    assertTrue("Diagnostics should appear before usage metrics", diagnosticTop < metricsTop)
     assertTrue("Usage metrics should appear before the full-sync action", metricsTop < syncTop)
+  }
+
+  @Test fun accountDiagnosticButtonRunsANewDiagnosticRequest() {
+    english()
+    response = { request ->
+      if (request.path == "/") {
+        json("""{"status":"ok","protocol":"SYNTHETIC_DIAGNOSTIC_PROTOCOL","profile":"fp0123456789abcdef","server":"lhr"}""")
+      } else json("{}", 500)
+    }
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { AccountScreen(model) } }
+
+    rule.onNodeWithTag("account_run_diagnostic")
+      .assertHasClickAction()
+      .performClick()
+    rule.waitUntil(10_000) { model.testResult.value.lastTestedTime > 0L }
+
+    assertTrue(requests.any { it == "GET /" || it.endsWith(" GET /") })
+    rule.onNodeWithText("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true).assertIsDisplayed()
   }
 
   @Test fun connectedProfileStatusUsesLocalizedSingularAndPluralCounts() {
@@ -131,7 +153,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("open_speed_test").assertDoesNotExist()
   }
 
-  @Test fun connectionAreaOpensFromDedicatedTopRightButton() {
+  @Test fun connectionAreaOpensFromNavigationWithoutExtraTopBarButton() {
     english()
     response = { request ->
       if (request.path == "/") {
@@ -141,18 +163,17 @@ class AccountSettingsFlowTest : AuditFixture() {
     val model = NextDnsViewModel(repository)
     rule.setContent { AppTheme { HomeScreen(model) } }
 
-    rule.onNodeWithTag("home_nextdns_connection_button")
+    rule.onNodeWithTag("home_nextdns_connection_button").assertDoesNotExist()
+    rule.onNodeWithTag("tab_account")
+      .performScrollTo()
       .assertIsDisplayed()
       .assertHasClickAction()
-      .assertWidthIsEqualTo(48.dp)
-      .assertHeightIsEqualTo(48.dp)
       .performClick()
+      .assertIsSelected()
 
     rule.onNodeWithTag("account_connection_status").assertIsDisplayed()
     rule.onNodeWithText("Profiles").assertIsDisplayed()
     rule.onNodeWithText("Profiles (1)").assertDoesNotExist()
-    rule.onNodeWithTag("tab_account").assertDoesNotExist()
-
     rule.waitUntil(10_000) {
       rule.onAllNodes(hasText("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true))
         .fetchSemanticsNodes().isNotEmpty()

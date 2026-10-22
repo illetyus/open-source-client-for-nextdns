@@ -1,7 +1,7 @@
 # Open Source Client for NextDNS — Privacy Policy (English draft)
 
 **DRAFT FOR TECHNICAL/LEGAL REVIEW — DO NOT PUBLISH YET**
-Document revision: 0.4 (21 October 2026). Effective date: [DATE OF FIRST PUBLIC RELEASE].
+Document revision: 0.8 (22 October 2026). Effective date: [DATE OF FIRST PUBLIC RELEASE].
 Developer/publisher: [VERIFIED LEGAL OR TRADING NAME].
 Support and privacy inquiries: [WORKING CONTACT / HTTPS PAGE].
 Public policy URL: [PUBLIC ACCESSIBLE NON-PDF HTTPS URL].
@@ -33,6 +33,8 @@ The Application uses the data for authenticating API requests; displaying profil
 ## 4. Destinations and network transmissions
 
 The intended architecture uses HTTPS connections from the Android device directly to NextDNS endpoints, including https://api.nextdns.io/ and https://test.nextdns.io/. These requests may reveal data such as API credentials, relevant account/profile identifiers, query parameters and the network source IP to NextDNS in the course of the service. The client does not call https://link-ip.nextdns.io/ or undocumented profile setup/linked-IP API routes. The public API documentation does not define those operations; the setup screen sends users to the NextDNS dashboard to view or manage linked-IP settings. The dashboard is opened in the user's browser, outside the client's API request flow.
+
+When allowlist, denylist, privacy/tracking or parental-control list screens display a hostname icon, the Application may automatically request a decorative image from `favicons.nextdns.io`. The normalized hostname is included in the HTTPS path as reversible hexadecimal text; this encoding is not encryption. The request does not attach the NextDNS API key. The icon host can receive the requested hostname and ordinary connection data such as the source IP address. DNS log rows use a local placeholder and do not send log domains to this host. The hostname is not part of the documented NextDNS API, and its operator's retention and privacy practices have not been verified for this draft. The request is bounded, does not follow redirects, is cached in memory only, and falls back to a local icon if it fails. Final release traffic still requires verification.
 
 For user-requested DNS log exports, NextDNS may supply a HTTPS file-download URL with a different hostname. The Application uses a separate download client without attaching the API key as an authorization header to that URL. **The precise destinations and redirects require verification in the final production network test.**
 
