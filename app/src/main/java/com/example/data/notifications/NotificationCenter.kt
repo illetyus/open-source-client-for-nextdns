@@ -20,8 +20,8 @@ object NotificationCenter {
   const val CHANNEL_CONFIG_CHANGES = "nextdns_config_changes"
   const val CHANNEL_DAILY_SUMMARY = "nextdns_daily_summary"
 
-  private const val NOTIFICATION_CONFIG_CHANGED = 2101
-  private const val NOTIFICATION_DAILY_SUMMARY = 2102
+  internal const val NOTIFICATION_CONFIG_CHANGED = 2101
+  internal const val NOTIFICATION_DAILY_SUMMARY = 2102
 
   fun createChannels(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
