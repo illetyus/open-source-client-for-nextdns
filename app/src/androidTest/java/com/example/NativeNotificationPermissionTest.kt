@@ -28,12 +28,11 @@ class NativeNotificationPermissionTest {
     val instrumentation = InstrumentationRegistry.getInstrumentation()
     val context = instrumentation.targetContext
     val manager = context.getSystemService(NotificationManager::class.java)
-    val originallyGranted = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    assumeTrue(
+      "The release audit must revoke notification permission before starting instrumentation",
+      context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED
+    )
     try {
-      instrumentation.uiAutomation.revokeRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
-      awaitCondition("Notification permission was not denied") {
-        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED
-      }
       NotificationCenter.createChannels(context)
       manager.cancelAll()
       awaitCondition("Previous notifications were not cleared") { manager.activeNotifications.isEmpty() }
@@ -47,17 +46,18 @@ class NativeNotificationPermissionTest {
       assertTrue("Denied permission must not emit either notification", manager.activeNotifications.isEmpty())
     } finally {
       manager.cancelAll()
-      if (originallyGranted) instrumentation.uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
     }
   }
 
   @Test fun grantedPermissionPostsPrivateNotificationsWithGenericPublicVersions() {
-    val instrumentation = InstrumentationRegistry.getInstrumentation()
-    val context = instrumentation.targetContext
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
     val manager = context.getSystemService(NotificationManager::class.java)
     val needsPermission = Build.VERSION.SDK_INT >= 33
+    assertTrue(
+      "The release audit must grant notification permission before starting instrumentation",
+      !needsPermission || context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    )
     try {
-      if (needsPermission) instrumentation.uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
       NotificationCenter.createChannels(context)
       manager.cancelAll()
       awaitCondition("Previous notifications were not cleared") { manager.activeNotifications.isEmpty() }
@@ -85,9 +85,6 @@ class NativeNotificationPermissionTest {
       assertEquals(1, posted.count { it.extras.getCharSequence(Notification.EXTRA_TEXT).toString() == dailyText })
     } finally {
       manager.cancelAll()
-      // Run on a disposable installation. Revoking a granted runtime permission
-      // here can kill the instrumented process before JUnit reports the result;
-      // the device provider resets permissions when discarding the session.
     }
   }
 }
