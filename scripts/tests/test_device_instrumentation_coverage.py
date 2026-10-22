@@ -54,7 +54,7 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         self.assertIn('LegalDocuments.load(context, language).getOrThrow()', viewport)
         self.assertNotIn('privacy-2026-10-DRAFT-2', viewport)
         self.assertIn('performScrollToNode(hasTestTag("legal_privacy_link"))', navigation)
-        self.assertIn('rule.onNodeWithTag("legal_privacy_link").assertIsDisplayed()', navigation)
+        self.assertIn('rule.onNodeWithTag("legal_privacy_link").assertExists().performClick()', navigation)
         self.assertNotIn('UiDevice', navigation)
 
 

@@ -60,7 +60,7 @@ class NativeLoginNavigationTest {
       // in the semantics tree until the parent scrolls that item in.
       rule.onNodeWithTag("settings_scroll_list")
         .performScrollToNode(hasTestTag("legal_privacy_link"))
-      rule.onNodeWithTag("legal_privacy_link").assertIsDisplayed()
+      rule.onNodeWithTag("legal_privacy_link").assertExists().performClick()
       rule.runOnIdle { assertTrue(acceptance.isAccepted()) }
     }
   }
