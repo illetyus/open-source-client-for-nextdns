@@ -7,6 +7,24 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class BenchmarkFixtureIsolationTest(unittest.TestCase):
+    def test_fixture_routes_all_catalog_fallbacks_through_its_guarded_client(self):
+        repository = (ROOT / 'app/src/main/java/com/example/data/repository/NextDnsRepository.kt').read_text(encoding='utf8')
+        activity = (ROOT / 'app/src/benchmark/java/com/example/BenchmarkFixtureActivity.kt').read_text(encoding='utf8')
+        self.assertIsNone(re.search(r'NextDnsNetworkClient\.fetchAvailable\w+Direct\(\)', repository), 'Catalog fallbacks bypass the injected factory')
+        self.assertIn('catalogCallFactory = fixtureClient', activity)
+        self.assertIn('requestUrl.host == baseUrl.host && requestUrl.port == baseUrl.port', activity)
+        self.assertIn('throw IOException("Synthetic benchmark rejects non-fixture endpoints")', activity)
+
+    def test_analytics_journey_scrolls_in_render_order(self):
+        source = (ROOT / 'macrobenchmark/src/main/java/com/example/macrobenchmark/AuthenticatedClientBenchmark.kt').read_text(encoding='utf8')
+        journey = source.split('fun analyticsSeriesAndInteractiveCountryMapRender()', 1)[1].split('private fun', 1)[0]
+        map_position = journey.index('scrollUntilFound(By.res("world_country_map")')
+        chart_scroll = 'scrollUntilFound(By.res("analytics_series_line_chart")'
+        self.assertTrue(chart_scroll in journey, 'Offscreen chart must be reached by scrolling')
+        chart_position = journey.index(chart_scroll)
+        self.assertLess(map_position, chart_position)
+        self.assertNotIn('Until.hasObject(By.res("analytics_series_line_chart"))', journey)
+
     def test_benchmark_fixture_is_confined_to_isolated_variant(self):
         app_gradle = (ROOT / 'app/build.gradle.kts').read_text(encoding='utf8')
         macrobenchmark_gradle = (ROOT / 'macrobenchmark/build.gradle.kts').read_text(encoding='utf8')

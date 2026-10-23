@@ -41,6 +41,7 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.time.Duration
@@ -110,6 +111,13 @@ class BenchmarkFixtureActivity : ComponentActivity() {
       .build()
 
     val fixtureClient = OkHttpClient.Builder()
+      .addInterceptor { chain ->
+        val requestUrl = chain.request().url
+        if (!(requestUrl.isHttps && requestUrl.host == baseUrl.host && requestUrl.port == baseUrl.port)) {
+          throw IOException("Synthetic benchmark rejects non-fixture endpoints")
+        }
+        chain.proceed(chain.request())
+      }
       .followRedirects(false)
       .followSslRedirects(false)
       .sslSocketFactory(clientCertificates.sslSocketFactory(), clientCertificates.trustManager)
@@ -154,6 +162,7 @@ class BenchmarkFixtureActivity : ComponentActivity() {
       },
       downloadClient = fixtureClient,
       streamClient = fixtureClient,
+      catalogCallFactory = fixtureClient,
       backgroundWorkEnabled = false
     )
     check(repository.loginWithApiKey(SYNTHETIC_API_KEY).isSuccess) {

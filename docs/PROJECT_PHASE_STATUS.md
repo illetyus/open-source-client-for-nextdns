@@ -1,5 +1,13 @@
 # Ana plan ve Faz 9 uygulama kaydı
 
+### 23 Ekim 2026 — inceleme APK'sı ve P07 düzeltmeleri
+
+Başarılı main CI `39812900881` (`c3dc918`) çıktısından mevcut inceleme sertifikasıyla imzalı APK/AAB üretildi; imza, 16 KB hizalama, manifest, lisans/NOTICE, release DEX ve 17/17 emülatör testiyle payload eşdeğerliği doğrulandı. APK SHA-256: `24d1c86fca0281a7a53a1f3e2b891e9f9949a2f3bed23f8ffd312dffca72352e`. Bu paket P07 PR'ının henüz birleştirilmemiş kodunu içermez; yerel kullanıcı incelemesi içindir, public yayın değildir.
+
+PR #33 incelemesinde benchmark'ın doğrudan katalog fallback istekleri ve ekran dışındaki seri grafiğine kaydırma eksikliği saptandı. Katalog istekleri varsayılan üretim davranışını koruyan enjekte edilebilir call factory'ye taşındı; benchmark istemcisi yalnız kendi HTTPS host/port'una izin verir. Harita ve grafik gezinmesi lazy-list sırasıyla kaydırılır. İki Python regresyonu önce başarısız, düzeltmeden sonra 29/29 Python testi başarılı; beş katalog rotasını gerçek istemci interceptor'ıyla sınayan JVM regresyonunun ve tüm Android derlemelerinin sonucu yeni PR CI'ında beklenir. Bağımsız düzeltme incelemesinde ek bulgu yoktur; fiziksel performans kapısı açık kalır.
+
+Önceki oturumun DPAPI BrowserStack yapılandırması bulundu. Kimlik bilgileri ifşa edilmeden hesap girişi ve 101 cihazlık canlı katalog doğrulandı; önceki ortam-değişkeni eksikliği hesap erişiminin yokluğu değildir. ADB çalışır, bağlı fiziksel cihaz yoktur. Cihaz testi gönderimi/sonucu ayrıca kanıtlanmadan B01–B22 PASS yapılmaz. Hukuk DRAFT ve hız testi kapsam dışı kalır.
+
 ### Güncel çalışma durumu — 22 Ekim 2026
 
 PR #32 (`8635c1c28619ba11f82f343651555ac5c1d4a917`) 17/17 Android API 35 release-emülatör testini içeren CI run `39811062359` sonrası `main`'e alındı; yeni `main` başı `c3dc9183aaa8b787a2107ee792660c3aa1563d27`. P07 PR #33 açık; son başlık için CI doğrulaması bekleniyor. Yerel Python suite 24/24, API matrisi 60 rota/39 profil alanı ve hukuki DRAFT bütünlük denetimleri geçti. `docs/release/readiness.json` içindeki B01–B22 cihaz kanıtı 13 PARTIAL, 9 NOT_RUN, 0 PASS durumundadır. Hız testi bu sürüm için iptal edilmiştir; eski istemci ve canlı sunucu araştırması tarihsel kayıttır. Hukuki belgeler `DRAFT`, yayıncı kimliği/iletişim doğrulaması yoktur ve yayın yapılmamıştır.

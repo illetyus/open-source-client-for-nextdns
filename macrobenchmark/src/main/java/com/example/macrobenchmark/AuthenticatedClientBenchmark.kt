@@ -61,11 +61,9 @@ class AuthenticatedClientBenchmark {
       ) {
         launchFixture(fixture)
         tapTab("tab_analytics", "analytics_device_filter")
-        check(device.wait(Until.hasObject(By.res("analytics_series_line_chart")), 15_000)) {
-          "Synthetic analytics series did not render"
-        }
         val map = scrollUntilFound(By.res("world_country_map"), "interactive country map")
         map.click()
+        scrollUntilFound(By.res("analytics_series_line_chart"), "synthetic analytics series")
         repeat(3) { swipeUpThroughList() }
       }
     } finally {

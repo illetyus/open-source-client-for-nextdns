@@ -340,6 +340,15 @@ PR #31 başlığı `39fe9b3ed11847dcc4df46b550d22976dffd6213` için CI `39741292
 
 ## 23 Ekim 2026 — P07 benchmark derleme kapısı
 
+Bağımsız PR incelemesinin ek bulguları:
+
+| Kimlik | Öncelik | Bulgu | Düzeltme ve doğrulama |
+|---|---|---|---|
+| NDNS-081 | P1 — ölçüm izolasyonu | Benchmark girişinde boş sentetik kataloglar, repository'nin global istemciyle gerçek NextDNS kataloglarına çıkmasına neden olabiliyordu. | Tüm sekiz direct katalog fallback'i enjekte edilebilir call factory kullanır; benchmark HTTPS exact host/port guard ile dış çağrıyı ağdan önce reddeder. Üretim varsayılanı korunur. İki yeni Python regresyonundan biri RED→GREEN; beş fallback rotası için socket açmayan JVM testi eklendi, CI bekleniyor. |
+| NDNS-082 | P1 — benchmark çalıştırma engeli | Analitik senaryosu lazy-list sonunda bulunan seri grafiğini kaydırmadan bekliyor, sonra önceki haritayı aşağı kaydırarak arıyordu. | Önce haritaya, sonra grafiğe kaydırılır; sıralama regresyonu RED→GREEN. Tüm yerel Python testleri 29/29; bağımsız düzeltme incelemesinde ek bulgu yok. Gerçek Macrobenchmark sonucu henüz yok. |
+
+23 Ekim erişim düzeltmesi: kayıtlı DPAPI BrowserStack yapılandırması açıldı, canlı kimlik doğrulaması ve 101 cihazlık katalog doğrulandı. ADB daemon başlatıldı; bağlı telefon yok. Önceki çevre-değişkeni eksikliği, kaydedilmiş hesabın bulunmadığını kanıtlamıyordu. Gönderim/sonuç kanıtı oluşana kadar cihaz kapıları açık kalır.
+
 | Kimlik | Öncelik | Bulgu | Düzeltme ve doğrulama |
 |---|---|---|---|
 | NDNS-080 | P1 — CI derleme engeli | PR #33 CI `39816474103`, `BenchmarkFixtureActivity.kt:83` üzerindeki `testTagsAsResourceId` kullanımı için gereken `ExperimentalComposeUiApi` opt-in eksik olduğundan benchmark Kotlin derlemesinde durdu. Android Lint ve 253 test geçti; sonraki release/güvenlik adımları çalışmadı. | `onCreate` üzerinde dar kapsamlı `@OptIn(ExperimentalComposeUiApi::class)` eklendi (`e46253e`). Yeni PR CI sonucu bekleniyor; başarılı derleme veya release güvenlik sonucu henüz iddia edilmiyor. |
