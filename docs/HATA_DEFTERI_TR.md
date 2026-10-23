@@ -337,3 +337,11 @@ PR #31 başlığı `39fe9b3ed11847dcc4df46b550d22976dffd6213` için CI `39741292
 | NDNS-079 | P2 - Android CI kararlılığı | Bildirim izin testinin başarılı senaryosu, Android'deki tüm etkin bildirim sayısının tam `2` olmasını bekliyordu. İlk CI denemesi koşulda başarısız oldu, yeniden çalıştırma geçti; log etkin bildirim kimliklerini vermediği için gecikmiş teslim ile ek bildirim ayırt edilemedi. | Test artık yalnız beklenen iki uygulama bildirim kimliğinin teslimini bekliyor ve kendi bildirimlerini incelemeden önce filtreliyor. | `NativeNotificationPermissionTest.grantedPermissionPostsPrivateNotificationsWithGenericPublicVersions`; PR #32 head `8635c1c28619ba11f82f343651555ac5c1d4a917`, run `39811062359`: 17/17 runtime test geçti. |
 
 **P08 doğrulama sınırı:** P07'deki 24 Python regresyonu, Python derlemesi, legal DRAFT bütünlük ve whitespace denetimleri geçti. Windows Gradle önbellek kilidi ayrı geçici `GRADLE_USER_HOME` ile aşıldı; `services.gradle.org` çözümlenemediği için yerel P07 Android derlemesi yapılamadı. P06 PR #32 emülatör CI'si `39811062359` geçti ve merge commit `c3dc9183aaa8b787a2107ee792660c3aa1563d27` main'de. P07 Android CI güncel PR head'inde bekleniyor. BrowserStack kimlik bilgileri/artefakt aktarımı ve fiziksel Android cihaz doğrulanmadığından BrowserStack, B01–B22 ve fiziksel cihaz Macrobenchmark/Perfetto PASS sonucu yok.
+
+## 23 Ekim 2026 — P07 benchmark derleme kapısı
+
+| Kimlik | Öncelik | Bulgu | Düzeltme ve doğrulama |
+|---|---|---|---|
+| NDNS-080 | P1 — CI derleme engeli | PR #33 CI `39816474103`, `BenchmarkFixtureActivity.kt:83` üzerindeki `testTagsAsResourceId` kullanımı için gereken `ExperimentalComposeUiApi` opt-in eksik olduğundan benchmark Kotlin derlemesinde durdu. Android Lint ve 253 test geçti; sonraki release/güvenlik adımları çalışmadı. | `onCreate` üzerinde dar kapsamlı `@OptIn(ExperimentalComposeUiApi::class)` eklendi (`e46253e`). Yeni PR CI sonucu bekleniyor; başarılı derleme veya release güvenlik sonucu henüz iddia edilmiyor. |
+
+Yerel Python regresyonları 23 Ekim'de yeniden çalıştırıldı: 24/24 PASS; hukuki paket bütünlüğü DRAFT olarak doğrulandı. Yerel Gradle hem normal hem IPv4/daemon kapalı denemede `Unable to establish loopback connection` ile başlamadı; bu ortam hatası uygulama test sonucu değildir. Hız testi kapsam dışıdır.
