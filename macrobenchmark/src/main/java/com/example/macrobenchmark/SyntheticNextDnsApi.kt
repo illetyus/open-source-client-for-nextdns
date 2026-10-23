@@ -38,7 +38,7 @@ internal class SyntheticNextDnsApi private constructor(
     const val FIXTURE_ACTIVITY = "com.example.BenchmarkFixtureActivity"
     const val EXTRA_BASE_URL = "benchmark_base_url"
     const val EXTRA_CERTIFICATE_BASE64 = "benchmark_certificate_base64"
-    private const val PROFILE_ID = "benchmark-profile"
+    private const val PROFILE_ID = "b00b1e"
     private const val PAGE_TWO_CURSOR = "benchmark-page-2"
 
     fun start(): SyntheticNextDnsApi {

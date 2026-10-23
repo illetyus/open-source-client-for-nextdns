@@ -43,6 +43,21 @@ class UiAuditTest : AuditFixture() {
   @get:Rule val rule = AuditComposeTestRule()
   private fun english() { LocalePreferences.setSelection(ApplicationProvider.getApplicationContext<NextDnsApp>(), "en") }
 
+  @Test fun unsafeApiProfileDoesNotExposeSetupAddressesOrInstallCommands() {
+    english()
+    val unsafeId = "abc123; printf P08_MARKER; #"
+    response = { json("""{"data":[{"id":"$unsafeId","name":"Synthetic malformed profile"}]}""") }
+    kotlinx.coroutines.runBlocking {
+      org.junit.Assert.assertTrue(repository.refreshProfilesFromApi())
+    }
+    repository.setActiveProfile(unsafeId)
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { com.example.ui.screens.SetupScreen(model) } }
+    rule.onNodeWithText(AppStrings.get(R.string.setup_profile_identity_unavailable)).assertIsDisplayed()
+    rule.onAllNodes(hasText(unsafeId, substring = true)).assertCountEquals(0)
+    rule.onAllNodes(hasText("brew install", substring = true)).assertCountEquals(0)
+  }
+
   @Test fun identicalRealisticFingerprintMustShowConnectedForSelectedProfile() {
     english()
     val profile = NextDnsProfile("aaaaaa", "Synthetic A", "fp0123456789abcdef")

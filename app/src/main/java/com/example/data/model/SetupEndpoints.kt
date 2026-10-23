@@ -10,10 +10,17 @@ data class ProfileSetupEndpoints(
   val ipv6: List<String> = emptyList()
 )
 
+/** Only resolver/setup sinks require the documented six-hex identifier form. */
+fun normalizedSetupProfileId(profileId: String?): String? = profileId
+  ?.trim()?.lowercase(Locale.ROOT)?.takeIf { it.matches(Regex("[0-9a-f]{6}")) }
+
+fun macOsNextDnsInstallCommand(profileId: String?): String? = normalizedSetupProfileId(profileId)?.let { id ->
+  "brew install nextdns/tap/nextdns && sudo nextdns install -config $id -auto-activate"
+}
+
 /** NextDNS profile-specific IPv6 resolver addresses use the six-hex-character profile ID. */
 fun profileIpv6Addresses(profileId: String?): List<String> {
-  val id = profileId?.trim()?.lowercase(Locale.ROOT).orEmpty()
-  if (!id.matches(Regex("[0-9a-f]{6}"))) return emptyList()
+  val id = normalizedSetupProfileId(profileId) ?: return emptyList()
   val suffix = "${id.take(2)}:${id.drop(2)}"
   return listOf("2a07:a8c0::$suffix", "2a07:a8c1::$suffix")
 }

@@ -14,6 +14,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.*
 import java.util.concurrent.TimeUnit
 import com.example.data.model.AnalyticsItemDto
+import com.example.data.model.normalizedSetupProfileId
 
 // ==========================================
 // NextDNS API Response DTOs
@@ -921,10 +922,11 @@ object NextDnsNetworkClient {
   }
 
   suspend fun fetchTestConnectionDirect(profileId: String? = null, callFactory: okhttp3.Call.Factory = client): NextDnsTestResponse? {
+    val setupProfileId = if (profileId.isNullOrBlank()) null else normalizedSetupProfileId(profileId) ?: return null
     return try {
-      val testUrl = if (!profileId.isNullOrBlank()) {
+      val testUrl = if (setupProfileId != null) {
         val rand = java.util.UUID.randomUUID().toString().replace("-", "").take(12)
-        "https://$rand-$profileId.test.nextdns.io/"
+        "https://$rand-$setupProfileId.test.nextdns.io/"
       } else {
         TEST_URL
       }

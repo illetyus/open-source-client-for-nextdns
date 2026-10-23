@@ -194,7 +194,7 @@ class BenchmarkFixtureActivity : ComponentActivity() {
 
   companion object {
     private const val TAG = "BenchmarkFixture"
-    private const val PROFILE_ID = "benchmark-profile"
+    private const val PROFILE_ID = "b00b1e"
     private const val SYNTHETIC_API_KEY = "benchmark-synthetic-key"
     private const val EXTRA_BASE_URL = "benchmark_base_url"
     private const val EXTRA_CERTIFICATE_BASE64 = "benchmark_certificate_base64"
