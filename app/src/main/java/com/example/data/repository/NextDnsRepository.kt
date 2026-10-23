@@ -60,7 +60,8 @@ class NextDnsRepository(
   private val diagnosticProbe: suspend (String?) -> NextDnsTestResponse? = { NextDnsNetworkClient.fetchTestConnectionDirect(it) },
   private val downloadClient: okhttp3.OkHttpClient = NextDnsNetworkClient.publicDownloadClient,
   private val streamClient: okhttp3.OkHttpClient = NextDnsNetworkClient.client,
-  private val backgroundWorkEnabled: Boolean = true
+  private val backgroundWorkEnabled: Boolean = true,
+  private val catalogCallFactory: okhttp3.Call.Factory = NextDnsNetworkClient.client
 ) {
   private val TAG = "NextDnsRepo"
   // Only state/cache commits and session transitions hold this lock, never network I/O.
@@ -529,7 +530,7 @@ class NextDnsRepository(
       // 1. Blocklists Catalog
       val blocklistDtos = fetchAllPages("availableBlocklists") { cursor ->
         apiService.getAvailableBlocklists(apiKey = null, cursor = cursor)
-      } ?: NextDnsNetworkClient.fetchAvailableBlocklistsDirect()
+      } ?: NextDnsNetworkClient.fetchAvailableBlocklistsDirect(catalogCallFactory)
       if (blocklistDtos != null && blocklistDtos.isNotEmpty()) {
         _availableBlocklistsCatalog.value = blocklistDtos.map { dto ->
           val cleanId = dto.id.lowercase().trim()
@@ -550,7 +551,7 @@ class NextDnsRepository(
       // 2. Natives Catalog
       val nativesDtos = fetchAllPages("availableNatives") { cursor ->
         apiService.getAvailableNatives(cursor = cursor)
-      } ?: NextDnsNetworkClient.fetchAvailableNativesDirect()
+      } ?: NextDnsNetworkClient.fetchAvailableNativesDirect(catalogCallFactory)
       if (nativesDtos != null && nativesDtos.isNotEmpty()) {
         _availableNativesCatalog.value = nativesDtos
       }
@@ -558,7 +559,7 @@ class NextDnsRepository(
       // 3. Parental Services Catalog
       val parentServices = fetchAllPages("availableParentalServices") { cursor ->
         apiService.getAvailableParentalServices(cursor = cursor)
-      } ?: NextDnsNetworkClient.fetchAvailableParentalServicesDirect()
+      } ?: NextDnsNetworkClient.fetchAvailableParentalServicesDirect(catalogCallFactory)
       if (parentServices != null && parentServices.isNotEmpty()) {
         _availableParentalServicesCatalog.value = parentServices
       }
@@ -566,7 +567,7 @@ class NextDnsRepository(
       // 4. Parental Categories Catalog
       val parentCats = fetchAllPages("availableParentalCategories") { cursor ->
         apiService.getAvailableParentalCategories(cursor = cursor)
-      } ?: NextDnsNetworkClient.fetchAvailableParentalCategoriesDirect()
+      } ?: NextDnsNetworkClient.fetchAvailableParentalCategoriesDirect(catalogCallFactory)
       if (parentCats != null && parentCats.isNotEmpty()) {
         _availableParentalCategoriesCatalog.value = parentCats
       }
@@ -574,7 +575,7 @@ class NextDnsRepository(
       // 5. TLDs Catalog
       val tlds = fetchAllPages("availableTlds") { cursor ->
         apiService.getAvailableTlds(cursor = cursor)
-      } ?: NextDnsNetworkClient.fetchAvailableTldsDirect()
+      } ?: NextDnsNetworkClient.fetchAvailableTldsDirect(catalogCallFactory)
       if (tlds == null) {
         _tldCatalogLoadState.value = TldCatalogLoadState.UNAVAILABLE
       } else {
@@ -753,7 +754,9 @@ class NextDnsRepository(
       }
       loadActiveProfileDataFromApi(key, target)
       withSessionContext(expectedKey = key, expectedProfile = target) {
-        safeApiCall("reconcileNotifications") { NotificationWorkScheduler.reconcile(NextDnsApp.instance) }
+        if (backgroundWorkEnabled) {
+          safeApiCall("reconcileNotifications") { NotificationWorkScheduler.reconcile(NextDnsApp.instance) }
+        }
         ensureOperationActive()
       }
       Result.success(mapped.size)
@@ -922,7 +925,7 @@ class NextDnsRepository(
           website = it.website,
           updatedOn = null
         )
-      } ?: NextDnsNetworkClient.fetchAvailableBlocklistsDirect()
+      } ?: NextDnsNetworkClient.fetchAvailableBlocklistsDirect(catalogCallFactory)
     }
     return commitCurrentSession {
       val safeAvailDtos = availableDtos ?: emptyList()
@@ -1043,7 +1046,7 @@ class NextDnsRepository(
 
     var servCatalog = _availableParentalServicesCatalog.value
     if (servCatalog.isEmpty()) {
-      val fetched = NextDnsNetworkClient.fetchAvailableParentalServicesDirect()
+      val fetched = NextDnsNetworkClient.fetchAvailableParentalServicesDirect(catalogCallFactory)
       if (fetched != null && fetched.isNotEmpty()) {
         servCatalog = fetched
         commitCurrentSession { _availableParentalServicesCatalog.value = fetched }
@@ -1052,7 +1055,7 @@ class NextDnsRepository(
 
     var catCatalog = _availableParentalCategoriesCatalog.value
     if (catCatalog.isEmpty()) {
-      val fetched = NextDnsNetworkClient.fetchAvailableParentalCategoriesDirect()
+      val fetched = NextDnsNetworkClient.fetchAvailableParentalCategoriesDirect(catalogCallFactory)
       if (fetched != null && fetched.isNotEmpty()) {
         catCatalog = fetched
         commitCurrentSession { _availableParentalCategoriesCatalog.value = fetched }

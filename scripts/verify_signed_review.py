@@ -8,6 +8,7 @@ import zipfile
 from pathlib import Path
 from package_payload import digest, entries
 from release_dex_audit import audit_dex
+from release_runtime_evidence import validate_runtime_summary
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--evidence', type=Path, required=True)
@@ -45,7 +46,8 @@ with zipfile.ZipFile(apk) as z:
         if re.fullmatch(r'classes\d*\.dex',name):
             audit_dex(z.read(name))
 runtime = json.loads((args.evidence/'build/compliance/runtime/release-runtime-evidence.json').read_text())
-assert runtime['commit']==evidence['commit'] and runtime['tests']==10 and runtime['failures']==0 and runtime['skipped']==0
+validate_runtime_summary(runtime)
+assert runtime['commit']==evidence['commit']
 assert runtime['payloadSha256']==digest(apk) and runtime['canaryAbsentFromLogcat'] and runtime['payloadIdenticalExceptSignature']
 snyk = json.loads((args.evidence/'build/compliance/snyk-app-release.json').read_text())
 assert snyk['ok'] is True and snyk['dependencyCount']>20 and not snyk['vulnerabilities']

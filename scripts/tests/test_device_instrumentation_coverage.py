@@ -10,6 +10,7 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
     def test_release_emulator_audit_executes_native_device_flows(self):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
         verifier = (ROOT / 'scripts/verify_release_runtime.py').read_text(encoding='utf8')
+        helper = (ROOT / 'scripts/release_runtime_evidence.py').read_text(encoding='utf8')
 
         required_classes = {
             'NativeApiFixtureTest',
@@ -23,9 +24,10 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         self.assertLessEqual(required_classes, invoked_classes)
         for class_name in required_classes:
             self.assertIn(f'com.example.{class_name}', verifier)
-        self.assertIn("sum(summaries) == 17", verifier)
-        self.assertIn("statuses.count('1') == 17 and statuses.count('0') == 17", verifier)
-        self.assertIn("'tests':17", verifier)
+        self.assertIn("sum(summaries) == REQUIRED_RUNTIME_TESTS", verifier)
+        self.assertIn("statuses.count('1') == REQUIRED_RUNTIME_TESTS and statuses.count('0') == REQUIRED_RUNTIME_TESTS", verifier)
+        self.assertIn("'tests':REQUIRED_RUNTIME_TESTS", verifier)
+        self.assertIn("REQUIRED_RUNTIME_TESTS = 17", helper)
 
     def test_permission_denial_is_prepared_outside_the_instrumented_process(self):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')

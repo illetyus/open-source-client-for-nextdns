@@ -99,6 +99,28 @@ class RepositoryRegressionTest {
   }
 
   private fun gate() = CountDownLatch(1).also { gates.add(it) }
+  @Test fun publicCatalogFallbacksUseInjectedFactoryWithoutExternalConnections() = runBlocking {
+    val catalogPaths = java.util.concurrent.CopyOnWriteArrayList<String>()
+    val catalogClient = OkHttpClient.Builder().addInterceptor { chain ->
+      catalogPaths.add(chain.request().url.encodedPath)
+      Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
+        .code(200).message("Synthetic catalog").body("{\"data\":[]}".toResponseBody()).build()
+    }.build()
+    val isolatedRepository = NextDnsRepository(
+      preferences, apiService = api, diagnosticService = testApi,
+      diagnosticProbe = { null }, backgroundWorkEnabled = false,
+      catalogCallFactory = catalogClient
+    )
+
+    isolatedRepository.loadAllLiveCatalogs()
+
+    assertEquals(setOf(
+      "/privacy/blocklists", "/privacy/natives", "/parentalControl/services",
+      "/parentalControl/categories", "/security/tlds"
+    ), catalogPaths.toSet())
+    assertEquals(5, catalogPaths.size)
+  }
+
   private fun await(latch: CountDownLatch) {
     assertTrue("Fixture request must reach its barrier", latch.await(5, TimeUnit.SECONDS))
   }
