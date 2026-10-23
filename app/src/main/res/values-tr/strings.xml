@@ -674,4 +674,5 @@
     <string name="analytics_series_no_value">Veri yok</string>
     <string name="analytics_series_table_heading">Son zaman dilimleri</string>
     <string name="analytics_series_chart_accessibility">%1$s için etkileşimli zaman serisi grafiği. Zamanı ve sorgu sayısını incelemek için bir nokta seçin.</string>
+    <string name="setup_profile_identity_unavailable">Profil kimliği doğrulanamadığı için kurulum yönergeleri kullanılamıyor.</string>
 </resources>

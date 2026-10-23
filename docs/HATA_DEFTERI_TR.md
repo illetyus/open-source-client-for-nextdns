@@ -340,6 +340,16 @@ PR #31 başlığı `39fe9b3ed11847dcc4df46b550d22976dffd6213` için CI `39741292
 
 ## 23 Ekim 2026 — P07 benchmark derleme kapısı
 
+### P08 — çıkış noktası doğrulaması ve dış kabul sınırı
+
+| Kimlik | Öncelik | Bulgu | Düzeltme / gerçek sınır |
+|---|---|---|---|
+| NDNS-083 | P2 — güven sınırı | API'dan gelen bozuk bir profil kimliği tanı URL'sinin authority bölümünü değiştirebilir veya kullanıcının kopyalayıp çalıştırdığı macOS kurulum komutuna shell sözdizimi ekleyebilirdi. Sıradan profil adından bu kimliğe saldırgan geçişi gösterilmedi; otomatik shell çalıştırma/API anahtarı sızıntısı yoktur. | Var olan altı-hex setup kimliği kuralı tek normalizer'da toplandı. Tanı, endpoint yönergeleri ve macOS komutu bu normalizer'ı kullanır; geçersiz tanı kimliği istek oluşturmaz. Repository'nin genel profil kayıtlarına yeni kısıt uygulanmadı. Beş dilde kullanılamaz açıklaması eklendi; sentetik benchmark kimliği iki tarafta `b00b1e` yapıldı. Pure Kotlin/JUnit RED→GREEN: 5/5; ağ isteği yakalama ve UI regresyonları eklendi, tam CI beklenir. |
+| NDNS-084 | P2 — tedarik zinciri sıkılaştırması | Gradle Wrapper JAR doğrulaması vardı; indirilen Gradle ZIP'i için distributionSha256Sum sabitlenmemişti. Ele geçirilmiş bağımlılık kanıtı yoktur. | 9.3.1 bin ZIP resmi SHA-256 özeti wrapper'a eklenir: `b266d5ff6b90eada6dc3b20cb090e3731302e553a27c5d3e4df1f0d76beaff06`. Kaynak: https://services.gradle.org/distributions/gradle-9.3.1-bin.zip.sha256 . Bağımlılık kilitleme/tüm depo güvenliği tamamlandı iddiası değildir. |
+| NDNS-085 | P1 — dış cihaz kabul engeli | Kayıtlı BrowserStack hesabıyla kimlik doğrulaması, 101 cihazlık katalog, plan ve geçmiş build/app listeleri HTTP 200; hash-doğrulanmış main paketinin gönderimi HTTP 403. Yeni upload/build yoktur; en yeni app 19 Ekim'dendir. | Aynı POST tekrarlanmadı; plan `Free`, çalışan/kuyruk session 0. App Management/Espresso yükleme yetkisi inceleme konusudur; kesin 403 nedeni varsayılmadı, hesap izinleri/abonelik değiştirilmedi. B01–B22 sonuçları PASS yapılmadı. |
+
+İki ertelenmiş güvenlik yüzeyi ayrıca kaynakta incelendi: profil kimliği çıkış noktası NDNS-083 ile giderilir. Log export API anahtarını indirme hostuna iletmez ve TLS doğrular; ancak API-seçimli HTTPS hostu ve HTTPS redirect ile yerel ağ bağlantı denemeleri sınırlandırılmamıştır. Saldırganın API yanıtını kontrol edebildiği gösterilmedi. Desteklenen indirme/CDN sözleşmesi bilinmeden yeni host allowlist'i uydurulmadı; bu yüzey açık inceleme sınırı olarak kalır.
+
 Bağımsız PR incelemesinin ek bulguları:
 
 | Kimlik | Öncelik | Bulgu | Düzeltme ve doğrulama |

@@ -674,4 +674,5 @@
     <string name="analytics_series_no_value">Keine Daten</string>
     <string name="analytics_series_table_heading">Letzte Zeitfenster</string>
     <string name="analytics_series_chart_accessibility">Interaktives Zeitreihendiagramm für %1$s. Wählen Sie einen Punkt aus, um Zeit und Abfrageanzahl anzuzeigen.</string>
+    <string name="setup_profile_identity_unavailable">Die Einrichtungsanweisungen sind nicht verfügbar, da diese Profil-ID nicht validiert werden konnte.</string>
 </resources>

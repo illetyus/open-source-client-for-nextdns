@@ -674,4 +674,5 @@
     <string name="analytics_series_no_value">Aucune donnée</string>
     <string name="analytics_series_table_heading">Dernières plages temporelles</string>
     <string name="analytics_series_chart_accessibility">Graphique interactif de série temporelle pour %1$s. Sélectionnez un point pour consulter l’heure et le nombre de requêtes.</string>
+    <string name="setup_profile_identity_unavailable">Les instructions de configuration sont indisponibles, car cet identifiant de profil ne peut pas être validé.</string>
 </resources>

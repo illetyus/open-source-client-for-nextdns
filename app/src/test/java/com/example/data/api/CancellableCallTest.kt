@@ -20,6 +20,32 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class CancellableCallTest {
+  @Test fun unsafeDiagnosticProfileDoesNotCreateAnyRequest() = runBlocking {
+    for (profileId in listOf("ignored@attacker.example/", "abc123; printf P08_MARKER; #", "benchmark-profile")) {
+      var requested = false
+      val result = NextDnsNetworkClient.fetchTestConnectionDirect(profileId, Call.Factory {
+        requested = true
+        error("Unsafe profile must not create a request")
+      })
+      assertNull(result)
+      assertFalse(profileId, requested)
+    }
+  }
+
+  @Test fun normalizedDiagnosticProfileCannotChangeAuthority() = runBlocking {
+    val body = TrackingBody("{\"status\":\"ok\",\"profile\":\"abc123\"}")
+    var captured: Request? = null
+    val result = NextDnsNetworkClient.fetchTestConnectionDirect(" ABC123 ", Call.Factory {
+      captured = it
+      FixtureCall(it, body)
+    })
+    assertEquals("ok", result?.status)
+    assertTrue(captured!!.url.host.matches(Regex("[0-9a-f]{12}-abc123\\.test\\.nextdns\\.io")))
+    assertEquals("https", captured!!.url.scheme)
+    assertNull(captured!!.header("X-Api-Key"))
+    assertTrue(body.closed.get())
+  }
+
   private class TrackingBody(text: String, private val blockRead: Boolean = false) : ResponseBody() {
     val closed = AtomicBoolean()
     val readStarted = CountDownLatch(1)

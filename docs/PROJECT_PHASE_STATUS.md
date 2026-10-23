@@ -1,5 +1,11 @@
 # Ana plan ve Faz 9 uygulama kaydı
 
+### 23 Ekim 2026 — P07 entegrasyonu ve P08 güven sınırı
+
+PR #33, güncel `c60cacf` başında CI `39890054040` başarılı olduktan sonra `6e0dd61418ed6bd668294c777c0a561be69d9ff0` ile main'e birleştirildi. Gerçek CI kanıtı: 254 JVM/Compose testi (0 hata/atlama), 91 zorunlu vaka, 12 screenshot, Debug/Benchmark/Release APK-AAB derlemeleri, Android Lint, DEX/bağımlılık/NOTICE, 50 bağımlılıkta 0 Snyk sorunu ve API 35'te 17/17 release-runtime testi. Main CI `39892122754` çalışıyor. Bu, fiziksel cihazda performans ölçümü veya B01–B22 kapanışı değildir.
+
+P08 `feat/p08-profile-boundaries` dalında: tanı URL'si ve kopyalanan kurulum komutu çıkışlarında profil kimliği doğrulandı (NDNS-083); Gradle ZIP resmi özeti sabitlendi (NDNS-084). Kaynak incelemesinde ek merge engeli yok; yerel pure Kotlin/JUnit 5/5, Python 29/29, beş dil 662 kaynak ve DRAFT bütünlük doğrulamaları geçti. Yeni tam Android CI ve normal PR entegrasyonu beklenir. Katalog/plan/geçmiş erişimi başarılı olan BrowserStack yüklemesi HTTP 403 nedeniyle engellidir (NDNS-085); yeni upload/build yoktur. Fiziksel cihaz, son hukuk/kimlik/Privacy girdileri ve Play kabulü açık kalır; yayın yapılmaz.
+
 ### 23 Ekim 2026 — inceleme APK'sı ve P07 düzeltmeleri
 
 Başarılı main CI `39812900881` (`c3dc918`) çıktısından mevcut inceleme sertifikasıyla imzalı APK/AAB üretildi; imza, 16 KB hizalama, manifest, lisans/NOTICE, release DEX ve 17/17 emülatör testiyle payload eşdeğerliği doğrulandı. APK SHA-256: `24d1c86fca0281a7a53a1f3e2b891e9f9949a2f3bed23f8ffd312dffca72352e`. Bu paket P07 PR'ının henüz birleştirilmemiş kodunu içermez; yerel kullanıcı incelemesi içindir, public yayın değildir.

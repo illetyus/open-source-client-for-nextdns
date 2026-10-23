@@ -39,6 +39,8 @@ import com.example.data.model.DiagnosticConnectionState
 import com.example.data.model.diagnosticConnectionState
 import com.example.data.model.ProfileSetupEndpoints
 import com.example.data.model.profileSetupEndpoints
+import com.example.data.model.normalizedSetupProfileId
+import com.example.data.model.macOsNextDnsInstallCommand
 import com.example.data.model.setupIpv4Addresses
 import com.example.data.model.setupIpv6Addresses
 import com.example.data.model.DiagnosticTestResult
@@ -61,7 +63,7 @@ fun SetupScreen(
 
   val platforms = listOf("Android", "iOS", "Windows", "macOS", "Linux", "ChromeOS", AppStrings.get(R.string.ui_4b4de7fb15), AppStrings.get(R.string.ui_7b5d49c4a6))
   val profile = activeProfile ?: NextDnsProfile("", AppStrings.get(R.string.ui_e267d34382))
-  val profileId = profile.id
+  val profileId = normalizedSetupProfileId(profile.id)
   val setup = profileSetupEndpoints(profileId)
 
   val lifecycleOwner = LocalLifecycleOwner.current
@@ -107,11 +109,11 @@ fun SetupScreen(
     }
 
     item {
-      EndpointsSection(
-        profileId = profileId,
-        context = context,
-        setup = setup
-      )
+      if (profileId != null) {
+        EndpointsSection(profileId = profileId, context = context, setup = setup)
+      } else {
+        Text(AppStrings.get(R.string.setup_profile_identity_unavailable), color = MaterialTheme.colorScheme.onSurfaceVariant)
+      }
     }
 
     item {
@@ -125,7 +127,7 @@ fun SetupScreen(
     }
 
     item {
-      SetupGuideSection(
+      if (profileId != null) SetupGuideSection(
         profileId = profileId,
         setup = setup,
         platforms = platforms,
@@ -949,12 +951,14 @@ private fun MacOsSetupGuide(profileId: String, context: Context) {
 
       SetupStepItem("3", AppStrings.get(R.string.ui_fbe5a8bd84))
 
-      CopyableValueBox(
-        label = AppStrings.get(R.string.ui_b9d9ff28ca),
-        value = "brew install nextdns/tap/nextdns && sudo nextdns install -config $profileId -auto-activate",
-        context = context,
-        copyLabel = AppStrings.get(R.string.ui_b9d9ff28ca)
-      )
+      macOsNextDnsInstallCommand(profileId)?.let { command ->
+        CopyableValueBox(
+          label = AppStrings.get(R.string.ui_b9d9ff28ca),
+          value = command,
+          context = context,
+          copyLabel = AppStrings.get(R.string.ui_b9d9ff28ca)
+        )
+      }
     }
   }
 }

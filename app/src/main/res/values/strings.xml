@@ -675,5 +675,6 @@
     <string name="analytics_series_no_value">No data</string>
     <string name="analytics_series_table_heading">Recent time buckets</string>
     <string name="analytics_series_chart_accessibility">Interactive time-series chart for %1$s. Select a point to inspect its time and query count.</string>
+    <string name="setup_profile_identity_unavailable">Setup instructions are unavailable because this profile ID could not be validated.</string>
 </resources>
 <!-- Locale-only presentation; API privacy fields remain unchanged. -->

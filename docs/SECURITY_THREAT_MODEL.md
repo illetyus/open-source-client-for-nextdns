@@ -37,6 +37,9 @@ This document describes the security assumptions and mitigations for
 - `X-Api-Key` is registered as a redacted header for debug logging.
 - Repository exception logging is debug-only.
 - Log export requests a public URL with `redirect=0`, then downloads it without the API key.
+- Profile-specific diagnostic hosts and copied setup commands use a shared normalized
+  six-hex profile identifier. Invalid identifiers do not create diagnostic requests or
+  expose setup instructions; this does not restrict generic repository profile records.
 
 ### DNS history
 
@@ -66,6 +69,11 @@ privacy notice describes this transfer. Charts are rendered locally with Compose
 main application does not use a JavaScript-enabled WebView.
 
 ## Residual risks
+
+- The initial HTTPS log-download URL and HTTPS redirect destinations remain selected by
+  the API response. Credentials are not attached, but local/private destination attempts
+  are not excluded. Supported download/CDN origins require contract verification before
+  introducing an origin allowlist; no API-response attacker-control path was established.
 
 - A rooted or otherwise fully compromised device may inspect process memory or hook app calls.
 - A user can deliberately disclose an API key to another app or person.
