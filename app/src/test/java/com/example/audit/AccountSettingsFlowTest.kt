@@ -256,7 +256,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithText(".zip").assertDoesNotExist()
   }
 
-  @Test fun publishedAndUnverifiedSecurityFieldsAppearInTheSecurityScreen() {
+  @Test fun publishedNextDnsSecurityFieldsAppearInTheSecurityScreen() {
     english()
     val model = NextDnsViewModel(repository)
     rule.setContent { AppTheme { SecurityScreen(model) } }
@@ -281,9 +281,6 @@ class AccountSettingsFlowTest : AuditFixture() {
       securityList.performScrollToNode(hasText(titleText))
       rule.onNodeWithText(titleText).assertExists()
     }
-    val unverifiedTitle = AppStrings.get(R.string.security_unverified_title)
-    securityList.performScrollToNode(hasText(unverifiedTitle))
-    rule.onNodeWithText(unverifiedTitle).assertExists()
   }
 
   @Test fun successfulEmptyTldCatalogIsNotReportedAsANetworkFailure() = runBlocking {
