@@ -1169,7 +1169,8 @@ class NextDnsRepository(
         ednsClientSubnet = s.performance?.ecs ?: _configSettings.value.ednsClientSubnet,
         cacheBoost = s.performance?.cacheBoost ?: _configSettings.value.cacheBoost,
         cnameFlattening = s.performance?.cnameFlattening ?: _configSettings.value.cnameFlattening,
-        web3 = s.web3 ?: _configSettings.value.web3
+        web3 = s.web3 ?: _configSettings.value.web3,
+        bypassAgeVerification = s.bav ?: _configSettings.value.bypassAgeVerification
       )
       _configSettings.value = updated
       preferences.saveConfigSettings(profileId, updated)
@@ -1873,6 +1874,17 @@ class NextDnsRepository(
     ) { key, pid ->
       apiService.updateSettings(
         key, pid, SettingsUpdateRequest(web3 = enabled)
+      )
+    }
+
+  suspend fun setBypassAgeVerification(enabled: Boolean): Result<Unit> =
+    mutateSection(
+      section = SyncSection.SETTINGS,
+      operationName = "setBypassAgeVerification",
+      verify = { _configSettings.value.bypassAgeVerification == enabled }
+    ) { key, pid ->
+      apiService.updateSettings(
+        key, pid, SettingsUpdateRequest(bav = enabled)
       )
     }
 

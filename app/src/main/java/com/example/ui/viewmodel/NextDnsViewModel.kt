@@ -804,6 +804,12 @@ class NextDnsViewModel(
     }
   }
 
+  fun toggleBypassAgeVerification(enabled: Boolean) {
+    viewModelScope.launch {
+      reportMutationResult(repository.setBypassAgeVerification(enabled))
+    }
+  }
+
   override fun onCleared() {
     authenticationJob?.cancel()
     stopVisibleTabSync()

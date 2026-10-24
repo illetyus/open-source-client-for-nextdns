@@ -93,6 +93,17 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("settings_scroll_list").assertIsDisplayed()
   }
 
+  @Test fun bypassAgeVerificationIsShownWithNextDnsServiceSettings() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SettingsScreen(model) } }
+
+    val settingsList = rule.onNodeWithTag("settings_scroll_list")
+    settingsList.performScrollToNode(hasTestTag("settings_bypass_age_verification"))
+    rule.onNodeWithTag("settings_bypass_age_verification").assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.bypass_age_verification_title)).assertIsDisplayed()
+  }
+
   @Test fun loginDoesNotScatterLegalLinksOutsideTheGroupedWelcomeFlow() {
     english()
     val model = NextDnsViewModel(repository)

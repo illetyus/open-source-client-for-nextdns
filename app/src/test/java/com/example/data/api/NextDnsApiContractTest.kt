@@ -214,6 +214,35 @@ class NextDnsApiContractTest {
   }
 
   @Test
+  fun bypassAgeVerificationUsesTheGeneralSettingsApiContract() = runTest {
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody("""{"data":{"bav":true}}""")
+    )
+
+    val settings = api.getSettings("test-key", "profile-1").body()?.data
+    val getRequest = server.takeRequest()
+
+    assertEquals(true, settings?.bav)
+    assertEquals("GET", getRequest.method)
+    assertEquals("/profiles/profile-1/settings", getRequest.path)
+
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody("""{"data":{}}""")
+    )
+
+    api.updateSettings("test-key", "profile-1", SettingsUpdateRequest(bav = false))
+    val patchRequest = server.takeRequest()
+
+    assertEquals("PATCH", patchRequest.method)
+    assertEquals("/profiles/profile-1/settings", patchRequest.path)
+    assertEquals("""{"bav":false}""", patchRequest.body.readUtf8())
+  }
+
+  @Test
   fun securityResponseRetainsUnknownJsonForReadOnlyDiscovery() = runTest {
     server.enqueue(
       MockResponse()

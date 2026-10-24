@@ -250,6 +250,7 @@ data class ConfigSettings(
   val cacheBoost: Boolean = false,
   val cnameFlattening: Boolean = true,
   val web3: Boolean = false,
+  val bypassAgeVerification: Boolean = false,
   val rewrites: List<RewriteItem> = emptyList()
 )
 

@@ -518,6 +518,9 @@
     <string name="month_short_11">"Nov"</string>
     <string name="month_short_12">"Dec"</string>
     <string name="web3_description">"Web3 includes blockchain domains and distributed networks such as IPFS. This setting enables their resolution by NextDNS. Some browsers require a trailing /, for example vitalik.eth/."</string>
+    <string name="bypass_age_verification_title">Bypass age verification</string>
+    <string name="bypass_age_verification_description">Enable the NextDNS profile setting for supported age-verification pages.</string>
+    <string name="bypass_age_verification_enable">Enable</string>
     <plurals name="seconds_ago">
         <item quantity="one">%1$d second ago</item>
         <item quantity="other">%1$d seconds ago</item>
@@ -623,7 +626,7 @@
     <string name="traffic_country_domains">"Top domains in this country"</string>
     <string name="traffic_country_map_accessibility">"Interactive traffic destination map. Choose a country on the map or in the country selector to inspect DNS traffic."</string>
     <string name="security_unverified_title">Additional server fields (read-only)</string>
-    <string name="security_unverified_explanation">These keys are not part of the published security schema. Documented security settings appear above and can be changed there; values of these additional fields are hidden.</string>
+    <string name="security_unverified_explanation">These keys are outside the published Security API schema. Recognized NextDNS options appear in their relevant settings sections; unknown Security fields stay read-only.</string>
     <string name="security_unverified_boolean">Boolean value: %1$s · read-only</string>
     <string name="security_unverified_text">Text · value hidden · read-only</string>
     <string name="security_unverified_number">Number · value hidden · read-only</string>

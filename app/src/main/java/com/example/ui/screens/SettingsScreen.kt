@@ -250,6 +250,13 @@ fun SettingsScreen(
     }
 
     item {
+      BypassAgeVerificationSection(
+        enabled = configSettings.bypassAgeVerification,
+        onToggle = { viewModel.toggleBypassAgeVerification(it) }
+      )
+    }
+
+    item {
       Column(
         modifier = Modifier.fillMaxWidth().testTag("settings_section_app_preferences"),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -899,6 +906,40 @@ fun Web3Section(
           onCheckedChange = onToggleWeb3
         )
       }
+    }
+  }
+}
+
+@Composable
+fun BypassAgeVerificationSection(
+  enabled: Boolean,
+  onToggle: (Boolean) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  NextDnsCard(
+    title = AppStrings.get(R.string.bypass_age_verification_title),
+    subtitle = AppStrings.get(R.string.bypass_age_verification_description),
+    modifier = modifier
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .testTag("settings_bypass_age_verification")
+        .bounceClick { onToggle(!enabled) }
+        .padding(vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+      Text(
+        text = AppStrings.get(R.string.bypass_age_verification_enable),
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.5.sp
+      )
+      NextDnsSwitch(
+        checked = enabled,
+        onCheckedChange = onToggle
+      )
     }
   }
 }

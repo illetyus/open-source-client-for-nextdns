@@ -74,6 +74,7 @@ object ConfigSnapshotHasher {
       appendBool(performance?.cacheBoost)
       appendBool(performance?.cnameFlattening)
       appendBool(snapshot.settings.web3)
+      appendBool(snapshot.settings.bav)
 
       append("|deny:")
       appendList(snapshot.denylist.map { "${it.id}:${it.active.token()}" })

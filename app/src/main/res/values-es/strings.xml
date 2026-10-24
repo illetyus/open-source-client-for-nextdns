@@ -517,6 +517,9 @@
     <string name="month_short_11">"nov"</string>
     <string name="month_short_12">"dic"</string>
     <string name="web3_description">"Web3 incluye dominios blockchain y redes distribuidas como IPFS. Este ajuste permite resolverlos con NextDNS. Algunos navegadores requieren / al final, como vitalik.eth/."</string>
+    <string name="bypass_age_verification_title">Omitir la verificación de edad</string>
+    <string name="bypass_age_verification_description">Activa el ajuste del perfil de NextDNS para omitir las páginas de verificación de edad compatibles.</string>
+    <string name="bypass_age_verification_enable">Activar</string>
     <plurals name="seconds_ago">
         <item quantity="one">hace %1$d segundo</item>
         <item quantity="other">hace %1$d segundos</item>
@@ -622,7 +625,7 @@
     <string name="traffic_country_domains">"Dominios más consultados en este país"</string>
     <string name="traffic_country_map_accessibility">"Mapa interactivo de destinos del tráfico. Elige un país en el mapa o en el selector para consultar el tráfico DNS."</string>
     <string name="security_unverified_title">Campos adicionales del servidor (solo lectura)</string>
-    <string name="security_unverified_explanation">Estas claves no forman parte del esquema de seguridad publicado. Los ajustes documentados aparecen arriba y pueden modificarse allí; los valores de estos campos adicionales se ocultan.</string>
+    <string name="security_unverified_explanation">Estas claves quedan fuera del esquema publicado de la API Security. Las opciones de NextDNS reconocidas aparecen en sus secciones correspondientes; los campos desconocidos de Security siguen siendo de solo lectura.</string>
     <string name="security_unverified_boolean">Valor booleano: %1$s · solo lectura</string>
     <string name="security_unverified_text">Texto · valor oculto · solo lectura</string>
     <string name="security_unverified_number">Número · valor oculto · solo lectura</string>
