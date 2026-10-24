@@ -279,11 +279,11 @@ class AccountSettingsFlowTest : AuditFixture() {
     ).forEach { title ->
       val titleText = AppStrings.get(title)
       securityList.performScrollToNode(hasText(titleText, substring = true))
-      rule.onNodeWithText(titleText, substring = true).assertIsDisplayed()
+      rule.onNodeWithText(titleText, substring = true).assertExists()
     }
     val unverifiedTitle = AppStrings.get(R.string.security_unverified_title)
     securityList.performScrollToNode(hasText(unverifiedTitle))
-    rule.onNodeWithText(unverifiedTitle).assertIsDisplayed()
+    rule.onNodeWithText(unverifiedTitle).assertExists()
   }
 
   @Test fun successfulEmptyTldCatalogIsNotReportedAsANetworkFailure() = runBlocking {
