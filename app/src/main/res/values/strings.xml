@@ -680,5 +680,17 @@
     <string name="analytics_series_table_heading">Recent time buckets</string>
     <string name="analytics_series_chart_accessibility">Interactive time-series chart for %1$s. Select a point to inspect its time and query count.</string>
     <string name="setup_profile_identity_unavailable">Setup instructions are unavailable because this profile ID could not be validated.</string>
+    <string name="security_api_toggle_description">Applied to the selected profile on NextDNS.</string>
+    <string name="security_data_drop_services_title">Data Drop Services</string>
+    <string name="security_decentralized_web_gateways_title">Decentralized Web Gateways</string>
+    <string name="security_dns_data_exfiltration_title">DNS Data Exfiltration</string>
+    <string name="security_dns_payload_delivery_title">DNS Payload Delivery</string>
+    <string name="security_fast_flux_networks_title">Fast-Flux Networks</string>
+    <string name="security_free_hosting_domains_title">Free Hosting Domains</string>
+    <string name="security_high_risk_tlds_title">High-Risk TLDs</string>
+    <string name="security_newly_active_domains_title">Newly Active Domains</string>
+    <string name="security_residential_hosting_title">Residential Hosting</string>
+    <string name="security_tunneling_endpoints_title">Tunneling Endpoints</string>
+    <string name="security_untrusted_certificates_title">Untrusted Certificates</string>
 </resources>
 <!-- Locale-only presentation; API privacy fields remain unchanged. -->

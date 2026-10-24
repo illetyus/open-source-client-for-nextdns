@@ -679,4 +679,16 @@
     <string name="analytics_series_table_heading">Dernières plages temporelles</string>
     <string name="analytics_series_chart_accessibility">Graphique interactif de série temporelle pour %1$s. Sélectionnez un point pour consulter l’heure et le nombre de requêtes.</string>
     <string name="setup_profile_identity_unavailable">Les instructions de configuration sont indisponibles, car cet identifiant de profil ne peut pas être validé.</string>
+    <string name="security_api_toggle_description">S’applique au profil NextDNS sélectionné.</string>
+    <string name="security_data_drop_services_title">Services de dépôt de données</string>
+    <string name="security_decentralized_web_gateways_title">Passerelles Web décentralisées</string>
+    <string name="security_dns_data_exfiltration_title">Exfiltration de données DNS</string>
+    <string name="security_dns_payload_delivery_title">Distribution de charge utile DNS</string>
+    <string name="security_fast_flux_networks_title">Réseaux Fast-Flux</string>
+    <string name="security_free_hosting_domains_title">Domaines d’hébergement gratuit</string>
+    <string name="security_high_risk_tlds_title">TLD à haut risque</string>
+    <string name="security_newly_active_domains_title">Domaines récemment actifs</string>
+    <string name="security_residential_hosting_title">Hébergement résidentiel</string>
+    <string name="security_tunneling_endpoints_title">Points de terminaison de tunneling</string>
+    <string name="security_untrusted_certificates_title">Certificats non fiables</string>
 </resources>

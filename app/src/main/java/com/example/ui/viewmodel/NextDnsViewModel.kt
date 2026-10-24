@@ -439,6 +439,17 @@ class NextDnsViewModel(
       "ddns" -> SecurityFlag.DDNS
       "parkedDomains" -> SecurityFlag.PARKING
       "csam" -> SecurityFlag.CSAM
+      "dataDropServices" -> SecurityFlag.DATA_DROP_SERVICES
+      "decentralizedWebGateways" -> SecurityFlag.DECENTRALIZED_WEB_GATEWAYS
+      "dnsDataExfiltration" -> SecurityFlag.DNS_DATA_EXFILTRATION
+      "dnsPayloadDelivery" -> SecurityFlag.DNS_PAYLOAD_DELIVERY
+      "fastFluxNetworks" -> SecurityFlag.FAST_FLUX_NETWORKS
+      "freeHostingDomains" -> SecurityFlag.FREE_HOSTING_DOMAINS
+      "highRiskTlds" -> SecurityFlag.HIGH_RISK_TLDS
+      "newlyActiveDomains" -> SecurityFlag.NEWLY_ACTIVE_DOMAINS
+      "residentialHosting" -> SecurityFlag.RESIDENTIAL_HOSTING
+      "tunnelingEndpoints" -> SecurityFlag.TUNNELING_ENDPOINTS
+      "untrustedCertificates" -> SecurityFlag.UNTRUSTED_CERTIFICATES
       else -> {
         showMessage(AppStrings.get(R.string.unknown_security_setting, feature), isError = true)
         return

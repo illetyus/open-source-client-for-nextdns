@@ -679,4 +679,16 @@
     <string name="analytics_series_table_heading">Son zaman dilimleri</string>
     <string name="analytics_series_chart_accessibility">%1$s için etkileşimli zaman serisi grafiği. Zamanı ve sorgu sayısını incelemek için bir nokta seçin.</string>
     <string name="setup_profile_identity_unavailable">Profil kimliği doğrulanamadığı için kurulum yönergeleri kullanılamıyor.</string>
+    <string name="security_api_toggle_description">Seçili NextDNS profiline uygulanır.</string>
+    <string name="security_data_drop_services_title">Veri Bırakma Hizmetleri</string>
+    <string name="security_decentralized_web_gateways_title">Merkeziyetsiz Web Ağ Geçitleri</string>
+    <string name="security_dns_data_exfiltration_title">DNS Üzerinden Veri Sızdırma</string>
+    <string name="security_dns_payload_delivery_title">DNS Yük İletimi</string>
+    <string name="security_fast_flux_networks_title">Fast-Flux Ağları</string>
+    <string name="security_free_hosting_domains_title">Ücretsiz Barındırma Alan Adları</string>
+    <string name="security_high_risk_tlds_title">Yüksek Riskli Üst Düzey Alan Adları</string>
+    <string name="security_newly_active_domains_title">Yeni Etkinleşen Alan Adları</string>
+    <string name="security_residential_hosting_title">Konut Ağı Barındırması</string>
+    <string name="security_tunneling_endpoints_title">Tünel Uç Noktaları</string>
+    <string name="security_untrusted_certificates_title">Güvenilmeyen Sertifikalar</string>
 </resources>

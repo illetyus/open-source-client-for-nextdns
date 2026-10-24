@@ -294,6 +294,33 @@ class AccountSettingsFlowTest : AuditFixture() {
     }
   }
 
+  @Test fun observedNextDnsSecurityFieldsRenderAsSwitches() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SecurityScreen(model) } }
+
+    val observedFields = listOf(
+      "dataDropServices" to R.string.security_data_drop_services_title,
+      "decentralizedWebGateways" to R.string.security_decentralized_web_gateways_title,
+      "dnsDataExfiltration" to R.string.security_dns_data_exfiltration_title,
+      "dnsPayloadDelivery" to R.string.security_dns_payload_delivery_title,
+      "fastFluxNetworks" to R.string.security_fast_flux_networks_title,
+      "freeHostingDomains" to R.string.security_free_hosting_domains_title,
+      "highRiskTlds" to R.string.security_high_risk_tlds_title,
+      "newlyActiveDomains" to R.string.security_newly_active_domains_title,
+      "residentialHosting" to R.string.security_residential_hosting_title,
+      "tunnelingEndpoints" to R.string.security_tunneling_endpoints_title,
+      "untrustedCertificates" to R.string.security_untrusted_certificates_title
+    )
+
+    observedFields.forEach { (feature, titleId) ->
+      val title = AppStrings.get(titleId)
+      rule.onNodeWithTag("security_settings_list").performScrollToNode(hasText(title))
+      rule.onNodeWithTag("security_flag_$feature", useUnmergedTree = true)
+        .assert(hasAnyDescendant(hasRole(androidx.compose.ui.semantics.Role.Switch)))
+    }
+  }
+
   @Test fun successfulEmptyTldCatalogIsNotReportedAsANetworkFailure() = runBlocking {
     response = { json("""{"data":[]}""") }
     repository.loadAllLiveCatalogs()

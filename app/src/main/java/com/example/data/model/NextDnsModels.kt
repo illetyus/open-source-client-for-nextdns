@@ -28,6 +28,17 @@ data class SecuritySettings(
   val ddns: Boolean = false,
   val parkedDomains: Boolean = true,
   val csam: Boolean = true,
+  val dataDropServices: Boolean = false,
+  val decentralizedWebGateways: Boolean = false,
+  val dnsDataExfiltration: Boolean = false,
+  val dnsPayloadDelivery: Boolean = false,
+  val fastFluxNetworks: Boolean = false,
+  val freeHostingDomains: Boolean = false,
+  val highRiskTlds: Boolean = false,
+  val newlyActiveDomains: Boolean = false,
+  val residentialHosting: Boolean = false,
+  val tunnelingEndpoints: Boolean = false,
+  val untrustedCertificates: Boolean = false,
   val blockedTlds: List<String> = emptyList()
 )
 

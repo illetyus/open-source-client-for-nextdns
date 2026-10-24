@@ -274,6 +274,40 @@ class NextDnsApiContractTest {
   }
 
   @Test
+  fun observedSecurityApiFlagsAreTypedInsteadOfClassifiedAsUnknown() = runTest {
+    val fields = linkedMapOf(
+      "dataDropServices" to true,
+      "decentralizedWebGateways" to false,
+      "dnsDataExfiltration" to true,
+      "dnsPayloadDelivery" to false,
+      "fastFluxNetworks" to true,
+      "freeHostingDomains" to false,
+      "highRiskTlds" to true,
+      "newlyActiveDomains" to false,
+      "residentialHosting" to true,
+      "tunnelingEndpoints" to false,
+      "untrustedCertificates" to true
+    )
+    val json = fields.entries.joinToString(",", "{", "}") { (name, value) ->
+      "\"$name\":$value"
+    }
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody("""{"data":$json}""")
+    )
+
+    val security = api.getSecurity("test-key", "profile-1").body()?.data!!
+    val serialized = moshi.adapter(SecurityDto::class.java).toJson(security)
+    @Suppress("UNCHECKED_CAST")
+    val typedFields = moshi.adapter(Map::class.java).fromJson(serialized) as Map<String, Any?>
+
+    assertTrue("Observed API keys must leave the unknown-field bucket", security.unknownFields.isEmpty())
+    assertTrue("Observed API keys must not be shown as unverified read-only fields", security.discoverUnverifiedFields().fields.isEmpty())
+    fields.forEach { (name, value) -> assertEquals(value, typedFields[name]) }
+  }
+
+  @Test
   fun securityUnknownFieldRetentionIsBoundedAndOverflowIsFingerprintable() {
     val adapter = moshi.adapter(SecurityDto::class.java)
     fun response(lastValue: Int) = (1..40).joinToString(",", "{", "}") { index ->
@@ -405,6 +439,41 @@ class NextDnsApiContractTest {
     assertFalse(body.contains("threatIntelligenceFeeds"))
     assertFalse(body.contains("aiThreatDetection"))
     assertFalse(body.contains("cryptojacking"))
+  }
+
+  @Test
+  fun securityMutationSupportsEachObservedApiFlagAsAnIsolatedPatch() = runTest {
+    val flags = listOf(
+      "dataDropServices" to true,
+      "decentralizedWebGateways" to false,
+      "dnsDataExfiltration" to true,
+      "dnsPayloadDelivery" to false,
+      "fastFluxNetworks" to true,
+      "freeHostingDomains" to false,
+      "highRiskTlds" to true,
+      "newlyActiveDomains" to false,
+      "residentialHosting" to true,
+      "tunnelingEndpoints" to false,
+      "untrustedCertificates" to true
+    )
+
+    flags.forEach { (name, value) ->
+      server.enqueue(
+        MockResponse()
+          .setResponseCode(200)
+          .setBody("""{"data":null}""")
+      )
+      val body = moshi.adapter(SecurityUpdateRequest::class.java)
+        .fromJson("""{"$name":$value}""")!!
+
+      val response = api.updateSecurity("test-key", "profile-1", body)
+      val request = server.takeRequest()
+
+      assertTrue(response.isSuccessful)
+      assertEquals("PATCH", request.method)
+      assertEquals("/profiles/profile-1/security", request.path)
+      assertEquals("""{"$name":$value}""", request.body.readUtf8())
+    }
   }
 
   @Test
