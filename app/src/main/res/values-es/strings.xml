@@ -608,6 +608,7 @@
     <string name="app_preferences">"Preferencias de la aplicación"</string>
     <string name="nextdns_service_settings">"Ajustes del servicio NextDNS"</string>
     <string name="nav_connection">"Conexión de NextDNS"</string>
+    <string name="settings_connection_summary">"Gestiona la clave API, los perfiles, los diagnósticos de conexión y la sincronización."</string>
     <string name="settings_delete_profile">"Eliminar perfil de NextDNS"</string>
     <string name="traffic_country_tap_hint">"Toca un país o usa el selector para consultar su tráfico."</string>
     <string name="traffic_map_unavailable">"La información del mapa de tráfico no está disponible."</string>
@@ -620,8 +621,8 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Dominios más consultados en este país"</string>
     <string name="traffic_country_map_accessibility">"Mapa interactivo de destinos del tráfico. Elige un país en el mapa o en el selector para consultar el tráfico DNS."</string>
-    <string name="security_unverified_title">Campos de seguridad de API sin verificar</string>
-    <string name="security_unverified_explanation">Estas claves proceden de la respuesta del servidor. Su significado y la compatibilidad de escritura no están verificados. Solo se muestran los valores booleanos; aquí no se pueden cambiar estos campos.</string>
+    <string name="security_unverified_title">Campos adicionales del servidor (solo lectura)</string>
+    <string name="security_unverified_explanation">Estas claves no forman parte del esquema de seguridad publicado. Los ajustes documentados aparecen arriba y pueden modificarse allí; los valores de estos campos adicionales se ocultan.</string>
     <string name="security_unverified_boolean">Valor booleano: %1$s · solo lectura</string>
     <string name="security_unverified_text">Texto · valor oculto · solo lectura</string>
     <string name="security_unverified_number">Número · valor oculto · solo lectura</string>

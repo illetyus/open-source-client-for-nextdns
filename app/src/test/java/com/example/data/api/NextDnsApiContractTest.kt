@@ -187,6 +187,33 @@ class NextDnsApiContractTest {
   }
 
   @Test
+  fun securityResponseMapsEveryPublishedSecurityField() = runTest {
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody(
+          """{"data":{"threatIntelligenceFeeds":false,"aiThreatDetection":true,"googleSafeBrowsing":false,"cryptojacking":true,"dnsRebinding":false,"idnHomographs":true,"typosquatting":false,"dga":true,"nrd":false,"ddns":true,"parking":false,"csam":true,"tlds":[{"id":"ru"}]}}"""
+        )
+    )
+
+    val security = api.getSecurity("test-key", "profile-1").body()?.data
+
+    assertEquals(false, security?.threatIntelligenceFeeds)
+    assertEquals(true, security?.aiThreatDetection)
+    assertEquals(false, security?.googleSafeBrowsing)
+    assertEquals(true, security?.cryptojacking)
+    assertEquals(false, security?.dnsRebinding)
+    assertEquals(true, security?.idnHomographs)
+    assertEquals(false, security?.typosquatting)
+    assertEquals(true, security?.dga)
+    assertEquals(false, security?.nrd)
+    assertEquals(true, security?.ddns)
+    assertEquals(false, security?.parking)
+    assertEquals(true, security?.csam)
+    assertEquals(listOf("ru"), security?.tlds?.map { it.id })
+  }
+
+  @Test
   fun securityResponseRetainsUnknownJsonForReadOnlyDiscovery() = runTest {
     server.enqueue(
       MockResponse()
@@ -343,6 +370,8 @@ class NextDnsApiContractTest {
 
     val request = server.takeRequest()
     val body = request.body.readUtf8()
+    assertEquals("PATCH", request.method)
+    assertEquals("/profiles/profile-1/security", request.path)
     assertTrue(body.contains("\"googleSafeBrowsing\":false"))
     assertFalse(body.contains("threatIntelligenceFeeds"))
     assertFalse(body.contains("aiThreatDetection"))

@@ -609,6 +609,7 @@
     <string name="app_preferences">"App preferences"</string>
     <string name="nextdns_service_settings">"NextDNS service settings"</string>
     <string name="nav_connection">"NextDNS connection"</string>
+    <string name="settings_connection_summary">"Manage your API key, profiles, connection diagnostics, and synchronization."</string>
     <string name="settings_delete_profile">"Delete NextDNS profile"</string>
     <string name="traffic_country_tap_hint">"Tap a country or use the selector to inspect its traffic."</string>
     <string name="traffic_map_unavailable">"Traffic map information is unavailable."</string>
@@ -621,8 +622,8 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Top domains in this country"</string>
     <string name="traffic_country_map_accessibility">"Interactive traffic destination map. Choose a country on the map or in the country selector to inspect DNS traffic."</string>
-    <string name="security_unverified_title">Unverified API security fields</string>
-    <string name="security_unverified_explanation">These keys came from the server. Their meaning and write support are unverified. Only Boolean values are shown; these fields cannot be changed here.</string>
+    <string name="security_unverified_title">Additional server fields (read-only)</string>
+    <string name="security_unverified_explanation">These keys are not part of the published security schema. Documented security settings appear above and can be changed there; values of these additional fields are hidden.</string>
     <string name="security_unverified_boolean">Boolean value: %1$s · read-only</string>
     <string name="security_unverified_text">Text · value hidden · read-only</string>
     <string name="security_unverified_number">Number · value hidden · read-only</string>

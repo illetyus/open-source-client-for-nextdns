@@ -608,6 +608,7 @@
     <string name="app_preferences">"Préférences de l’application"</string>
     <string name="nextdns_service_settings">"Paramètres du service NextDNS"</string>
     <string name="nav_connection">"Connexion NextDNS"</string>
+    <string name="settings_connection_summary">"Gérer la clé API, les profils, les diagnostics de connexion et la synchronisation."</string>
     <string name="settings_delete_profile">"Supprimer le profil NextDNS"</string>
     <string name="traffic_country_tap_hint">"Touchez un pays ou utilisez le sélecteur pour consulter son trafic."</string>
     <string name="traffic_map_unavailable">"Les informations de la carte du trafic sont indisponibles."</string>
@@ -620,8 +621,8 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Domaines les plus consultés dans ce pays"</string>
     <string name="traffic_country_map_accessibility">"Carte interactive des destinations du trafic. Choisissez un pays sur la carte ou dans le sélecteur pour consulter le trafic DNS."</string>
-    <string name="security_unverified_title">Champs de sécurité API non vérifiés</string>
-    <string name="security_unverified_explanation">Ces clés proviennent de la réponse du serveur. Leur sens et la prise en charge de leur modification ne sont pas vérifiés. Seules les valeurs booléennes sont affichées ; ces champs ne peuvent pas être modifiés ici.</string>
+    <string name="security_unverified_title">Champs serveur supplémentaires (lecture seule)</string>
+    <string name="security_unverified_explanation">Ces clés ne font pas partie du schéma de sécurité publié. Les paramètres documentés apparaissent ci-dessus et peuvent y être modifiés ; les valeurs des champs supplémentaires sont masquées.</string>
     <string name="security_unverified_boolean">Valeur booléenne : %1$s · lecture seule</string>
     <string name="security_unverified_text">Texte · valeur masquée · lecture seule</string>
     <string name="security_unverified_number">Nombre · valeur masquée · lecture seule</string>

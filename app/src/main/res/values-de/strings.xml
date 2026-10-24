@@ -608,6 +608,7 @@
     <string name="app_preferences">"App-Einstellungen"</string>
     <string name="nextdns_service_settings">"NextDNS-Diensteinstellungen"</string>
     <string name="nav_connection">"NextDNS-Verbindung"</string>
+    <string name="settings_connection_summary">"API-Schlüssel, Profile, Verbindungsdiagnose und Synchronisierung verwalten."</string>
     <string name="settings_delete_profile">"NextDNS-Profil löschen"</string>
     <string name="traffic_country_tap_hint">"Tippe auf ein Land oder nutze die Länderauswahl, um den Datenverkehr anzusehen."</string>
     <string name="traffic_map_unavailable">"Informationen zur Verkehrskarte sind nicht verfügbar."</string>
@@ -620,8 +621,8 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Häufigste Domains in diesem Land"</string>
     <string name="traffic_country_map_accessibility">"Interaktive Karte der Verkehrszielorte. Wähle ein Land auf der Karte oder in der Länderauswahl, um DNS-Daten anzusehen."</string>
-    <string name="security_unverified_title">Nicht verifizierte API-Sicherheitsfelder</string>
-    <string name="security_unverified_explanation">Diese Schlüssel stammen aus der Serverantwort. Bedeutung und Schreibunterstützung sind nicht verifiziert. Nur boolesche Werte werden angezeigt; hier lassen sich diese Felder nicht ändern.</string>
+    <string name="security_unverified_title">Zusätzliche Serverfelder (schreibgeschützt)</string>
+    <string name="security_unverified_explanation">Diese Schlüssel gehören nicht zum veröffentlichten Sicherheitsschema. Dokumentierte Sicherheitseinstellungen stehen oben und können dort geändert werden; Werte zusätzlicher Felder bleiben verborgen.</string>
     <string name="security_unverified_boolean">Boolescher Wert: %1$s · schreibgeschützt</string>
     <string name="security_unverified_text">Text · Wert verborgen · schreibgeschützt</string>
     <string name="security_unverified_number">Zahl · Wert verborgen · schreibgeschützt</string>
