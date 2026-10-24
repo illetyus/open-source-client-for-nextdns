@@ -278,8 +278,8 @@ class AccountSettingsFlowTest : AuditFixture() {
       R.string.ui_122c713cab
     ).forEach { title ->
       val titleText = AppStrings.get(title)
-      securityList.performScrollToNode(hasText(titleText, substring = true))
-      rule.onNodeWithText(titleText, substring = true).assertExists()
+      securityList.performScrollToNode(hasText(titleText))
+      rule.onNodeWithText(titleText).assertExists()
     }
     val unverifiedTitle = AppStrings.get(R.string.security_unverified_title)
     securityList.performScrollToNode(hasText(unverifiedTitle))
