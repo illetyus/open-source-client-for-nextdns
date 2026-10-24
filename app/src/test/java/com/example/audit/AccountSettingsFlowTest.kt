@@ -261,6 +261,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     val model = NextDnsViewModel(repository)
     rule.setContent { AppTheme { SecurityScreen(model) } }
 
+    val securityList = rule.onNodeWithTag("security_settings_list")
     listOf(
       R.string.ui_9c19e93b43,
       R.string.ui_b8c859e123,
@@ -276,8 +277,11 @@ class AccountSettingsFlowTest : AuditFixture() {
       R.string.ui_bfa7376292,
       R.string.ui_122c713cab
     ).forEach { title ->
-      rule.onNodeWithText(AppStrings.get(title), substring = true).assertExists()
+      val titleText = AppStrings.get(title)
+      securityList.performScrollToNode(hasText(titleText, substring = true))
+      rule.onNodeWithText(titleText, substring = true).assertIsDisplayed()
     }
+    securityList.performScrollToNode(hasText(AppStrings.get(R.string.ui_122c713cab), substring = true))
     rule.onNodeWithText(AppStrings.get(R.string.security_unverified_title)).assertDoesNotExist()
   }
 
