@@ -43,7 +43,8 @@ fun SecurityScreen(
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
-      .padding(horizontal = 16.dp),
+      .padding(horizontal = 16.dp)
+      .testTag("security_settings_list"),
     contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {

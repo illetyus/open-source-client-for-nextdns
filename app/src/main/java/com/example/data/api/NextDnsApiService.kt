@@ -243,7 +243,8 @@ data class SettingsDto(
   val logs: SettingsLogsDto? = null,
   val blockPage: SettingsBlockPageDto? = null,
   val performance: SettingsPerformanceDto? = null,
-  val web3: Boolean? = null
+  val web3: Boolean? = null,
+  val bav: Boolean? = null
 )
 
 data class SettingsLogsDto(
@@ -340,7 +341,8 @@ data class SettingsUpdateRequest(
   val logs: SettingsLogsDto? = null,
   val blockPage: SettingsBlockPageDto? = null,
   val performance: SettingsPerformanceDto? = null,
-  val web3: Boolean? = null
+  val web3: Boolean? = null,
+  val bav: Boolean? = null
 )
 
 data class SettingsPerformanceUpdateRequest(

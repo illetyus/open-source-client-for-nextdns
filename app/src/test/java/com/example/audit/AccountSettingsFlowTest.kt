@@ -54,6 +54,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     val settingsList = rule.onNodeWithTag("settings_scroll_list")
     listOf(
       "settings_section_service",
+      "settings_connection_entry",
       "settings_section_legal",
       "settings_section_app_preferences",
       "settings_section_delete"
@@ -61,6 +62,13 @@ class AccountSettingsFlowTest : AuditFixture() {
       settingsList.performScrollToNode(hasTestTag(tag))
       rule.onNodeWithTag(tag).assertIsDisplayed()
     }
+    settingsList.performScrollToNode(hasTestTag("settings_section_service"))
+    val serviceSettingsTop = rule.onNodeWithTag("settings_section_service")
+      .fetchSemanticsNode().boundsInRoot.top
+    settingsList.performScrollToNode(hasTestTag("settings_connection_entry"))
+    val connectionEntryTop = rule.onNodeWithTag("settings_connection_entry")
+      .fetchSemanticsNode().boundsInRoot.top
+    assertTrue("NextDNS connection must be the first service settings destination", serviceSettingsTop < connectionEntryTop)
     settingsList.performScrollToNode(hasTestTag("settings_section_app_preferences"))
     val preferencesTop = rule.onNodeWithTag("settings_section_app_preferences")
       .fetchSemanticsNode().boundsInRoot.top
@@ -72,6 +80,28 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("legal_privacy_link").assertExists()
     assertEquals(1, rule.onAllNodesWithTag("legal_terms_link").fetchSemanticsNodes().size)
     assertEquals(1, rule.onAllNodesWithTag("legal_privacy_link").fetchSemanticsNodes().size)
+  }
+
+  @Test fun nextDnsConnectionOpensFromSettingsAndReturnsToSettings() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SettingsScreen(model) } }
+
+    rule.onNodeWithTag("settings_connection_entry").assertIsDisplayed().performClick()
+    rule.onNodeWithTag("account_connection_status").assertIsDisplayed()
+    rule.onNodeWithTag("settings_connection_back").assertIsDisplayed().performClick()
+    rule.onNodeWithTag("settings_scroll_list").assertIsDisplayed()
+  }
+
+  @Test fun bypassAgeVerificationIsShownWithNextDnsServiceSettings() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SettingsScreen(model) } }
+
+    val settingsList = rule.onNodeWithTag("settings_scroll_list")
+    settingsList.performScrollToNode(hasTestTag("settings_bypass_age_verification"))
+    rule.onNodeWithTag("settings_bypass_age_verification").assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.bypass_age_verification_title)).assertIsDisplayed()
   }
 
   @Test fun loginDoesNotScatterLegalLinksOutsideTheGroupedWelcomeFlow() {
@@ -164,12 +194,16 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.setContent { AppTheme { HomeScreen(model) } }
 
     rule.onNodeWithTag("home_nextdns_connection_button").assertDoesNotExist()
-    rule.onNodeWithTag("tab_account")
+    rule.onNodeWithTag("tab_settings")
       .performScrollTo()
       .assertIsDisplayed()
       .assertHasClickAction()
       .performClick()
       .assertIsSelected()
+
+    rule.onNodeWithTag("settings_connection_entry")
+      .assertIsDisplayed()
+      .performClick()
 
     rule.onNodeWithTag("account_connection_status").assertIsDisplayed()
     rule.onNodeWithText("Profiles").assertIsDisplayed()
@@ -179,6 +213,7 @@ class AccountSettingsFlowTest : AuditFixture() {
         .fetchSemanticsNodes().isNotEmpty()
     }
 
+    rule.onNodeWithTag("settings_connection_back").performClick()
     rule.onNodeWithTag("tab_setup").performScrollTo().performClick().assertIsSelected()
   }
 
@@ -230,6 +265,33 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("security_tld_catalog_loading").assertIsDisplayed()
     rule.onNodeWithText(".work").assertDoesNotExist()
     rule.onNodeWithText(".zip").assertDoesNotExist()
+  }
+
+  @Test fun publishedNextDnsSecurityFieldsAppearInTheSecurityScreen() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SecurityScreen(model) } }
+
+    val securityList = rule.onNodeWithTag("security_settings_list")
+    listOf(
+      R.string.ui_9c19e93b43,
+      R.string.ui_b8c859e123,
+      R.string.ui_b6b6e376c7,
+      R.string.ui_309e669643,
+      R.string.ui_7a41105eb3,
+      R.string.ui_9904d77eb3,
+      R.string.ui_6194b3ff35,
+      R.string.ui_fa2b128b73,
+      R.string.ui_c3cd82c4f0,
+      R.string.ui_3399d9a672,
+      R.string.ui_b8b2a448eb,
+      R.string.ui_bfa7376292,
+      R.string.ui_122c713cab
+    ).forEach { title ->
+      val titleText = AppStrings.get(title)
+      securityList.performScrollToNode(hasText(titleText))
+      rule.onNodeWithText(titleText).assertExists()
+    }
   }
 
   @Test fun successfulEmptyTldCatalogIsNotReportedAsANetworkFailure() = runBlocking {

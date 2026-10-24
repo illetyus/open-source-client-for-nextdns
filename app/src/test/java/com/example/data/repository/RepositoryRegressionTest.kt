@@ -494,6 +494,28 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
     assertEquals(true, preferences.getConfigSettings("aaaaaa")?.web3)
   }
 
+  @Test fun bypassAgeVerificationUsesTheSettingsApiField() = runBlocking {
+    var patchBody: String? = null
+    response = { req ->
+      if (req.method == "PATCH") {
+        patchBody = req.body.readUtf8()
+        json("{}")
+      } else {
+        json("""{"data":{"bav":true}}""")
+      }
+    }
+
+    assertTrue(repository.setBypassAgeVerification(true).isSuccess)
+
+    assertEquals("""{"bav":true}""", patchBody)
+    assertEquals(
+      listOf("PATCH /profiles/aaaaaa/settings", "GET /profiles/aaaaaa/settings"),
+      requests.toList()
+    )
+    assertTrue(repository.configSettings.value.bypassAgeVerification)
+    assertEquals(true, preferences.getConfigSettings("aaaaaa")?.bypassAgeVerification)
+  }
+
   @Test fun web3TrueFalseAndMissingFieldPreserveAuthoritativeState() = runBlocking {
     response = { json("""{"data":{"web3":true}}""") }
     assertTrue(repository.refreshSection(SyncSection.SETTINGS))

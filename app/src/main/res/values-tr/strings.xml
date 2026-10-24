@@ -517,6 +517,9 @@
     <string name="month_short_11">"Kas"</string>
     <string name="month_short_12">"Ara"</string>
     <string name="web3_description">"Web3, blok zinciri alan adları ve IPFS gibi dağıtık ağları kapsar. Bu ayar, NextDNS’in bu adları çözümlemesini etkinleştirir. Bazı tarayıcılarda adresin sonuna / eklemek gerekebilir (ör. vitalik.eth/)."</string>
+    <string name="bypass_age_verification_title">Yaş doğrulamasını atla</string>
+    <string name="bypass_age_verification_description">NextDNS profilinde desteklenen yaş doğrulama sayfalarını atlama seçeneğini etkinleştirir.</string>
+    <string name="bypass_age_verification_enable">Etkinleştir</string>
     <plurals name="seconds_ago">
         <item quantity="one">%1$d saniye önce</item>
         <item quantity="other">%1$d saniye önce</item>
@@ -608,6 +611,7 @@
     <string name="app_preferences">"Uygulama tercihleri"</string>
     <string name="nextdns_service_settings">"NextDNS hizmet ayarları"</string>
     <string name="nav_connection">"NextDNS bağlantısı"</string>
+    <string name="settings_connection_summary">"API anahtarını, profilleri, bağlantı tanılamasını ve eşitlemeyi yönetin."</string>
     <string name="settings_delete_profile">"NextDNS profilini sil"</string>
     <string name="traffic_country_tap_hint">"Trafik ayrıntıları için haritada bir ülkeye dokunun veya ülke seçicisini kullanın."</string>
     <string name="traffic_map_unavailable">"Trafik haritası bilgisi alınamıyor."</string>
@@ -620,8 +624,8 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Bu ülkedeki en sık alan adları"</string>
     <string name="traffic_country_map_accessibility">"Etkileşimli trafik varış noktaları haritası. DNS trafiğini incelemek için haritadan veya ülke seçicisinden ülke seçin."</string>
-    <string name="security_unverified_title">Doğrulanmamış API güvenlik alanları</string>
-    <string name="security_unverified_explanation">Bu anahtarlar sunucu yanıtından geldi. Anlamları ve yazma desteği doğrulanmadı. Yalnızca Boolean değerleri gösterilir; buradan hiçbir alan değiştirilemez.</string>
+    <string name="security_unverified_title">Ek sunucu alanları (salt okunur)</string>
+    <string name="security_unverified_explanation">Bu anahtarlar yayımlanmış Güvenlik API şemasının dışındadır. Tanınan NextDNS seçenekleri ilgili ayar bölümlerinde gösterilir; bilinmeyen güvenlik alanları salt okunur kalır.</string>
     <string name="security_unverified_boolean">Boolean değeri: %1$s · salt okunur</string>
     <string name="security_unverified_text">Metin · değer gizli · salt okunur</string>
     <string name="security_unverified_number">Sayı · değer gizli · salt okunur</string>

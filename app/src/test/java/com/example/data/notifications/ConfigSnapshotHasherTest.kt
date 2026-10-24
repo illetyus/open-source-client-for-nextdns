@@ -71,6 +71,19 @@ class ConfigSnapshotHasherTest {
   }
 
   @Test
+  fun digestChangesWhenBypassAgeVerificationChanges() {
+    val first = sampleSnapshot()
+    val changed = first.copy(
+      settings = first.settings.copy(bav = true)
+    )
+
+    assertNotEquals(
+      ConfigSnapshotHasher.digest(first),
+      ConfigSnapshotHasher.digest(changed)
+    )
+  }
+
+  @Test
   fun digestChangesWhenAnUnverifiedServerSecurityFieldChanges() {
     val originalSecurity = sampleSnapshot().security
     val first = sampleSnapshot().copy(

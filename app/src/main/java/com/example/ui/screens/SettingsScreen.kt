@@ -9,6 +9,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -144,8 +146,57 @@ fun SettingsScreen(
   val activeProfile by viewModel.activeProfile.collectAsStateWithLifecycle()
   val configSettings by viewModel.configSettings.collectAsStateWithLifecycle()
 
+  var showConnectionSettings by rememberSaveable { mutableStateOf(false) }
   var showDeleteProfileDialog by remember { mutableStateOf(false) }
   val profileName = activeProfile?.name ?: AppStrings.get(R.string.ui_0a4d547a3f)
+  BackHandler(enabled = showConnectionSettings) {
+    showConnectionSettings = false
+  }
+
+  if (showConnectionSettings) {
+    Column(
+      modifier = modifier
+        .fillMaxSize()
+        .testTag("settings_connection_page")
+    ) {
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        IconButton(
+          onClick = { showConnectionSettings = false },
+          modifier = Modifier.testTag("settings_connection_back")
+        ) {
+          Icon(
+            imageVector = Icons.Default.ArrowBack,
+            contentDescription = AppStrings.get(R.string.ui_80ad54ad05),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+          Text(
+            text = AppStrings.get(R.string.nav_connection),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+          )
+          Text(
+            text = AppStrings.get(R.string.settings_connection_summary),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+      }
+      AccountScreen(
+        viewModel = viewModel,
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1f)
+      )
+    }
+    return
+  }
 
   LazyColumn(
     modifier = modifier
@@ -160,6 +211,10 @@ fun SettingsScreen(
         title = AppStrings.get(R.string.nextdns_service_settings),
         tag = "settings_section_service"
       )
+    }
+
+    item {
+      SettingsConnectionEntry(onClick = { showConnectionSettings = true })
     }
 
     item {
@@ -191,6 +246,13 @@ fun SettingsScreen(
       Web3Section(
         web3Enabled = configSettings.web3,
         onToggleWeb3 = { viewModel.toggleWeb3(it) }
+      )
+    }
+
+    item {
+      BypassAgeVerificationSection(
+        enabled = configSettings.bypassAgeVerification,
+        onToggle = { viewModel.toggleBypassAgeVerification(it) }
       )
     }
 
@@ -261,6 +323,49 @@ fun SettingsScreen(
         }
       }
     )
+  }
+}
+
+@Composable
+private fun SettingsConnectionEntry(onClick: () -> Unit) {
+  Surface(
+    onClick = onClick,
+    modifier = Modifier
+      .fillMaxWidth()
+      .testTag("settings_connection_entry"),
+    shape = RoundedCornerShape(14.dp),
+    color = MaterialTheme.colorScheme.surfaceVariant
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 14.dp),
+      horizontalArrangement = Arrangement.spacedBy(14.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Icon(
+        imageVector = Icons.Default.SettingsInputComponent,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.primary
+      )
+      Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(
+          text = AppStrings.get(R.string.nav_connection),
+          style = MaterialTheme.typography.titleSmall,
+          color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+          text = AppStrings.get(R.string.settings_connection_summary),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+      }
+      Icon(
+        imageVector = Icons.Default.ArrowForward,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+    }
   }
 }
 
@@ -801,6 +906,40 @@ fun Web3Section(
           onCheckedChange = onToggleWeb3
         )
       }
+    }
+  }
+}
+
+@Composable
+fun BypassAgeVerificationSection(
+  enabled: Boolean,
+  onToggle: (Boolean) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  NextDnsCard(
+    title = AppStrings.get(R.string.bypass_age_verification_title),
+    subtitle = AppStrings.get(R.string.bypass_age_verification_description),
+    modifier = modifier
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .testTag("settings_bypass_age_verification")
+        .bounceClick { onToggle(!enabled) }
+        .padding(vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+      Text(
+        text = AppStrings.get(R.string.bypass_age_verification_enable),
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.5.sp
+      )
+      NextDnsSwitch(
+        checked = enabled,
+        onCheckedChange = onToggle
+      )
     }
   }
 }
