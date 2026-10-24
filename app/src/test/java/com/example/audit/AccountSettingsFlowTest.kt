@@ -317,7 +317,14 @@ class AccountSettingsFlowTest : AuditFixture() {
       val title = AppStrings.get(titleId)
       rule.onNodeWithTag("security_settings_list").performScrollToNode(hasText(title))
       rule.onNodeWithTag("security_flag_$feature", useUnmergedTree = true)
-        .assert(hasAnyDescendant(hasRole(androidx.compose.ui.semantics.Role.Switch)))
+        .assert(
+          hasAnyDescendant(
+            SemanticsMatcher.expectValue(
+              androidx.compose.ui.semantics.SemanticsProperties.Role,
+              androidx.compose.ui.semantics.Role.Switch
+            )
+          )
+        )
     }
   }
 
