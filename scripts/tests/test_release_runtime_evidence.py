@@ -28,7 +28,7 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
             "NativeApiFixtureTest",
             "NativeLegalViewportTest",
             "NativeLoginNavigationTest",
-            "NativeNotificationPermissionTest",
+            "NativeNotificationRuntimeAuditTest",
             "ReleaseSecurityRuntimeTest",
             "WorldMapStrictModeTest",
         ):

@@ -51,13 +51,15 @@ adb shell settings put global animator_duration_scale 0
 adb install -r "$out/release-runtime.apk"
 adb install -r "$out/release-runtime-test.apk"
 adb logcat -c
+adb shell pm revoke com.aistudio.nextdns.mgrqvt android.permission.POST_NOTIFICATIONS
 timeout 240 adb shell am instrument -w -r -e class \
-  com.example.NativeNotificationPermissionTest#permissionDenialAndGrantFollowThePlatformPrompt \
-  com.aistudio.nextdns.mgrqvt.test/androidx.test.runner.AndroidJUnitRunner > "$out/instrumentation-permission-flow.txt"
+  com.example.NativeNotificationRuntimeAuditTest#deniedPermissionPreventsNotifications \
+  com.aistudio.nextdns.mgrqvt.test/androidx.test.runner.AndroidJUnitRunner > "$out/instrumentation-denied.txt"
+adb shell pm grant com.aistudio.nextdns.mgrqvt android.permission.POST_NOTIFICATIONS
 timeout 240 adb shell am instrument -w -r -e class \
-  com.example.NativeApiFixtureTest,com.example.NativeLegalViewportTest,com.example.NativeLoginNavigationTest,com.example.ReleaseSecurityRuntimeTest,com.example.WorldMapStrictModeTest \
-  com.aistudio.nextdns.mgrqvt.test/androidx.test.runner.AndroidJUnitRunner > "$out/instrumentation-other-tests.txt"
-cat "$out/instrumentation-permission-flow.txt" "$out/instrumentation-other-tests.txt" > "$out/instrumentation.txt"
+  com.example.NativeApiFixtureTest,com.example.NativeLegalViewportTest,com.example.NativeLoginNavigationTest,com.example.NativeNotificationRuntimeAuditTest#grantedPermissionPostsPrivateNotifications,com.example.ReleaseSecurityRuntimeTest,com.example.WorldMapStrictModeTest \
+  com.aistudio.nextdns.mgrqvt.test/androidx.test.runner.AndroidJUnitRunner > "$out/instrumentation-granted.txt"
+cat "$out/instrumentation-denied.txt" "$out/instrumentation-granted.txt" > "$out/instrumentation.txt"
 adb logcat -d -v threadtime > "$out/logcat.txt"
 python3 scripts/verify_release_runtime.py
 

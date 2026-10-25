@@ -1,7 +1,6 @@
 package com.example
 
 import android.Manifest
-import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -92,55 +91,6 @@ class NativeNotificationPermissionTest {
     return true
   }
 
-  private fun postAndAssertPrivateNotifications() {
-    val manager = context.getSystemService(NotificationManager::class.java)
-    NotificationCenter.createChannels(context)
-    manager.cancelAll()
-    assertTrue(NotificationCenter.canPost(context, NotificationCenter.CHANNEL_CONFIG_CHANGES))
-    assertTrue(NotificationCenter.canPost(context, NotificationCenter.CHANNEL_DAILY_SUMMARY))
-    assertTrue(NotificationCenter.postConfigChanged(context))
-    assertTrue(NotificationCenter.postDailySummary(context, 9876543L, 1234567L))
-    val expectedIds = setOf(
-      NotificationCenter.NOTIFICATION_CONFIG_CHANGED,
-      NotificationCenter.NOTIFICATION_DAILY_SUMMARY
-    )
-    composeRule.waitUntil(5_000) {
-      manager.activeNotifications.map { it.id }.containsAll(expectedIds)
-    }
-    val delivered = manager.activeNotifications.filter { it.id in expectedIds }
-    assertEquals(expectedIds, delivered.map { it.id }.toSet())
-    val posted = delivered.map { it.notification }
-    if (Build.VERSION.SDK_INT >= 26) {
-      assertEquals(
-        setOf(NotificationCenter.CHANNEL_CONFIG_CHANGES, NotificationCenter.CHANNEL_DAILY_SUMMARY),
-        posted.map { it.channelId }.toSet()
-      )
-    }
-    for (notification in posted) {
-      assertEquals(Notification.VISIBILITY_PRIVATE, notification.visibility)
-      val publicVersion = notification.publicVersion
-      assertNotNull("A generic lockscreen replacement is required", publicVersion)
-      assertEquals(
-        context.getString(R.string.app_name),
-        publicVersion.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
-      )
-      assertEquals(
-        AppStrings.get(R.string.ui_092e2e8b4e),
-        publicVersion.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
-      )
-      assertNull(publicVersion.extras.getCharSequence(Notification.EXTRA_BIG_TEXT))
-      val publicFields = publicVersion.extras.keySet().map { publicVersion.extras.get(it).toString() }
-      assertTrue(publicFields.none { "9876543" in it || "1234567" in it })
-      assertFalse(
-        publicVersion.extras.getCharSequence(Notification.EXTRA_TEXT).toString() ==
-          notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
-      )
-    }
-    val dailyText = AppStrings.get(R.string.ui_edf1c59922)
-      .format(AppStrings.locale, 9876543L, 1234567L)
-    assertEquals(1, posted.count { it.extras.getCharSequence(Notification.EXTRA_TEXT).toString() == dailyText })
-  }
-
   @Test fun permissionDenialAndGrantFollowThePlatformPrompt() {
     val permission = Manifest.permission.POST_NOTIFICATIONS
     val manager = context.getSystemService(NotificationManager::class.java)
@@ -160,11 +110,7 @@ class NativeNotificationPermissionTest {
       composeRule.waitUntil(5_000) {
         context.checkSelfPermission(permission) == PackageManager.PERMISSION_DENIED
       }
-      assertFalse(NotificationCenter.canPost(context, NotificationCenter.CHANNEL_CONFIG_CHANGES))
-      assertFalse(NotificationCenter.canPost(context, NotificationCenter.CHANNEL_DAILY_SUMMARY))
-      assertFalse(NotificationCenter.postConfigChanged(context))
-      assertFalse(NotificationCenter.postDailySummary(context, 9876543L, 1234567L))
-      assertTrue("Denied permission must not emit either notification", manager.activeNotifications.isEmpty())
+      NotificationRuntimeAssertions.assertDeniedPermissionPreventsNotifications(context)
 
       notificationToggle(configTitle).performClick()
       assertTrue("Android notification permission dialog did not reappear", permissionDialogButton("permission_allow_button"))
@@ -174,6 +120,6 @@ class NativeNotificationPermissionTest {
       assertEquals(PackageManager.PERMISSION_GRANTED, context.checkSelfPermission(permission))
     }
 
-    postAndAssertPrivateNotifications()
+    NotificationRuntimeAssertions.assertPrivateNotificationsHaveGenericPublicVersions(context)
   }
 }
