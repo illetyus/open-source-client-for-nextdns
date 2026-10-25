@@ -30,6 +30,13 @@ import org.junit.runner.RunWith
 /** Real-device UI journeys. Fixtures and disposable application storage only. */
 @RunWith(AndroidJUnit4::class)
 class NativeScreenJourneyTest {
+  private data class CatalogDialogJourney(
+    val tab: NavTab,
+    val listTag: String,
+    val caption: Int,
+    val closeTag: String
+  )
+
   @get:Rule val rule = createEmptyComposeRule()
   private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
   private var scenario: ActivityScenario<MainActivity>? = null
@@ -172,7 +179,8 @@ class NativeScreenJourneyTest {
       androidx.test.espresso.Espresso.closeSoftKeyboard()
       val before = backend.calls.count { it.method == "POST" }
       rule.onNodeWithTag("${prefix}_add_domain").performClick()
-      rule.onNodeWithText(AppStrings.get(R.string.ui_c10eecdcb0)).assertIsDisplayed()
+      val errorMessage = if (tab == NavTab.DENYLIST) R.string.ui_c10eecdcb0 else R.string.ui_162ff93d0f
+      rule.onNodeWithText(AppStrings.get(errorMessage)).assertIsDisplayed()
       assertEquals(before, backend.calls.count { it.method == "POST" })
       val domain = "added-$prefix.fixture.example"
       field.performTextReplacement(domain)
@@ -193,18 +201,18 @@ class NativeScreenJourneyTest {
   @Test fun privacyAndParentalCatalogDialogsOpenAndDismissWithoutMutations() {
     val backend = connected()
     val before = backend.calls.count { it.method in setOf("POST", "PATCH", "DELETE") }
-    for ((tab, tag, caption) in listOf(
-      Triple(NavTab.PRIVACY, "privacy_settings_list", R.string.manage_blocklists),
-      Triple(NavTab.PRIVACY, "privacy_settings_list", R.string.ui_eaa29349bc),
-      Triple(NavTab.PARENTAL, "parental_settings_list", R.string.ui_b02d56c853),
-      Triple(NavTab.PARENTAL, "parental_settings_list", R.string.ui_c216d0fa85)
+    for ((tab, listTag, caption, closeTag) in listOf(
+      CatalogDialogJourney(NavTab.PRIVACY, "privacy_settings_list", R.string.manage_blocklists, "privacy_blocklist_dialog_close"),
+      CatalogDialogJourney(NavTab.PRIVACY, "privacy_settings_list", R.string.ui_eaa29349bc, "privacy_native_tracking_dialog_close"),
+      CatalogDialogJourney(NavTab.PARENTAL, "parental_settings_list", R.string.ui_b02d56c853, "parental_service_dialog_close"),
+      CatalogDialogJourney(NavTab.PARENTAL, "parental_settings_list", R.string.ui_c216d0fa85, "parental_category_dialog_close")
     )) {
       navigate(tab)
       val text = AppStrings.get(caption)
-      rule.onNodeWithTag(tag).performScrollToNode(hasText(text, ignoreCase = true))
+      rule.onNodeWithTag(listTag).performScrollToNode(hasText(text, ignoreCase = true))
       rule.onNodeWithText(text, ignoreCase = true).performClick()
       rule.onNode(isDialog()).assertIsDisplayed()
-      rule.onNodeWithText(AppStrings.get(R.string.close), substring = false, ignoreCase = true).performClick()
+      rule.onNodeWithTag(closeTag).performClick()
       rule.onNode(isDialog()).assertDoesNotExist()
       rule.onNodeWithTag("screen_${tab.name.lowercase()}").assertIsDisplayed()
     }

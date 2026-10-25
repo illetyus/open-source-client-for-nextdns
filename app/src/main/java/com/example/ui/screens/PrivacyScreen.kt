@@ -600,7 +600,7 @@ private fun AddBlocklistCatalogDialog(
       }
     },
     confirmButton = {
-      TextButton(onClick = onDismiss) {
+      TextButton(onClick = onDismiss, modifier = Modifier.testTag("privacy_blocklist_dialog_close")) {
         Text(AppStrings.get(R.string.ui_79c4b04b6e), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
       }
     },
@@ -673,7 +673,7 @@ private fun AddNativeTrackingDialog(
     },
     confirmButton = {},
     dismissButton = {
-      TextButton(onClick = onDismiss) {
+      TextButton(onClick = onDismiss, modifier = Modifier.testTag("privacy_native_tracking_dialog_close")) {
         Text(AppStrings.get(R.string.close), color = MaterialTheme.colorScheme.onSurfaceVariant)
       }
     }

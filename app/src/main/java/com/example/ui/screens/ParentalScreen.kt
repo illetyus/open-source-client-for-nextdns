@@ -444,7 +444,7 @@ private fun AddParentalServiceDialog(
     },
     confirmButton = {},
     dismissButton = {
-      TextButton(onClick = onDismiss) {
+      TextButton(onClick = onDismiss, modifier = Modifier.testTag("parental_service_dialog_close")) {
         Text(AppStrings.get(R.string.close), color = MaterialTheme.colorScheme.onSurfaceVariant)
       }
     }
@@ -512,7 +512,7 @@ private fun AddParentalCategoryDialog(
     },
     confirmButton = {},
     dismissButton = {
-      TextButton(onClick = onDismiss) {
+      TextButton(onClick = onDismiss, modifier = Modifier.testTag("parental_category_dialog_close")) {
         Text(AppStrings.get(R.string.close), color = MaterialTheme.colorScheme.onSurfaceVariant)
       }
     }
