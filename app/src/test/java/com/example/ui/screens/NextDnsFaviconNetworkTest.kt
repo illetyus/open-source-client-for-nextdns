@@ -55,13 +55,15 @@ class NextDnsFaviconNetworkTest {
   }
 
   @Test fun highResolutionSourceIsRetainedForSharperDomainIcons() = runBlocking {
-    server.enqueue(imageResponse(png(384)))
+    val source = png(384)
+    assertTrue("High-resolution fixture must fit within the download limit", source.size <= 128 * 1024)
+    server.enqueue(imageResponse(source))
 
     val bitmap = loader().load("example.com")
 
-    assertNotNull(bitmap)
-    assertEquals(192, bitmap!!.width)
-    assertEquals(192, bitmap.height)
+    assertNotNull("A valid 384px PNG within the byte limit should decode", bitmap)
+    assertEquals("Decoded width should be capped at 192px", 192, bitmap!!.width)
+    assertEquals("Decoded height should be capped at 192px", 192, bitmap.height)
   }
 
   @Test fun redirectIsRejectedWithoutRequestingItsTarget() = runBlocking {
