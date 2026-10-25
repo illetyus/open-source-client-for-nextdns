@@ -8,6 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.data.api.NextDnsNetworkClient
 import com.example.data.legal.LegalDocuments
 import com.example.data.local.NextDnsPreferences
+import okhttp3.Dns
 import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.mockwebserver.MockResponse
@@ -20,6 +21,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.net.InetAddress
 import java.security.KeyStore
 import java.util.concurrent.TimeUnit
 
@@ -43,6 +45,9 @@ class ReleaseSecurityRuntimeTest {
   @Test fun releaseIsNotDebuggableAndNetworkLoggingIsDisabled() {
     assertFalse(BuildConfig.DEBUG)
     assertEquals(0, context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE)
+    if (android.os.Build.VERSION.SDK_INT >= 29) {
+      assertFalse("Only the benchmark variant should be profileable by shell", context.applicationInfo.isProfileableByShell)
+    }
     val logging = NextDnsNetworkClient.client.interceptors.filterIsInstance<HttpLoggingInterceptor>()
     assertEquals(1, logging.size)
     assertEquals(HttpLoggingInterceptor.Level.NONE, logging.single().level)
@@ -51,13 +56,20 @@ class ReleaseSecurityRuntimeTest {
   }
 
   @Test fun cleartextTransportIsRejectedBeforeSendingCredentials() {
-    assertFalse(NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted)
+    val testHost = "cleartext-audit.invalid"
+    assertFalse(NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted(testHost))
     val server = MockWebServer()
     server.start()
     try {
       server.enqueue(MockResponse().setBody("unused"))
+      // Use a non-localhost URL hostname while routing its socket to the local
+      // fixture. Android 17 grants localhost its own cleartext exception.
+      val client = NextDnsNetworkClient.client.newBuilder()
+        .dns(Dns { listOf(InetAddress.getByName("127.0.0.1")) })
+        .callTimeout(10, TimeUnit.SECONDS)
+        .build()
       val result = runCatching {
-        NextDnsNetworkClient.client.newCall(Request.Builder().url(server.url("/"))
+        client.newCall(Request.Builder().url(server.url("/").newBuilder().host(testHost).build())
           .header("X-Api-Key", canary).build()).execute().close()
       }
       assertTrue(result.isFailure)
