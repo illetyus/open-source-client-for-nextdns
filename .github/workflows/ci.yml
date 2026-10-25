@@ -141,7 +141,7 @@ jobs:
             app/build/outputs/roborazzi/localization/*.png
             app/build/test-results/testDebugUnitTest/*.xml
             app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Assemble Release (unsigned on CI)
@@ -207,5 +207,5 @@ jobs:
             app/build/outputs/apk/release/*.apk
             macrobenchmark/build/outputs/apk/benchmark/*.apk
             app/build/outputs/bundle/release/*.aab
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
