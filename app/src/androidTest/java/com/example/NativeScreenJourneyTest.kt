@@ -3,6 +3,8 @@ package com.example
 import android.content.Context
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.setContent
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.lifecycle.ViewModelStore
@@ -183,7 +185,7 @@ class NativeScreenJourneyTest {
         val rules = if (tab == NavTab.DENYLIST) backend.model.denylist.value else backend.model.allowlist.value
         rules.any { it.domain == domain }
       }
-      field.assertTextEquals("")
+      field.assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("")))
       rule.onNodeWithText(domain).assertIsDisplayed()
     }
   }
@@ -202,7 +204,7 @@ class NativeScreenJourneyTest {
       rule.onNodeWithTag(tag).performScrollToNode(hasText(text, ignoreCase = true))
       rule.onNodeWithText(text, ignoreCase = true).performClick()
       rule.onNode(isDialog()).assertIsDisplayed()
-      androidx.test.espresso.Espresso.pressBack()
+      rule.onNodeWithText(AppStrings.get(R.string.close), substring = false, ignoreCase = true).performClick()
       rule.onNode(isDialog()).assertDoesNotExist()
       rule.onNodeWithTag("screen_${tab.name.lowercase()}").assertIsDisplayed()
     }
