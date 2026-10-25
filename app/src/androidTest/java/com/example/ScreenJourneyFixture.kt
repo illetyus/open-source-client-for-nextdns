@@ -38,6 +38,7 @@ internal class ScreenJourneyFixture(context: Context) : AutoCloseable {
   private val deny = linkedSetOf("blocked.fixture.example")
   private val allow = linkedSetOf("allowed.fixture.example")
   private val server = MockWebServer()
+  private val logTimestamp = Instant.now().minusSeconds(3_600).toString()
   private val preferences = NextDnsPreferences(object : ContextWrapper(context) {
     override fun getSharedPreferences(name: String, mode: Int): SharedPreferences =
       context.getSharedPreferences("screen_journey_$name", mode)
@@ -119,18 +120,22 @@ internal class ScreenJourneyFixture(context: Context) : AutoCloseable {
     }
     if (path == "/profiles/aaaaaa/logs") {
       val rows = listOf(
-        JSONObject().put("id", "blocked-log").put("timestamp", Instant.now().toString())
+        JSONObject().put("id", "blocked-log").put("timestamp", logTimestamp)
           .put("domain", "blocked.fixture.example").put("status", "blocked")
           .put("device", JSONObject().put("id", "phone").put("name", "Fixture phone")),
-        JSONObject().put("id", "allowed-log").put("timestamp", Instant.now().toString())
+        JSONObject().put("id", "allowed-log").put("timestamp", logTimestamp)
           .put("domain", "allowed.fixture.example").put("status", "default")
       ).filter { row ->
         val device = url.queryParameter("device")
         val status = url.queryParameter("status")
         val search = url.queryParameter("search")
+        val from = url.queryParameter("from")?.let(Instant::parse)
+        val to = url.queryParameter("to")?.let(Instant::parse)
+        val timestamp = Instant.parse(row.getString("timestamp"))
         (device == null || row.optJSONObject("device")?.optString("id") == device) &&
           (status == null || row.optString("status") == status) &&
-          (search == null || row.optString("domain").contains(search))
+          (search == null || row.optString("domain").contains(search)) &&
+          (from == null || !timestamp.isBefore(from)) && (to == null || timestamp.isBefore(to))
       }
       return json(JSONObject().put("data", JSONArray(rows)).toString())
     }

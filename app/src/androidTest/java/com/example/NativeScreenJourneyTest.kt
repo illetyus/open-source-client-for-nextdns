@@ -15,6 +15,9 @@ import com.example.i18n.LocalePreferences
 import com.example.ui.screens.HomeScreen
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NavTab
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.time.Duration
+import java.time.Instant
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -53,8 +56,7 @@ class NativeScreenJourneyTest {
     rule.waitUntil(20_000) { tags.any { rule.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() } }
     val tag = tags.first { rule.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() }
     val target = rule.onNodeWithTag(tag)
-    if (tag.startsWith("tab_")) target.performScrollTo()
-    target.performClick()
+    target.performScrollTo().assertIsDisplayed().performClick()
     awaitTag("screen_$name")
     rule.onNodeWithTag("screen_$name").assertIsDisplayed()
     rule.onNodeWithTag(tag).assertIsSelected()
@@ -186,6 +188,27 @@ class NativeScreenJourneyTest {
     }
   }
 
+  @Test fun privacyAndParentalCatalogDialogsOpenAndDismissWithoutMutations() {
+    val backend = connected()
+    val before = backend.calls.count { it.method in setOf("POST", "PATCH", "DELETE") }
+    for ((tab, tag, caption) in listOf(
+      Triple(NavTab.PRIVACY, "privacy_settings_list", R.string.manage_blocklists),
+      Triple(NavTab.PRIVACY, "privacy_settings_list", R.string.ui_eaa29349bc),
+      Triple(NavTab.PARENTAL, "parental_settings_list", R.string.ui_b02d56c853),
+      Triple(NavTab.PARENTAL, "parental_settings_list", R.string.ui_c216d0fa85)
+    )) {
+      navigate(tab)
+      val text = AppStrings.get(caption)
+      rule.onNodeWithTag(tag).performScrollToNode(hasText(text, ignoreCase = true))
+      rule.onNodeWithText(text, ignoreCase = true).performClick()
+      rule.onNode(isDialog()).assertIsDisplayed()
+      androidx.test.espresso.Espresso.pressBack()
+      rule.onNode(isDialog()).assertDoesNotExist()
+      rule.onNodeWithTag("screen_${tab.name.lowercase()}").assertIsDisplayed()
+    }
+    assertEquals(before, backend.calls.count { it.method in setOf("POST", "PATCH", "DELETE") })
+  }
+
   @Test fun logAndAnalyticsFiltersChangeRequestsAndKeepNavigationUsable() {
     val backend = connected()
     navigate(NavTab.LOGS)
@@ -195,7 +218,15 @@ class NativeScreenJourneyTest {
     rule.onNodeWithTag("logs_search_field").performTextReplacement("blocked.fixture")
     androidx.test.espresso.Espresso.closeSoftKeyboard()
     rule.waitUntil(20_000) {
-      backend.calls.any { it.path.endsWith("/logs") && it.query.contains("from=") && it.query.contains("status=blocked") && it.query.contains("search=blocked.fixture") }
+      backend.calls.any { call ->
+        if (!call.path.endsWith("/logs")) false else {
+          val url = ("https://localhost${call.path}?${call.query}").toHttpUrl()
+          val from = url.queryParameter("from")?.let(Instant::parse)
+          val to = url.queryParameter("to")?.let(Instant::parse)
+          from != null && to != null && Duration.between(from, to) == Duration.ofDays(7) &&
+            url.queryParameter("status") == "blocked" && url.queryParameter("search") == "blocked.fixture"
+        }
+      }
     }
     rule.onNodeWithTag("logs_device_filter").performClick()
     awaitTag("logs_device_option_phone")

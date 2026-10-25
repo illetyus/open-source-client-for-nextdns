@@ -471,16 +471,18 @@ fun HomeScreen(
         },
         label = "NextDnsTabContent"
       ) { tab ->
-        when (tab) {
-          NavTab.SETUP -> SetupScreen(viewModel, Modifier.testTag("screen_setup"))
-          NavTab.SECURITY -> SecurityScreen(viewModel, Modifier.testTag("screen_security"))
-          NavTab.PRIVACY -> PrivacyScreen(viewModel, Modifier.testTag("screen_privacy"))
-          NavTab.PARENTAL -> ParentalScreen(viewModel, Modifier.testTag("screen_parental"))
-          NavTab.DENYLIST -> DenylistScreen(viewModel, Modifier.testTag("screen_denylist"))
-          NavTab.ALLOWLIST -> AllowlistScreen(viewModel, Modifier.testTag("screen_allowlist"))
-          NavTab.ANALYTICS -> AnalyticsScreen(viewModel, Modifier.testTag("screen_analytics"))
-          NavTab.LOGS -> LogsScreen(viewModel, Modifier.testTag("screen_logs"))
-          NavTab.SETTINGS -> SettingsScreen(viewModel, Modifier.testTag("screen_settings"))
+        Box(Modifier.fillMaxSize().testTag("screen_${tab.name.lowercase()}")) {
+          when (tab) {
+            NavTab.SETUP -> SetupScreen(viewModel)
+            NavTab.SECURITY -> SecurityScreen(viewModel)
+            NavTab.PRIVACY -> PrivacyScreen(viewModel)
+            NavTab.PARENTAL -> ParentalScreen(viewModel)
+            NavTab.DENYLIST -> DenylistScreen(viewModel)
+            NavTab.ALLOWLIST -> AllowlistScreen(viewModel)
+            NavTab.ANALYTICS -> AnalyticsScreen(viewModel)
+            NavTab.LOGS -> LogsScreen(viewModel)
+            NavTab.SETTINGS -> SettingsScreen(viewModel)
+          }
         }
       }
     }

@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +44,8 @@ fun ParentalScreen(
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
-      .padding(horizontal = 16.dp),
+      .padding(horizontal = 16.dp)
+      .testTag("parental_settings_list"),
     contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
