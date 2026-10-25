@@ -54,6 +54,16 @@ class NextDnsFaviconNetworkTest {
     assertEquals(1, server.requestCount)
   }
 
+  @Test fun highResolutionSourceIsRetainedForSharperDomainIcons() = runBlocking {
+    server.enqueue(imageResponse(png(384)))
+
+    val bitmap = loader().load("example.com")
+
+    assertNotNull(bitmap)
+    assertEquals(192, bitmap!!.width)
+    assertEquals(192, bitmap.height)
+  }
+
   @Test fun redirectIsRejectedWithoutRequestingItsTarget() = runBlocking {
     server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", server.url("/redirect-target")))
 
@@ -156,6 +166,20 @@ class NextDnsFaviconNetworkTest {
       val noise = index * 1_103_515_245 + 12_345
       (0xff shl 24) or ((noise ushr 16 and 0xff) shl 16) or
         ((noise ushr 8 and 0xff) shl 8) or (noise and 0xff)
+    }
+    bitmap.setPixels(pixels, 0, side, 0, 0, side, side)
+    return ByteArrayOutputStream().use { output ->
+      check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+      bitmap.recycle()
+      output.toByteArray()
+    }
+  }
+
+  private fun png(side: Int): ByteArray {
+    val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+    val pixels = IntArray(side * side) { index ->
+      val shade = index % 256
+      (0xff shl 24) or (shade shl 16) or ((255 - shade) shl 8) or shade
     }
     bitmap.setPixels(pixels, 0, side, 0, 0, side, side)
     return ByteArrayOutputStream().use { output ->

@@ -666,6 +666,7 @@
     <string name="analytics_series_metric_encryption">DNS-Verschlüsselung</string>
     <string name="analytics_series_metric_protocols">Protokolle</string>
     <string name="analytics_series_metric_ips">IP-Adressen</string>
+    <string name="analytics_ips_title">IP-Adressen</string>
     <string name="analytics_series_metric_query_types">Abfragetypen</string>
     <string name="analytics_series_metric_ip_versions">IP-Versionen</string>
     <string name="analytics_series_domain_all">Alle Status</string>

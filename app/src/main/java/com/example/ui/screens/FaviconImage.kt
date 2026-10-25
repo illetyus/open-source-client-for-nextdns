@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.LruCache
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.Icon
@@ -32,8 +33,8 @@ import okhttp3.Request
 private const val FAVICON_HOST = "favicons.nextdns.io"
 private const val MAX_FAVICON_BYTES = 128 * 1024
 private const val MAX_FAVICON_DIMENSION = 1024
-private const val CACHED_FAVICON_DIMENSION = 96
-private const val MAX_CACHED_FAVICONS = 96
+private const val CACHED_FAVICON_DIMENSION = 192
+private const val MAX_FAVICON_CACHE_BYTES = 4 * 1024 * 1024
 internal const val FAVICON_TOTAL_TIMEOUT_MS = 8_000
 private val PNG_SIGNATURE = byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
 private val LOCAL_ONLY_HOST_SUFFIXES = setOf(
@@ -86,20 +87,17 @@ internal class NextDnsFaviconLoader(
   private val allowedHost: String = FAVICON_HOST,
   private val allowHttpForTests: Boolean = false
 ) {
-  private val cache = object : LinkedHashMap<String, Bitmap>(MAX_CACHED_FAVICONS, 0.75f, true) {
-    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean =
-      size > MAX_CACHED_FAVICONS
+  private val cache = object : LruCache<String, Bitmap>(MAX_FAVICON_CACHE_BYTES) {
+    override fun sizeOf(key: String, value: Bitmap): Int = value.allocationByteCount
   }
 
   suspend fun load(domain: String): Bitmap? {
     val url = urlForDomain(domain) ?: return null
-    synchronized(cache) { cache[url] }?.let { return it }
+    cache.get(url)?.let { return it }
     val downloaded = download(url) ?: return null
-    synchronized(cache) {
-      cache[url]?.let { return it }
-      cache[url] = downloaded
+    return cache.get(url) ?: cache.put(url, downloaded).let { previous ->
+      previous ?: downloaded
     }
-    return downloaded
   }
 
   private suspend fun download(url: String): Bitmap? {

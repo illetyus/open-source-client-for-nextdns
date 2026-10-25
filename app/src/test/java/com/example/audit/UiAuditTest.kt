@@ -271,7 +271,7 @@ class UiAuditTest : AuditFixture() {
     rule.runOnIdle { org.junit.Assert.assertTrue(requested) }
   }
 
-  @Test fun logRowsShowLocalDomainIconsForBrowsingHistory() {
+  @Test fun logRowsShowNextDnsFaviconsForBrowsingHistory() {
     english()
     rule.setContent {
       AppTheme {
@@ -285,8 +285,8 @@ class UiAuditTest : AuditFixture() {
       }
     }
 
-    rule.onNodeWithTag("logs_local_domain_icon", useUnmergedTree = true).assertExists()
-    rule.onAllNodesWithTag("remote_favicon_image", useUnmergedTree = true).assertCountEquals(0)
+    rule.onNodeWithTag("remote_favicon_image", useUnmergedTree = true).assertExists()
+    rule.onAllNodesWithTag("logs_local_domain_icon", useUnmergedTree = true).assertCountEquals(0)
   }
 
   @Test fun unverifiedSecurityFieldsAreDisclosedReadOnlyWithoutShowingRawValues() {

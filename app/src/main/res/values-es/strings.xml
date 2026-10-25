@@ -666,6 +666,7 @@
     <string name="analytics_series_metric_encryption">Cifrado DNS</string>
     <string name="analytics_series_metric_protocols">Protocolos</string>
     <string name="analytics_series_metric_ips">Direcciones IP</string>
+    <string name="analytics_ips_title">Direcciones IP</string>
     <string name="analytics_series_metric_query_types">Tipos de consulta</string>
     <string name="analytics_series_metric_ip_versions">Versiones IP</string>
     <string name="analytics_series_domain_all">Todos los estados</string>

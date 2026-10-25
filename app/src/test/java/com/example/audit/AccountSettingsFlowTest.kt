@@ -54,7 +54,6 @@ class AccountSettingsFlowTest : AuditFixture() {
     val settingsList = rule.onNodeWithTag("settings_scroll_list")
     listOf(
       "settings_section_service",
-      "settings_connection_entry",
       "settings_section_legal",
       "settings_section_app_preferences",
       "settings_section_delete"
@@ -62,13 +61,7 @@ class AccountSettingsFlowTest : AuditFixture() {
       settingsList.performScrollToNode(hasTestTag(tag))
       rule.onNodeWithTag(tag).assertIsDisplayed()
     }
-    settingsList.performScrollToNode(hasTestTag("settings_section_service"))
-    val serviceSettingsTop = rule.onNodeWithTag("settings_section_service")
-      .fetchSemanticsNode().boundsInRoot.top
-    settingsList.performScrollToNode(hasTestTag("settings_connection_entry"))
-    val connectionEntryTop = rule.onNodeWithTag("settings_connection_entry")
-      .fetchSemanticsNode().boundsInRoot.top
-    assertTrue("NextDNS connection must be the first service settings destination", serviceSettingsTop < connectionEntryTop)
+    rule.onNodeWithTag("settings_connection_entry").assertDoesNotExist()
     settingsList.performScrollToNode(hasTestTag("settings_section_app_preferences"))
     val preferencesTop = rule.onNodeWithTag("settings_section_app_preferences")
       .fetchSemanticsNode().boundsInRoot.top
@@ -82,15 +75,16 @@ class AccountSettingsFlowTest : AuditFixture() {
     assertEquals(1, rule.onAllNodesWithTag("legal_privacy_link").fetchSemanticsNodes().size)
   }
 
-  @Test fun nextDnsConnectionOpensFromSettingsAndReturnsToSettings() {
+  @Test fun nextDnsConnectionOpensFromAccountMenuAndReturnsToPreviousScreen() {
     english()
     val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { SettingsScreen(model) } }
+    rule.setContent { AppTheme { HomeScreen(model) } }
 
-    rule.onNodeWithTag("settings_connection_entry").assertIsDisplayed().performClick()
+    rule.onNodeWithTag("home_account_menu_button").assertIsDisplayed().performClick()
+    rule.onNodeWithTag("home_account_menu_connection").assertIsDisplayed().performClick()
     rule.onNodeWithTag("account_connection_status").assertIsDisplayed()
     rule.onNodeWithTag("settings_connection_back").assertIsDisplayed().performClick()
-    rule.onNodeWithTag("settings_scroll_list").assertIsDisplayed()
+    rule.onNodeWithTag("tab_setup").assertIsSelected()
   }
 
   @Test fun bypassAgeVerificationIsShownWithNextDnsServiceSettings() {
@@ -183,7 +177,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("open_speed_test").assertDoesNotExist()
   }
 
-  @Test fun connectionAreaOpensFromNavigationWithoutExtraTopBarButton() {
+  @Test fun accountMenuOpensConnectionAreaWithoutChangingTheSelectedTab() {
     english()
     response = { request ->
       if (request.path == "/") {
@@ -193,17 +187,9 @@ class AccountSettingsFlowTest : AuditFixture() {
     val model = NextDnsViewModel(repository)
     rule.setContent { AppTheme { HomeScreen(model) } }
 
-    rule.onNodeWithTag("home_nextdns_connection_button").assertDoesNotExist()
-    rule.onNodeWithTag("tab_settings")
-      .performScrollTo()
-      .assertIsDisplayed()
-      .assertHasClickAction()
-      .performClick()
-      .assertIsSelected()
-
-    rule.onNodeWithTag("settings_connection_entry")
-      .assertIsDisplayed()
-      .performClick()
+    rule.onNodeWithTag("tab_setup").assertIsSelected()
+    rule.onNodeWithTag("home_account_menu_button").performClick()
+    rule.onNodeWithTag("home_account_menu_connection").assertIsDisplayed().performClick()
 
     rule.onNodeWithTag("account_connection_status").assertIsDisplayed()
     rule.onNodeWithText("Profiles").assertIsDisplayed()
@@ -214,7 +200,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     }
 
     rule.onNodeWithTag("settings_connection_back").performClick()
-    rule.onNodeWithTag("tab_setup").performScrollTo().performClick().assertIsSelected()
+    rule.onNodeWithTag("tab_setup").assertIsSelected()
   }
 
   @Test fun localTrackingProtectionIconUsesTheSmallerSize() {
@@ -383,6 +369,38 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("world_map_selected_queries").assertTextContains("42 queries")
     rule.onNodeWithText("dns.example").assertIsDisplayed()
     rule.onNodeWithText(AppStrings.get(R.string.analytics_partial_failure_notice)).assertIsDisplayed()
+  }
+
+  @Test fun analyticsScreenDisplaysIpsReturnedByTheExistingAnalyticsEndpoint() {
+    english()
+    response = { request ->
+      when {
+        request.requestUrl?.encodedPath.orEmpty().endsWith("/analytics/ips") ->
+          json("""{"data":[{"ip":"203.0.113.45","queries":17,"network":{"isp":"Example ISP","asn":64500},"geo":{"countryCode":"TR","country":"Türkiye","city":"Ankara"}}]}""")
+        request.requestUrl?.encodedPath.orEmpty().endsWith("/analytics/domains") &&
+          request.requestUrl?.queryParameter("status") == "default" ->
+          json("""{"data":[{"domain":"allowed-icons.example","queries":8}]}""")
+        request.requestUrl?.encodedPath.orEmpty().contains("/analytics/") -> json("""{"data":[]}""")
+        else -> json("{}", 404)
+      }
+    }
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { AnalyticsScreen(model) } }
+
+    rule.waitUntil(30_000) {
+      model.analyticsLastSuccessAt.value != null && !model.isAnalyticsLoading.value
+    }
+
+    assertEquals(listOf("203.0.113.45"), model.analytics.value.topIps.map { it.ip })
+    assertTrue("The existing IP analytics endpoint should be requested", requests.any {
+      it.contains("/analytics/ips?")
+    })
+    rule.onNodeWithTag("analytics_resolved_domains_card").performScrollTo()
+    rule.onNodeWithTag("analytics_domain_favicon", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("analytics_ips_card").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText("203.0.113.45").assertIsDisplayed()
+    rule.onNodeWithText("Ankara, Türkiye").assertIsDisplayed()
+    rule.onNodeWithText("Example ISP · AS64500").assertIsDisplayed()
   }
 
   @Test fun partialAnalyticsWarningIsVisibleInAccountOverview() {

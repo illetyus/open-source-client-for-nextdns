@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.ui.res.painterResource
+import androidx.activity.compose.BackHandler
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,10 +63,16 @@ fun HomeScreen(
   val uiMessage by viewModel.uiMessage.collectAsStateWithLifecycle()
 
   var showProfileMenu by remember { mutableStateOf(false) }
+  var showAccountMenu by remember { mutableStateOf(false) }
+  var showConnectionSettings by rememberSaveable { mutableStateOf(false) }
   var showNewProfileDialog by remember { mutableStateOf(false) }
   var newProfileNameInput by remember { mutableStateOf("") }
   val snackbarHostState = remember { SnackbarHostState() }
   val lifecycleOwner = LocalLifecycleOwner.current
+
+  BackHandler(enabled = showConnectionSettings) {
+    showConnectionSettings = false
+  }
 
   DisposableEffect(lifecycleOwner) {
     val observer = LifecycleEventObserver { _, event ->
@@ -128,7 +136,7 @@ fun HomeScreen(
         modifier = Modifier.statusBarsPadding()
       ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-          // Independent client title, profile selector and connection shortcut.
+          // Independent client title and profile selector; account actions live in the trailing menu.
           Row(
             modifier = Modifier
               .fillMaxWidth()
@@ -295,6 +303,36 @@ fun HomeScreen(
                     }
                   )
                 }
+              }
+            }
+
+            Box {
+              TextButton(
+                onClick = { showAccountMenu = true },
+                modifier = Modifier.testTag("home_account_menu_button")
+              ) {
+                Icon(Icons.Default.AccountCircle, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(AppStrings.get(R.string.ui_c994874896), maxLines = 1)
+              }
+              DropdownMenu(
+                expanded = showAccountMenu,
+                onDismissRequest = { showAccountMenu = false },
+                modifier = Modifier
+                  .background(MaterialTheme.colorScheme.surfaceVariant)
+                  .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(14.dp))
+              ) {
+                DropdownMenuItem(
+                  modifier = Modifier.testTag("home_account_menu_connection"),
+                  leadingIcon = {
+                    Icon(Icons.Default.SettingsInputComponent, contentDescription = null)
+                  },
+                  text = { Text(AppStrings.get(R.string.nav_connection)) },
+                  onClick = {
+                    showAccountMenu = false
+                    showConnectionSettings = true
+                  }
+                )
               }
             }
 
@@ -471,16 +509,20 @@ fun HomeScreen(
         },
         label = "NextDnsTabContent"
       ) { tab ->
-        when (tab) {
-          NavTab.SETUP -> SetupScreen(viewModel)
-          NavTab.SECURITY -> SecurityScreen(viewModel)
-          NavTab.PRIVACY -> PrivacyScreen(viewModel)
-          NavTab.PARENTAL -> ParentalScreen(viewModel)
-          NavTab.DENYLIST -> DenylistScreen(viewModel)
-          NavTab.ALLOWLIST -> AllowlistScreen(viewModel)
-          NavTab.ANALYTICS -> AnalyticsScreen(viewModel)
-          NavTab.LOGS -> LogsScreen(viewModel)
-          NavTab.SETTINGS -> SettingsScreen(viewModel)
+        if (showConnectionSettings) {
+          ConnectionSettingsScreen(viewModel, onBack = { showConnectionSettings = false })
+        } else {
+          when (tab) {
+            NavTab.SETUP -> SetupScreen(viewModel)
+            NavTab.SECURITY -> SecurityScreen(viewModel)
+            NavTab.PRIVACY -> PrivacyScreen(viewModel)
+            NavTab.PARENTAL -> ParentalScreen(viewModel)
+            NavTab.DENYLIST -> DenylistScreen(viewModel)
+            NavTab.ALLOWLIST -> AllowlistScreen(viewModel)
+            NavTab.ANALYTICS -> AnalyticsScreen(viewModel)
+            NavTab.LOGS -> LogsScreen(viewModel)
+            NavTab.SETTINGS -> SettingsScreen(viewModel)
+          }
         }
         }
       }

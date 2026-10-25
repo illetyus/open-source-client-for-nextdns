@@ -666,6 +666,7 @@
     <string name="analytics_series_metric_encryption">DNS şifrelemesi</string>
     <string name="analytics_series_metric_protocols">Protokoller</string>
     <string name="analytics_series_metric_ips">IP adresleri</string>
+    <string name="analytics_ips_title">IP adresleri</string>
     <string name="analytics_series_metric_query_types">Sorgu türleri</string>
     <string name="analytics_series_metric_ip_versions">IP sürümleri</string>
     <string name="analytics_series_domain_all">Tüm durumlar</string>
