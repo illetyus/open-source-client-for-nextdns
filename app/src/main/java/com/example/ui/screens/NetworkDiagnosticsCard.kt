@@ -75,7 +75,8 @@ internal fun NetworkDiagnosticsCard(
               text = diagnosticLabel,
               color = statusColor,
               fontWeight = FontWeight.Bold,
-              fontSize = 13.5.sp
+              fontSize = 13.5.sp,
+              modifier = Modifier.testTag("setup_diagnostic_status_label")
             )
             diagnosticCheckedAt?.let { checkedAt ->
               Text(

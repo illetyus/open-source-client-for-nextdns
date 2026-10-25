@@ -475,11 +475,13 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.setContent { AppTheme { SetupScreen(model) } }
 
     rule.onNodeWithTag("setup_network_diagnostics").performScrollTo()
+    val expectedStatus = AppStrings.get(R.string.diagnostic_unverified_title)
     rule.waitUntil(5_000) {
-      rule.onAllNodesWithText(AppStrings.get(R.string.diagnostic_unverified_title))
-        .fetchSemanticsNodes().isNotEmpty()
+      runCatching {
+        rule.onNodeWithTag("setup_diagnostic_status_label").assertTextEquals(expectedStatus)
+      }.isSuccess
     }
-    rule.onNodeWithText(AppStrings.get(R.string.diagnostic_unverified_title)).assertExists()
+    rule.onNodeWithTag("setup_diagnostic_status_label").assertTextEquals(expectedStatus)
     rule.onNodeWithText(AppStrings.get(R.string.ui_8c25d923c8)).assertDoesNotExist()
   }
 
