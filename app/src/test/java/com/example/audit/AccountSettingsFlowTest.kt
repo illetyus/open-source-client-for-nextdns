@@ -150,7 +150,7 @@ class AccountSettingsFlowTest : AuditFixture() {
         .fetchSemanticsNodes().isNotEmpty()
     }
     rule.onNodeWithTag("setup_diagnostic_server")
-      .assertTextContains("SYNTHETIC_DIAGNOSTIC_PROTOCOL")
+      .assertTextContains("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true)
   }
 
   @Test fun connectedProfileStatusUsesLocalizedSingularAndPluralCounts() {
