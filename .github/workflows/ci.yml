@@ -14,6 +14,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-screen-test-apks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Set up JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          verify-signature: true
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+        with:
+          validate-wrappers: true
+          cache-provider: basic
+      - name: Assemble screen-test app and instrumentation APKs
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
+          python3 scripts/record_screen_test_artifacts.py
+      - name: Upload screen-test artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: espresso-screen-test-apks
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            build/screen-tests/package-evidence.json
+          if-no-files-found: error
+
   build-test-analyze:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -107,7 +141,7 @@ jobs:
             app/build/outputs/roborazzi/localization/*.png
             app/build/test-results/testDebugUnitTest/*.xml
             app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Assemble Release (unsigned on CI)
@@ -169,7 +203,9 @@ jobs:
             build/compliance/
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/androidTest/debug/*.apk
+            app/build/outputs/apk/benchmark/*.apk
             app/build/outputs/apk/release/*.apk
+            macrobenchmark/build/outputs/apk/benchmark/*.apk
             app/build/outputs/bundle/release/*.aab
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14

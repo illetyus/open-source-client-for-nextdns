@@ -1,5 +1,6 @@
 package com.example.macrobenchmark
 
+import android.graphics.Rect
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.StartupTimingMetric
@@ -8,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
@@ -103,18 +105,23 @@ class AuthenticatedClientBenchmark {
   private fun androidx.benchmark.macro.MacrobenchmarkScope.tapTab(tag: String, destinationTag: String) {
     repeat(12) {
       val tab = device.findObject(By.res(tag))
-      if (tab != null && tab.visibleBounds.width() > 0 && tab.visibleBounds.height() > 0) {
-        tab.click()
-        check(device.wait(Until.hasObject(By.res(destinationTag)), 15_000)) {
-          "Navigation to $tag did not render $destinationTag"
+      val bounds = tab?.visibleBoundsOrNull()
+      if (bounds != null && bounds.width() > 0 && bounds.height() > 0) {
+        try {
+          tab.click()
+          check(device.wait(Until.hasObject(By.res(destinationTag)), 15_000)) {
+            "Navigation to $tag did not render $destinationTag"
+          }
+          return
+        } catch (_: StaleObjectException) {
+          // Compose may replace the accessibility node between bounds lookup and click.
         }
-        return
       }
-      val anchor = listOf("tab_setup", "tab_logs", "tab_analytics")
+      val anchorBounds = listOf("tab_setup", "tab_logs", "tab_analytics")
         .asSequence()
-        .mapNotNull { device.findObject(By.res(it)) }
-        .firstOrNull { it.visibleBounds.height() > 0 }
-      val y = anchor?.visibleBounds?.centerY() ?: (device.displayHeight * 0.20f).toInt()
+        .mapNotNull { device.findObject(By.res(it))?.visibleBoundsOrNull() }
+        .firstOrNull { it.height() > 0 }
+      val y = anchorBounds?.centerY() ?: (device.displayHeight * 0.20f).toInt()
       device.swipe(
         (device.displayWidth * 0.84f).toInt(), y,
         (device.displayWidth * 0.18f).toInt(), y, 12
@@ -122,6 +129,13 @@ class AuthenticatedClientBenchmark {
     }
     error("Navigation tab $tag was not reachable")
   }
+
+  private fun UiObject2.visibleBoundsOrNull(): Rect? =
+    try {
+      visibleBounds
+    } catch (_: StaleObjectException) {
+      null
+    }
 
   private fun androidx.benchmark.macro.MacrobenchmarkScope.swipeUpThroughList() {
     val centerX = device.displayWidth / 2

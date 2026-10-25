@@ -47,7 +47,8 @@ fun PrivacyScreen(
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
-      .padding(horizontal = 16.dp),
+      .padding(horizontal = 16.dp)
+      .testTag("privacy_settings_list"),
     contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp),
     verticalArrangement = Arrangement.spacedBy(14.dp)
   ) {
@@ -286,16 +287,7 @@ private fun NativeTrackingItemCard(
   onRemove: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val domain = when (nat.id) {
-    "windows" -> "microsoft.com"
-    "apple" -> "apple.com"
-    "samsung" -> "samsung.com"
-    "xiaomi" -> "mi.com"
-    "huawei" -> "huawei.com"
-    "roku" -> "roku.com"
-    "sonos" -> "sonos.com"
-    else -> "nextdns.io"
-  }
+  val domain = nativeTrackingFaviconDomain(nat.id).orEmpty()
 
   Surface(
     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -323,6 +315,7 @@ private fun NativeTrackingItemCard(
         )
         FaviconImage(
           domain = domain,
+          fallbackLabel = nat.name,
           modifier = Modifier
             .size(24.dp)
             .clip(RoundedCornerShape(4.dp))
@@ -607,7 +600,7 @@ private fun AddBlocklistCatalogDialog(
       }
     },
     confirmButton = {
-      TextButton(onClick = onDismiss) {
+      TextButton(onClick = onDismiss, modifier = Modifier.testTag("privacy_blocklist_dialog_close")) {
         Text(AppStrings.get(R.string.ui_79c4b04b6e), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
       }
     },
@@ -636,16 +629,7 @@ private fun AddNativeTrackingDialog(
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
           inactiveNatives.forEach { nat ->
-            val domain = when (nat.id) {
-              "windows" -> "microsoft.com"
-              "apple" -> "apple.com"
-              "samsung" -> "samsung.com"
-              "xiaomi" -> "mi.com"
-              "huawei" -> "huawei.com"
-              "roku" -> "roku.com"
-              "sonos" -> "sonos.com"
-              else -> "nextdns.io"
-            }
+            val domain = nativeTrackingFaviconDomain(nat.id).orEmpty()
 
             Surface(
               color = MaterialTheme.colorScheme.surfaceVariant,
@@ -672,7 +656,8 @@ private fun AddNativeTrackingDialog(
                 ) {
                   FaviconImage(
                     domain = domain,
-                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))
+                    fallbackLabel = nat.name,
+                    modifier = Modifier.size(32.dp).clip(RoundedCornerShape(4.dp))
                   )
                   Column {
                     Text(nat.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -688,7 +673,7 @@ private fun AddNativeTrackingDialog(
     },
     confirmButton = {},
     dismissButton = {
-      TextButton(onClick = onDismiss) {
+      TextButton(onClick = onDismiss, modifier = Modifier.testTag("privacy_native_tracking_dialog_close")) {
         Text(AppStrings.get(R.string.close), color = MaterialTheme.colorScheme.onSurfaceVariant)
       }
     }

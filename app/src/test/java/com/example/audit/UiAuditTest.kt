@@ -62,14 +62,14 @@ class UiAuditTest : AuditFixture() {
     english()
     val profile = NextDnsProfile("aaaaaa", "Synthetic A", "fp0123456789abcdef")
     val measurement = DiagnosticTestResult(status = "ok", profileId = profile.fingerprint, lastTestedTime = 1_000)
-    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}, {}) } }
+    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}) } }
     rule.onNodeWithText(AppStrings.get(R.string.ui_934b24bdc9)).assertIsDisplayed()
   }
 
   @Test fun detectedNextDnsWithoutSelectedProfileMustNotSayNotConfigured() {
     english()
     val measurement = DiagnosticTestResult(status = "ok", profileId = "fp0123456789abcdef", lastTestedTime = 1_000)
-    rule.setContent { AppTheme { ConnectionStatusBanner(null, measurement, false, {}, {}) } }
+    rule.setContent { AppTheme { ConnectionStatusBanner(null, measurement, false, {}) } }
     rule.onNodeWithText(AppStrings.get(R.string.diagnostic_detected_title)).assertIsDisplayed()
     rule.onNodeWithText(AppStrings.get(R.string.ui_1866bc156e)).assertDoesNotExist()
   }
@@ -78,7 +78,7 @@ class UiAuditTest : AuditFixture() {
     english()
     val profile = NextDnsProfile("aaaaaa", "Synthetic A", "fp0123456789abcdef")
     val measurement = DiagnosticTestResult(status = "ok", profileId = "fpfedcba9876543210", lastTestedTime = 1_000)
-    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}, {}) } }
+    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}) } }
     rule.onNodeWithText(AppStrings.get(R.string.ui_934b24bdc9)).assertDoesNotExist()
   }
 
@@ -146,7 +146,7 @@ class UiAuditTest : AuditFixture() {
     english()
     val profile = NextDnsProfile("aaaaaa", "Synthetic A")
     val measurement = DiagnosticTestResult(status = "ok", profileId = "aaaaaa", lastTestedTime = 1_000)
-    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}, {}) } }
+    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}) } }
     rule.onNodeWithText(AppStrings.get(R.string.ui_934b24bdc9)).assertDoesNotExist()
     rule.onNodeWithText(AppStrings.get(R.string.diagnostic_unverified_title)).assertIsDisplayed()
   }
@@ -271,7 +271,7 @@ class UiAuditTest : AuditFixture() {
     rule.runOnIdle { org.junit.Assert.assertTrue(requested) }
   }
 
-  @Test fun logRowsShowLocalDomainIconsForBrowsingHistory() {
+  @Test fun logRowsShowNextDnsFaviconsForBrowsingHistory() {
     english()
     rule.setContent {
       AppTheme {
@@ -285,8 +285,8 @@ class UiAuditTest : AuditFixture() {
       }
     }
 
-    rule.onNodeWithTag("logs_local_domain_icon", useUnmergedTree = true).assertExists()
-    rule.onAllNodesWithTag("remote_favicon_image", useUnmergedTree = true).assertCountEquals(0)
+    rule.onNodeWithTag("remote_favicon_image", useUnmergedTree = true).assertExists()
+    rule.onAllNodesWithTag("logs_local_domain_icon", useUnmergedTree = true).assertCountEquals(0)
   }
 
   @Test fun unverifiedSecurityFieldsAreDisclosedReadOnlyWithoutShowingRawValues() {

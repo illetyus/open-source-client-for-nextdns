@@ -16,7 +16,7 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
             'NativeApiFixtureTest',
             'NativeLegalViewportTest',
             'NativeLoginNavigationTest',
-            'NativeNotificationPermissionTest',
+            'NativeNotificationRuntimeAuditTest',
             'ReleaseSecurityRuntimeTest',
             'WorldMapStrictModeTest',
         }
@@ -29,25 +29,30 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         self.assertIn("'tests':REQUIRED_RUNTIME_TESTS", verifier)
         self.assertIn("REQUIRED_RUNTIME_TESTS = 17", helper)
 
-    def test_permission_denial_is_prepared_outside_the_instrumented_process(self):
+    def test_permission_flow_uses_the_platform_prompt(self):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
-        denied_test = 'com.example.NativeNotificationPermissionTest#android13PermissionDenialPreventsPrivateNotifications'
-        granted_test = 'com.example.NativeNotificationPermissionTest#grantedPermissionPostsPrivateNotificationsWithGenericPublicVersions'
-        self.assertIn('adb shell pm revoke com.aistudio.nextdns.mgrqvt android.permission.POST_NOTIFICATIONS', runner)
+        permission_test = 'com.example.NativeNotificationPermissionTest#permissionDenialAndGrantFollowThePlatformPrompt'
+        denied_test = 'com.example.NativeNotificationRuntimeAuditTest#deniedPermissionPreventsNotifications'
+        granted_test = 'com.example.NativeNotificationRuntimeAuditTest#grantedPermissionPostsPrivateNotifications'
+        self.assertNotIn(permission_test, runner)
         self.assertIn(denied_test, runner)
-        self.assertIn('adb shell pm grant com.aistudio.nextdns.mgrqvt android.permission.POST_NOTIFICATIONS', runner)
         self.assertIn(granted_test, runner)
-        self.assertLess(runner.index('adb shell pm revoke'), runner.index(denied_test))
-        self.assertLess(runner.index(denied_test), runner.index('adb shell pm grant'))
-        self.assertLess(runner.index('adb shell pm grant'), runner.index(granted_test))
+        self.assertIn('adb shell pm revoke com.aistudio.nextdns.mgrqvt android.permission.POST_NOTIFICATIONS', runner)
+        self.assertIn('adb shell pm grant com.aistudio.nextdns.mgrqvt android.permission.POST_NOTIFICATIONS', runner)
+        self.assertLess(runner.index('pm revoke'), runner.index(denied_test))
+        self.assertLess(runner.index('pm grant'), runner.index(granted_test))
         self.assertEqual(2, runner.count('am instrument'))
         self.assertIn('instrumentation-denied.txt', runner)
         self.assertIn('instrumentation-granted.txt', runner)
         notification_test = (ROOT / 'app/src/androidTest/java/com/example/NativeNotificationPermissionTest.kt').read_text(encoding='utf8')
-        for method in ("android13PermissionDenialPreventsPrivateNotifications", "grantedPermissionPostsPrivateNotificationsWithGenericPublicVersions"):
-            body = notification_test.split(f"fun {method}()", 1)[1].split("@Test", 1)[0]
-            self.assertNotIn("revokeRuntimePermission", body)
-            self.assertNotIn("grantRuntimePermission", body)
+        self.assertIn(f'@Test fun {permission_test.rsplit("#", 1)[1]}()', notification_test)
+        self.assertNotIn('revokeRuntimePermission', notification_test)
+        self.assertNotIn('grantRuntimePermission', notification_test)
+        runtime_test = (ROOT / 'app/src/androidTest/java/com/example/NativeNotificationRuntimeAuditTest.kt').read_text(encoding='utf8')
+        self.assertIn(f'@Test fun {denied_test.rsplit("#", 1)[1]}()', runtime_test)
+        self.assertIn(f'@Test fun {granted_test.rsplit("#", 1)[1]}()', runtime_test)
+        self.assertNotIn('revokeRuntimePermission', runtime_test)
+        self.assertNotIn('grantRuntimePermission', runtime_test)
 
     def test_native_login_reaches_settings_legal_section_and_viewport_checks_revisions(self):
         viewport = (ROOT / 'app/src/androidTest/java/com/example/NativeLegalViewportTest.kt').read_text(encoding='utf8')

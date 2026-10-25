@@ -58,6 +58,7 @@ android {
       initWith(getByName("release"))
       signingConfig = signingConfigs.getByName("debug")
       isDebuggable = false
+      isProfileable = true
       applicationIdSuffix = ".benchmark"
       matchingFallbacks += listOf("release")
     }
@@ -166,6 +167,7 @@ dependencies {
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.runner)
+  androidTestImplementation(libs.androidx.test.uiautomator)
   androidTestImplementation(libs.mockwebserver)
   androidTestImplementation("com.squareup.okhttp3:okhttp-tls:4.10.0")
   debugImplementation(libs.androidx.compose.ui.test.manifest)

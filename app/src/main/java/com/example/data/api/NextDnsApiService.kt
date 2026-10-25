@@ -79,6 +79,17 @@ data class SecurityDto(
   val ddns: Boolean? = null,
   val parking: Boolean? = null,
   val csam: Boolean? = null,
+  val dataDropServices: Boolean? = null,
+  val decentralizedWebGateways: Boolean? = null,
+  val dnsDataExfiltration: Boolean? = null,
+  val dnsPayloadDelivery: Boolean? = null,
+  val fastFluxNetworks: Boolean? = null,
+  val freeHostingDomains: Boolean? = null,
+  val highRiskTlds: Boolean? = null,
+  val newlyActiveDomains: Boolean? = null,
+  val residentialHosting: Boolean? = null,
+  val tunnelingEndpoints: Boolean? = null,
+  val untrustedCertificates: Boolean? = null,
   val tlds: List<TldDto>? = null,
   @Json(ignore = true) val unknownFields: Map<String, Any?> = emptyMap(),
   @Json(ignore = true) val unknownFieldOverflowCount: Int = 0,
@@ -243,7 +254,8 @@ data class SettingsDto(
   val logs: SettingsLogsDto? = null,
   val blockPage: SettingsBlockPageDto? = null,
   val performance: SettingsPerformanceDto? = null,
-  val web3: Boolean? = null
+  val web3: Boolean? = null,
+  val bav: Boolean? = null
 )
 
 data class SettingsLogsDto(
@@ -303,7 +315,18 @@ data class SecurityUpdateRequest(
   val nrd: Boolean? = null,
   val ddns: Boolean? = null,
   val parking: Boolean? = null,
-  val csam: Boolean? = null
+  val csam: Boolean? = null,
+  val dataDropServices: Boolean? = null,
+  val decentralizedWebGateways: Boolean? = null,
+  val dnsDataExfiltration: Boolean? = null,
+  val dnsPayloadDelivery: Boolean? = null,
+  val fastFluxNetworks: Boolean? = null,
+  val freeHostingDomains: Boolean? = null,
+  val highRiskTlds: Boolean? = null,
+  val newlyActiveDomains: Boolean? = null,
+  val residentialHosting: Boolean? = null,
+  val tunnelingEndpoints: Boolean? = null,
+  val untrustedCertificates: Boolean? = null
 )
 
 @com.squareup.moshi.JsonClass(generateAdapter = true)
@@ -340,7 +363,8 @@ data class SettingsUpdateRequest(
   val logs: SettingsLogsDto? = null,
   val blockPage: SettingsBlockPageDto? = null,
   val performance: SettingsPerformanceDto? = null,
-  val web3: Boolean? = null
+  val web3: Boolean? = null,
+  val bav: Boolean? = null
 )
 
 data class SettingsPerformanceUpdateRequest(

@@ -128,7 +128,7 @@ fun HomeScreen(
         modifier = Modifier.statusBarsPadding()
       ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-          // Independent client title, profile selector and connection shortcut.
+          // Independent client title and profile selector.
           Row(
             modifier = Modifier
               .fillMaxWidth()
@@ -471,21 +471,22 @@ fun HomeScreen(
         },
         label = "NextDnsTabContent"
       ) { tab ->
-        when (tab) {
-          NavTab.SETUP -> SetupScreen(viewModel)
-          NavTab.SECURITY -> SecurityScreen(viewModel)
-          NavTab.PRIVACY -> PrivacyScreen(viewModel)
-          NavTab.PARENTAL -> ParentalScreen(viewModel)
-          NavTab.DENYLIST -> DenylistScreen(viewModel)
-          NavTab.ALLOWLIST -> AllowlistScreen(viewModel)
-          NavTab.ANALYTICS -> AnalyticsScreen(viewModel)
-          NavTab.LOGS -> LogsScreen(viewModel)
-          NavTab.SETTINGS -> SettingsScreen(viewModel)
-          NavTab.ACCOUNT -> AccountScreen(viewModel)
-        }
+        Box(Modifier.fillMaxSize().testTag("screen_${tab.name.lowercase()}")) {
+          when (tab) {
+            NavTab.SETUP -> SetupScreen(viewModel)
+            NavTab.SECURITY -> SecurityScreen(viewModel)
+            NavTab.PRIVACY -> PrivacyScreen(viewModel)
+            NavTab.PARENTAL -> ParentalScreen(viewModel)
+            NavTab.DENYLIST -> DenylistScreen(viewModel)
+            NavTab.ALLOWLIST -> AllowlistScreen(viewModel)
+            NavTab.ANALYTICS -> AnalyticsScreen(viewModel)
+            NavTab.LOGS -> LogsScreen(viewModel)
+            NavTab.SETTINGS -> SettingsScreen(viewModel)
+          }
         }
       }
     }
+  }
   }
   }
 
@@ -694,7 +695,6 @@ private fun getTabIcon(tab: NavTab): ImageVector {
     NavTab.ANALYTICS -> Icons.Default.BarChart
     NavTab.LOGS -> Icons.Default.Article
     NavTab.SETTINGS -> Icons.Default.Settings
-    NavTab.ACCOUNT -> Icons.Default.AccountCircle
   }
 }
 
