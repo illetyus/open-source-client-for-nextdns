@@ -65,7 +65,10 @@ class ReleaseSecurityRuntimeTest {
       // Use a non-localhost URL hostname while routing its socket to the local
       // fixture. Android 17 grants localhost its own cleartext exception.
       val client = NextDnsNetworkClient.client.newBuilder()
-        .dns(Dns { listOf(InetAddress.getByName("127.0.0.1")) })
+        .dns(object : Dns {
+          override fun lookup(hostname: String): List<InetAddress> =
+            listOf(InetAddress.getByName("127.0.0.1"))
+        })
         .callTimeout(10, TimeUnit.SECONDS)
         .build()
       val result = runCatching {
