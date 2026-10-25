@@ -66,6 +66,26 @@ class NextDnsFaviconNetworkTest {
     assertEquals("Decoded height should be capped at 192px", 192, bitmap.height)
   }
 
+  @Test fun malformedHighResolutionImageFallsBackToTheNextSupportedSize() = runBlocking {
+    server.enqueue(imageResponse("not a bitmap".toByteArray()))
+    server.enqueue(imageResponse(PNG_BYTES))
+    val loader = NextDnsFaviconLoader(
+      client = NextDnsFaviconHttp.client,
+      urlsForDomain = { domain ->
+        listOf("3x", "2x", "1x").map { scale -> server.url("/$domain@$scale.png").toString() }
+      },
+      allowedHost = server.hostName,
+      allowHttpForTests = true
+    )
+
+    val bitmap = loader.load("example.com")
+
+    assertNotNull("A malformed @3x image should fall back to a valid @2x image", bitmap)
+    assertEquals(2, server.requestCount)
+    assertEquals("/example.com@3x.png", server.takeRequest().path)
+    assertEquals("/example.com@2x.png", server.takeRequest().path)
+  }
+
   @Test fun redirectIsRejectedWithoutRequestingItsTarget() = runBlocking {
     server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", server.url("/redirect-target")))
 
@@ -98,7 +118,7 @@ class NextDnsFaviconNetworkTest {
   @Test fun unexpectedHostIsRejectedBeforeAnyRequest() = runBlocking {
     val client = NextDnsFaviconLoader(
       client = NextDnsFaviconHttp.client,
-      urlForDomain = { "https://unexpected.invalid/favicon" },
+      urlsForDomain = { listOf("https://unexpected.invalid/favicon") },
       allowedHost = server.hostName
     )
 
@@ -156,7 +176,7 @@ class NextDnsFaviconNetworkTest {
   ): NextDnsFaviconLoader =
     NextDnsFaviconLoader(
       client = client,
-      urlForDomain = { server.url("/favicon").toString() },
+      urlsForDomain = { listOf(server.url("/favicon").toString()) },
       allowedHost = server.hostName,
       allowHttpForTests = allowHttpForTests
     )

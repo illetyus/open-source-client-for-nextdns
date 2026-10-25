@@ -3,20 +3,28 @@ package com.example.ui.screens
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.Image
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -46,28 +54,33 @@ private val LOCAL_ONLY_HOST_SUFFIXES = setOf(
  * Builds the observed NextDNS favicon URL only from a hostname. The route is
  * not part of the published NextDNS API, so callers must retain a local fallback.
  */
-internal fun nextDnsFaviconUrl(domain: String): String? {
+internal fun nextDnsFaviconUrl(domain: String): String? =
+  nextDnsFaviconUrls(domain).firstOrNull()
+
+internal fun nextDnsFaviconUrls(domain: String): List<String> {
   val input = domain.trim()
-  if (input.isEmpty() || input.any { it.isWhitespace() || it in "/:@?#\\*" }) return null
+  if (input.isEmpty() || input.any { it.isWhitespace() || it in "/:@?#\\*" }) return emptyList()
 
   val ascii = runCatching { IDN.toASCII(input, IDN.USE_STD3_ASCII_RULES) }
     .getOrNull()
     ?.lowercase(Locale.ROOT)
-    ?: return null
+    ?: return emptyList()
   val hostname = ascii.removeSuffix(".")
-  if (hostname.length > 253 || !hostname.contains('.')) return null
+  if (hostname.length > 253 || !hostname.contains('.')) return emptyList()
 
   val labels = hostname.split('.')
   if (labels.any { label ->
       label.isEmpty() || label.length > 63 || label.startsWith('-') || label.endsWith('-') ||
         label.any { !(it in 'a'..'z' || it in '0'..'9' || it == '-') }
-    }) return null
-  if (hostname.matches(Regex("^[0-9.]+$"))) return null
-  if (LOCAL_ONLY_HOST_SUFFIXES.any { hostname == it || hostname.endsWith(".$it") }) return null
+    }) return emptyList()
+  if (hostname.matches(Regex("^[0-9.]+$"))) return emptyList()
+  if (LOCAL_ONLY_HOST_SUFFIXES.any { hostname == it || hostname.endsWith(".$it") }) return emptyList()
 
   val hexHostname = hostname.toByteArray(StandardCharsets.US_ASCII)
     .joinToString(separator = "") { byte -> "%02x".format(Locale.ROOT, byte.toInt() and 0xff) }
-  return "https://$FAVICON_HOST/hex:$hexHostname@2x.png"
+  return listOf("3x", "2x", "1x").map { scale ->
+    "https://$FAVICON_HOST/hex:$hexHostname@$scale.png"
+  }
 }
 
 internal object NextDnsFaviconHttp {
@@ -83,7 +96,7 @@ internal object NextDnsFaviconHttp {
 
 internal class NextDnsFaviconLoader(
   private val client: OkHttpClient = NextDnsFaviconHttp.client,
-  private val urlForDomain: (String) -> String? = ::nextDnsFaviconUrl,
+  private val urlsForDomain: (String) -> List<String> = ::nextDnsFaviconUrls,
   private val allowedHost: String = FAVICON_HOST,
   private val allowHttpForTests: Boolean = false
 ) {
@@ -92,11 +105,18 @@ internal class NextDnsFaviconLoader(
   }
 
   suspend fun load(domain: String): Bitmap? {
-    val url = urlForDomain(domain) ?: return null
-    cache.get(url)?.let { return it }
-    val downloaded = download(url) ?: return null
-    return cache.get(url) ?: cache.put(url, downloaded).let { previous ->
-      previous ?: downloaded
+    val urls = urlsForDomain(domain).distinct().take(3)
+    val cacheKey = urls.firstOrNull() ?: return null
+    cache.get(cacheKey)?.let { return it }
+
+    return withTimeoutOrNull(FAVICON_TOTAL_TIMEOUT_MS.toLong()) {
+      for (url in urls) {
+        val downloaded = download(url) ?: continue
+        return@withTimeoutOrNull cache.get(cacheKey) ?: cache.put(cacheKey, downloaded).let { previous ->
+          previous ?: downloaded
+        }
+      }
+      null
     }
   }
 
@@ -199,7 +219,8 @@ private val defaultNextDnsFaviconLoader = NextDnsFaviconLoader()
 @Composable
 fun FaviconImage(
   domain: String,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  fallbackLabel: String = domain
 ) {
   val appContext = LocalContext.current.applicationContext
   val bitmap = produceState<Bitmap?>(initialValue = null, key1 = appContext, key2 = domain) {
@@ -207,10 +228,8 @@ fun FaviconImage(
   }.value
 
   if (bitmap == null) {
-    Icon(
-      imageVector = Icons.Default.Language,
-      contentDescription = null,
-      tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    FaviconMonogram(
+      label = fallbackLabel,
       modifier = modifier.testTag("remote_favicon_image")
     )
   } else {
@@ -218,9 +237,37 @@ fun FaviconImage(
       bitmap = bitmap.asImageBitmap(),
       contentDescription = null,
       contentScale = ContentScale.Crop,
+      filterQuality = FilterQuality.High,
       modifier = modifier.testTag("remote_favicon_image")
     )
   }
+}
+
+@Composable
+private fun FaviconMonogram(label: String, modifier: Modifier = Modifier) {
+  Box(
+    modifier = modifier.background(
+      color = MaterialTheme.colorScheme.primaryContainer,
+      shape = RoundedCornerShape(4.dp)
+    ),
+    contentAlignment = Alignment.Center
+  ) {
+    Text(
+      text = faviconFallbackMonogram(label),
+      color = MaterialTheme.colorScheme.onPrimaryContainer,
+      fontSize = 12.sp,
+      fontWeight = FontWeight.Bold,
+      maxLines = 1,
+      modifier = Modifier.clearAndSetSemantics { }
+    )
+  }
+}
+
+internal fun faviconFallbackMonogram(label: String): String {
+  val normalized = label.trim()
+  if (normalized.isEmpty()) return "?"
+  val firstCodePoint = normalized.codePointAt(0)
+  return String(Character.toChars(Character.toUpperCase(firstCodePoint)))
 }
 
 
