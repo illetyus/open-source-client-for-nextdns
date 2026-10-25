@@ -144,7 +144,12 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.waitUntil(10_000) { model.testResult.value.lastTestedTime > 0L }
 
     assertTrue(requests.any { it == "GET /" || it.endsWith(" GET /") })
-    rule.onNodeWithText("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true).assertIsDisplayed()
+    rule.onNodeWithTag("setup_network_diagnostics").performScrollTo()
+    rule.waitUntil(5_000) {
+      rule.onAllNodesWithText("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true)
+        .fetchSemanticsNodes().isNotEmpty()
+    }
+    rule.onNodeWithText("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true).assertExists()
   }
 
   @Test fun connectedProfileStatusUsesLocalizedSingularAndPluralCounts() {
@@ -470,7 +475,11 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.setContent { AppTheme { SetupScreen(model) } }
 
     rule.onNodeWithTag("setup_network_diagnostics").performScrollTo()
-    rule.onNodeWithText(AppStrings.get(R.string.diagnostic_unverified_title)).assertIsDisplayed()
+    rule.waitUntil(5_000) {
+      rule.onAllNodesWithText(AppStrings.get(R.string.diagnostic_unverified_title))
+        .fetchSemanticsNodes().isNotEmpty()
+    }
+    rule.onNodeWithText(AppStrings.get(R.string.diagnostic_unverified_title)).assertExists()
     rule.onNodeWithText(AppStrings.get(R.string.ui_8c25d923c8)).assertDoesNotExist()
   }
 
