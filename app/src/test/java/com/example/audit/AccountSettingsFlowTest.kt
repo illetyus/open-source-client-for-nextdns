@@ -385,7 +385,8 @@ class AccountSettingsFlowTest : AuditFixture() {
     }
     rule.onNodeWithTag("analytics_partial_warning")
       .performScrollTo()
-      .assertTextEquals(AppStrings.get(R.string.analytics_partial_failure_notice))
+      .assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.analytics_partial_failure_notice)).assertIsDisplayed()
     rule.onNodeWithText("100").assertExists()
   }
 
@@ -457,7 +458,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithText("undefined", substring = true).assertDoesNotExist()
   }
 
-  @Test fun accountDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected() {
+  @Test fun setupDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected() {
     english()
     response = { request ->
       if (request.path == "/") {
@@ -468,6 +469,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     val model = NextDnsViewModel(repository)
     rule.setContent { AppTheme { SetupScreen(model) } }
 
+    rule.onNodeWithTag("setup_network_diagnostics").performScrollTo()
     rule.onNodeWithText(AppStrings.get(R.string.diagnostic_unverified_title)).assertIsDisplayed()
     rule.onNodeWithText(AppStrings.get(R.string.ui_8c25d923c8)).assertDoesNotExist()
   }
@@ -483,6 +485,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     val model = NextDnsViewModel(repository)
     rule.setContent { AppTheme { SetupScreen(model) } }
 
+    rule.onNodeWithTag("setup_network_diagnostics").performScrollTo()
     rule.onNodeWithText("Server: iad", substring = true).assertIsDisplayed()
     rule.onNodeWithText("Resolver: 45.90.28.0").assertIsDisplayed()
     rule.onNodeWithText("Anycast: enabled").assertIsDisplayed()
