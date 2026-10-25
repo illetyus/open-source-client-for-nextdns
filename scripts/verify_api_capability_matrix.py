@@ -58,6 +58,22 @@ DOCUMENTED_PROFILE_FIELDS = {
     "settings.web3",
 }
 
+# These Security booleans were observed in the user's real profile response UI;
+# they are intentionally separate from the currently published profile example.
+OBSERVED_SECURITY_FIELDS = {
+    "security.dataDropServices",
+    "security.decentralizedWebGateways",
+    "security.dnsDataExfiltration",
+    "security.dnsPayloadDelivery",
+    "security.fastFluxNetworks",
+    "security.freeHostingDomains",
+    "security.highRiskTlds",
+    "security.newlyActiveDomains",
+    "security.residentialHosting",
+    "security.tunnelingEndpoints",
+    "security.untrustedCertificates",
+}
+
 
 def verify_route_evidence(matrix_text, implemented):
     assert matrix_text.count(EVIDENCE_START) == 1 and matrix_text.count(EVIDENCE_END) == 1, (
@@ -91,6 +107,23 @@ def verify_route_evidence(matrix_text, implemented):
     return classified
 
 
+def verify_profile_fields(field_inventory):
+    table_lines = [line for line in field_inventory.splitlines() if line.startswith("|")]
+    assert table_lines and all(line.count("|") == 5 for line in table_lines), (
+        "Each profile-field inventory row must contain exactly four Markdown columns"
+    )
+    documented_fields = FIELD_ROW.findall(field_inventory)
+    assert len(documented_fields) == len(set(documented_fields)), "Duplicate profile fields in the API matrix"
+    expected_fields = DOCUMENTED_PROFILE_FIELDS | OBSERVED_SECURITY_FIELDS
+    missing_fields = sorted(expected_fields - set(documented_fields))
+    stale_fields = sorted(set(documented_fields) - expected_fields)
+    assert not missing_fields and not stale_fields, (
+        "API profile-field matrix differs from published and observed profile fields. "
+        f"Missing: {missing_fields}; extra: {stale_fields}"
+    )
+    return set(documented_fields)
+
+
 def verify():
     service_text = SERVICE.read_text(encoding="utf-8")
     matrix_text = MATRIX.read_text(encoding="utf-8")
@@ -114,21 +147,10 @@ def verify():
         "API profile-field inventory markers must appear exactly once"
     )
     field_inventory = matrix_text.split(FIELD_START, 1)[1].split(FIELD_END, 1)[0]
-    table_lines = [line for line in field_inventory.splitlines() if line.startswith("|")]
-    assert table_lines and all(line.count("|") == 5 for line in table_lines), (
-        "Each profile-field inventory row must contain exactly four Markdown columns"
-    )
-    documented_fields = FIELD_ROW.findall(field_inventory)
-    assert len(documented_fields) == len(set(documented_fields)), "Duplicate profile fields in the API matrix"
-    missing_fields = sorted(DOCUMENTED_PROFILE_FIELDS - set(documented_fields))
-    stale_fields = sorted(set(documented_fields) - DOCUMENTED_PROFILE_FIELDS)
-    assert not missing_fields and not stale_fields, (
-        "API profile-field matrix differs from the published profile example. "
-        f"Missing: {missing_fields}; extra: {stale_fields}"
-    )
+    documented_fields = verify_profile_fields(field_inventory)
     print(
         f"PASS: API capability matrix classifies all {len(implemented)} Retrofit routes "
-        f"and lists {len(documented_fields)} profile fields exactly once"
+        f"and lists {len(documented_fields)} published or observed profile fields exactly once"
     )
 
 

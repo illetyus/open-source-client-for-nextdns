@@ -494,6 +494,98 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
     assertEquals(true, preferences.getConfigSettings("aaaaaa")?.web3)
   }
 
+  @Test fun bypassAgeVerificationUsesTheSettingsApiField() = runBlocking {
+    var patchBody: String? = null
+    response = { req ->
+      if (req.method == "PATCH") {
+        patchBody = req.body.readUtf8()
+        json("{}")
+      } else {
+        json("""{"data":{"bav":true}}""")
+      }
+    }
+
+    assertTrue(repository.setBypassAgeVerification(true).isSuccess)
+
+    assertEquals("""{"bav":true}""", patchBody)
+    assertEquals(
+      listOf("PATCH /profiles/aaaaaa/settings", "GET /profiles/aaaaaa/settings"),
+      requests.toList()
+    )
+    assertTrue(repository.configSettings.value.bypassAgeVerification)
+    assertEquals(true, preferences.getConfigSettings("aaaaaa")?.bypassAgeVerification)
+  }
+
+  @Test fun observedSecurityFlagsPatchAndPersistIndividually() = runBlocking {
+    val flags = listOf(
+      SecurityFlag.DATA_DROP_SERVICES to "dataDropServices",
+      SecurityFlag.DECENTRALIZED_WEB_GATEWAYS to "decentralizedWebGateways",
+      SecurityFlag.DNS_DATA_EXFILTRATION to "dnsDataExfiltration",
+      SecurityFlag.DNS_PAYLOAD_DELIVERY to "dnsPayloadDelivery",
+      SecurityFlag.FAST_FLUX_NETWORKS to "fastFluxNetworks",
+      SecurityFlag.FREE_HOSTING_DOMAINS to "freeHostingDomains",
+      SecurityFlag.HIGH_RISK_TLDS to "highRiskTlds",
+      SecurityFlag.NEWLY_ACTIVE_DOMAINS to "newlyActiveDomains",
+      SecurityFlag.RESIDENTIAL_HOSTING to "residentialHosting",
+      SecurityFlag.TUNNELING_ENDPOINTS to "tunnelingEndpoints",
+      SecurityFlag.UNTRUSTED_CERTIFICATES to "untrustedCertificates"
+    )
+    var currentField = ""
+    val patchBodies = mutableListOf<String>()
+    response = { req ->
+      if (req.method == "PATCH") {
+        val body = req.body.readUtf8()
+        patchBodies += body
+        currentField = body.substringAfter('"').substringBefore('"')
+        json("{}")
+      } else {
+        json("""{"data":{"$currentField":true}}""")
+      }
+    }
+
+    flags.forEach { (flag, field) ->
+      assertTrue("$field mutation should be verified", repository.setSecurityFlag(flag, true).isSuccess)
+      assertEquals("""{"$field":true}""", patchBodies.last())
+    }
+
+    flags.forEach { (_, field) ->
+      assertTrue("$field should be loaded and cached", preferences.getSecuritySettings("aaaaaa")?.let { settings ->
+        when (field) {
+          "dataDropServices" -> settings.dataDropServices
+          "decentralizedWebGateways" -> settings.decentralizedWebGateways
+          "dnsDataExfiltration" -> settings.dnsDataExfiltration
+          "dnsPayloadDelivery" -> settings.dnsPayloadDelivery
+          "fastFluxNetworks" -> settings.fastFluxNetworks
+          "freeHostingDomains" -> settings.freeHostingDomains
+          "highRiskTlds" -> settings.highRiskTlds
+          "newlyActiveDomains" -> settings.newlyActiveDomains
+          "residentialHosting" -> settings.residentialHosting
+          "tunnelingEndpoints" -> settings.tunnelingEndpoints
+          else -> settings.untrustedCertificates
+        }
+      } == true)
+    }
+    assertEquals(
+      flags.flatMap {
+        listOf("PATCH /profiles/aaaaaa/security", "GET /profiles/aaaaaa/security")
+      },
+      requests
+    )
+  }
+
+  @Test fun missingObservedSecurityFieldPreservesCachedValue() = runBlocking {
+    preferences.saveSecuritySettings(
+      "aaaaaa",
+      com.example.data.model.SecuritySettings(dnsDataExfiltration = true)
+    )
+    repository.loadLocalProfileData("aaaaaa")
+    response = { json("""{"data":{}}""") }
+
+    assertTrue(repository.refreshSection(SyncSection.SECURITY))
+    assertTrue(repository.securitySettings.value.dnsDataExfiltration)
+    assertTrue(preferences.getSecuritySettings("aaaaaa")?.dnsDataExfiltration == true)
+  }
+
   @Test fun web3TrueFalseAndMissingFieldPreserveAuthoritativeState() = runBlocking {
     response = { json("""{"data":{"web3":true}}""") }
     assertTrue(repository.refreshSection(SyncSection.SETTINGS))

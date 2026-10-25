@@ -29,7 +29,7 @@ internal class SecurityDtoJsonAdapterFactory : JsonAdapter.Factory {
 
         objectValue.forEach { (key, value) ->
           if (key !is String) return@forEach
-          if (key in DOCUMENTED_SECURITY_FIELDS) {
+          if (key in RECOGNIZED_SECURITY_FIELDS) {
             knownFields[key] = value
           } else if (unknownFields.size < MAX_RETAINED_UNKNOWN_SECURITY_FIELDS) {
             unknownFields[key] = value
@@ -54,7 +54,7 @@ internal class SecurityDtoJsonAdapterFactory : JsonAdapter.Factory {
 
   private companion object {
     const val MAX_RETAINED_UNKNOWN_SECURITY_FIELDS = 32
-    val DOCUMENTED_SECURITY_FIELDS = setOf(
+    val RECOGNIZED_SECURITY_FIELDS = setOf(
       "threatIntelligenceFeeds",
       "aiThreatDetection",
       "googleSafeBrowsing",
@@ -67,6 +67,17 @@ internal class SecurityDtoJsonAdapterFactory : JsonAdapter.Factory {
       "ddns",
       "parking",
       "csam",
+      "dataDropServices",
+      "decentralizedWebGateways",
+      "dnsDataExfiltration",
+      "dnsPayloadDelivery",
+      "fastFluxNetworks",
+      "freeHostingDomains",
+      "highRiskTlds",
+      "newlyActiveDomains",
+      "residentialHosting",
+      "tunnelingEndpoints",
+      "untrustedCertificates",
       "tlds"
     )
   }

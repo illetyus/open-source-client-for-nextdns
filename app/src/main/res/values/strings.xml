@@ -518,6 +518,9 @@
     <string name="month_short_11">"Nov"</string>
     <string name="month_short_12">"Dec"</string>
     <string name="web3_description">"Web3 includes blockchain domains and distributed networks such as IPFS. This setting enables their resolution by NextDNS. Some browsers require a trailing /, for example vitalik.eth/."</string>
+    <string name="bypass_age_verification_title">Bypass age verification</string>
+    <string name="bypass_age_verification_description">Enable the NextDNS profile setting for supported age-verification pages.</string>
+    <string name="bypass_age_verification_enable">Enable</string>
     <plurals name="seconds_ago">
         <item quantity="one">%1$d second ago</item>
         <item quantity="other">%1$d seconds ago</item>
@@ -595,8 +598,6 @@
     <string name="sync_all_success">"All sections synced with NextDNS."</string>
     <string name="account_status_connected">"API connected • %1$d profile"</string>
     <string name="account_status_connected_many">"API connected • %1$d profiles"</string>
-    <string name="account_profile_action">Open NextDNS connection and profiles</string>
-    <string name="account_profile_return">Return to the app</string>
     <string name="account_status_connecting">"Checking API connection…"</string>
     <string name="account_status_disconnected">"API not connected"</string>
     <string name="account_status_error">"Could not connect to the API"</string>
@@ -608,7 +609,6 @@
     <string name="legal_and_about">"Legal and about"</string>
     <string name="app_preferences">"App preferences"</string>
     <string name="nextdns_service_settings">"NextDNS service settings"</string>
-    <string name="nav_connection">"NextDNS connection"</string>
     <string name="settings_delete_profile">"Delete NextDNS profile"</string>
     <string name="traffic_country_tap_hint">"Tap a country or use the selector to inspect its traffic."</string>
     <string name="traffic_map_unavailable">"Traffic map information is unavailable."</string>
@@ -621,8 +621,8 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Top domains in this country"</string>
     <string name="traffic_country_map_accessibility">"Interactive traffic destination map. Choose a country on the map or in the country selector to inspect DNS traffic."</string>
-    <string name="security_unverified_title">Unverified API security fields</string>
-    <string name="security_unverified_explanation">These keys came from the server. Their meaning and write support are unverified. Only Boolean values are shown; these fields cannot be changed here.</string>
+    <string name="security_unverified_title">Additional server fields (read-only)</string>
+    <string name="security_unverified_explanation">These keys are outside the published Security API schema. Recognized NextDNS options appear in their relevant settings sections; unknown Security fields stay read-only.</string>
     <string name="security_unverified_boolean">Boolean value: %1$s · read-only</string>
     <string name="security_unverified_text">Text · value hidden · read-only</string>
     <string name="security_unverified_number">Number · value hidden · read-only</string>
@@ -663,6 +663,7 @@
     <string name="analytics_series_metric_encryption">DNS encryption</string>
     <string name="analytics_series_metric_protocols">Protocols</string>
     <string name="analytics_series_metric_ips">IP addresses</string>
+    <string name="analytics_ips_title">IP addresses</string>
     <string name="analytics_series_metric_query_types">Query types</string>
     <string name="analytics_series_metric_ip_versions">IP versions</string>
     <string name="analytics_series_domain_all">All statuses</string>
@@ -676,5 +677,17 @@
     <string name="analytics_series_table_heading">Recent time buckets</string>
     <string name="analytics_series_chart_accessibility">Interactive time-series chart for %1$s. Select a point to inspect its time and query count.</string>
     <string name="setup_profile_identity_unavailable">Setup instructions are unavailable because this profile ID could not be validated.</string>
+    <string name="security_api_toggle_description">Applied to the selected profile on NextDNS.</string>
+    <string name="security_data_drop_services_title">Data Drop Services</string>
+    <string name="security_decentralized_web_gateways_title">Decentralized Web Gateways</string>
+    <string name="security_dns_data_exfiltration_title">DNS Data Exfiltration</string>
+    <string name="security_dns_payload_delivery_title">DNS Payload Delivery</string>
+    <string name="security_fast_flux_networks_title">Fast-Flux Networks</string>
+    <string name="security_free_hosting_domains_title">Free Hosting Domains</string>
+    <string name="security_high_risk_tlds_title">High-Risk TLDs</string>
+    <string name="security_newly_active_domains_title">Newly Active Domains</string>
+    <string name="security_residential_hosting_title">Residential Hosting</string>
+    <string name="security_tunneling_endpoints_title">Tunneling Endpoints</string>
+    <string name="security_untrusted_certificates_title">Untrusted Certificates</string>
 </resources>
 <!-- Locale-only presentation; API privacy fields remain unchanged. -->

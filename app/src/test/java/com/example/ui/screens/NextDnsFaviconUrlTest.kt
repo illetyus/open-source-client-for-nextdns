@@ -8,15 +8,27 @@ import org.junit.Test
 class NextDnsFaviconUrlTest {
   @Test fun encodesNormalizedAsciiHostUnderTheFixedNextDnsOrigin() {
     assertEquals(
-      "https://favicons.nextdns.io/hex:6578616d706c652e636f6d@2x.png",
+      "https://favicons.nextdns.io/hex:6578616d706c652e636f6d@3x.png",
       nextDnsFaviconUrl("EXAMPLE.COM.")
     )
   }
 
   @Test fun convertsInternationalHostnamesToAsciiBeforeHexEncoding() {
     assertEquals(
-      "https://favicons.nextdns.io/hex:786e2d2d62636865722d6b76612e6465@2x.png",
+      "https://favicons.nextdns.io/hex:786e2d2d62636865722d6b76612e6465@3x.png",
       nextDnsFaviconUrl("bücher.de")
+    )
+  }
+
+  @Test fun requestsLargestObservedSizeFirstAndFallsBackToSmallerSizes() {
+    val encoded = "6578616d706c652e636f6d"
+    assertEquals(
+      listOf(
+        "https://favicons.nextdns.io/hex:$encoded@3x.png",
+        "https://favicons.nextdns.io/hex:$encoded@2x.png",
+        "https://favicons.nextdns.io/hex:$encoded@1x.png"
+      ),
+      nextDnsFaviconUrls("example.com")
     )
   }
 
