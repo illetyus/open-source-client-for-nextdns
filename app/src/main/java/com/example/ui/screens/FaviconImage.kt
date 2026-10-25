@@ -170,25 +170,12 @@ internal class NextDnsFaviconLoader(
 
       val sampleSize = (maxOf(bounds.outWidth, bounds.outHeight) / CACHED_FAVICON_DIMENSION)
         .coerceAtLeast(1)
-      val sampled = BitmapFactory.decodeByteArray(
+      val decoded = BitmapFactory.decodeByteArray(
         bytes,
         0,
         bytes.size,
         BitmapFactory.Options().apply { inSampleSize = sampleSize; inPreferredConfig = Bitmap.Config.ARGB_8888 }
-      )
-      // Some platform decoders reject sampled PNGs even though the bounded source is valid.
-      // At most 1024 × 1024 pixels are allowed above, so retrying without sampling stays bounded.
-      val decoded = sampled ?: if (sampleSize > 1) {
-        BitmapFactory.decodeByteArray(
-          bytes,
-          0,
-          bytes.size,
-          BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
-        )
-      } else {
-        null
-      } ?: return null
-
+      ) ?: return null
       val largestDimension = maxOf(decoded.width, decoded.height)
       if (largestDimension <= CACHED_FAVICON_DIMENSION) return decoded
 

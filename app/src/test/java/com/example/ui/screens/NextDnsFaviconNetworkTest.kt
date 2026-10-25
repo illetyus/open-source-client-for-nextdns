@@ -179,9 +179,10 @@ class NextDnsFaviconNetworkTest {
 
   private fun png(side: Int): ByteArray {
     val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+    val dark = 0xff336699.toInt()
+    val light = 0xffcc8844.toInt()
     val pixels = IntArray(side * side) { index ->
-      val shade = index % 256
-      (0xff shl 24) or (shade shl 16) or ((255 - shade) shl 8) or shade
+      if ((index / side + index % side) % 2 == 0) dark else light
     }
     bitmap.setPixels(pixels, 0, side, 0, 0, side, side)
     return ByteArrayOutputStream().use { output ->
