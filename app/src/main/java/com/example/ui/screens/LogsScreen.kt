@@ -311,6 +311,7 @@ internal fun LogsHeaderControls(
           .clip(RoundedCornerShape(10.dp))
           .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
           .heightIn(min = 48.dp)
+          .testTag("logs_device_filter")
           .bounceClick(scaleDown = 0.99f) { onToggleDeviceMenu(true) },
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(10.dp)

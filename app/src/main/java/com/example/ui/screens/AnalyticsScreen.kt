@@ -449,6 +449,7 @@ private fun AnalyticsFilterBar(
         modifier = Modifier
           .clip(RoundedCornerShape(10.dp))
           .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+          .testTag("analytics_time_filter")
           .bounceClick { onToggleTimeFilterMenu(true) },
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(10.dp)
@@ -471,6 +472,7 @@ private fun AnalyticsFilterBar(
       ) {
         timesList.forEach { tm ->
           DropdownMenuItem(
+            modifier = Modifier.testTag("analytics_time_option_$tm"),
             text = { Text(analyticsTimeFilterLabel(tm), color = if (tm == selectedTimeFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontSize = 12.sp) },
             onClick = {
               onSelectTime(tm)

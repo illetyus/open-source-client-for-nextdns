@@ -80,7 +80,7 @@ fun DenylistScreen(
                 Text(errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 11.sp)
               }
             },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).testTag("denylist_domain_input"),
             colors = OutlinedTextFieldDefaults.colors(
               focusedBorderColor = MaterialTheme.colorScheme.primary,
               unfocusedBorderColor = MaterialTheme.colorScheme.outline,
@@ -114,7 +114,7 @@ fun DenylistScreen(
                 }
               }
             },
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = 8.dp).testTag("denylist_add_domain")
           )
         }
       }

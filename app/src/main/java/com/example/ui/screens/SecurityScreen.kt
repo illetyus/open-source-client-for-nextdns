@@ -75,7 +75,8 @@ fun SecurityScreen(
         title = AppStrings.get(R.string.ui_b6b6e376c7),
         subtitle = AppStrings.get(R.string.ui_e8957127ba),
         checked = settings.googleSafeBrowsing,
-        onCheckedChange = { viewModel.toggleSecurityFeature("googleSafeBrowsing", it) }
+        onCheckedChange = { viewModel.toggleSecurityFeature("googleSafeBrowsing", it) },
+        modifier = Modifier.testTag("security_google_safe_browsing")
       )
     }
 
