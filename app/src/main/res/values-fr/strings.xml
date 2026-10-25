@@ -597,8 +597,6 @@
     <string name="sync_all_success">"Toutes les sections sont synchronisées avec NextDNS."</string>
     <string name="account_status_connected">"API connectée • %1$d profil"</string>
     <string name="account_status_connected_many">"API connectée • %1$d profils"</string>
-    <string name="account_profile_action">Ouvrir la connexion et les profils NextDNS</string>
-    <string name="account_profile_return">Retour à l’application</string>
     <string name="account_status_connecting">"Vérification de la connexion API…"</string>
     <string name="account_status_disconnected">"API non connectée"</string>
     <string name="account_status_error">"Connexion à l’API impossible"</string>
@@ -610,8 +608,6 @@
     <string name="legal_and_about">"Mentions légales et à propos"</string>
     <string name="app_preferences">"Préférences de l’application"</string>
     <string name="nextdns_service_settings">"Paramètres du service NextDNS"</string>
-    <string name="nav_connection">"Connexion NextDNS"</string>
-    <string name="settings_connection_summary">"Gérer la clé API, les profils, les diagnostics de connexion et la synchronisation."</string>
     <string name="settings_delete_profile">"Supprimer le profil NextDNS"</string>
     <string name="traffic_country_tap_hint">"Touchez un pays ou utilisez le sélecteur pour consulter son trafic."</string>
     <string name="traffic_map_unavailable">"Les informations de la carte du trafic sont indisponibles."</string>

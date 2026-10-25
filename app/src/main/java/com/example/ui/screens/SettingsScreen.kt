@@ -162,6 +162,10 @@ fun SettingsScreen(
     }
 
     item {
+      ApiConnectionSettingsSection(viewModel)
+    }
+
+    item {
       LogsAndPrivacySection(
         configSettings = configSettings,
         viewModel = viewModel,
@@ -266,51 +270,6 @@ fun SettingsScreen(
           Text(AppStrings.get(R.string.ui_c1e7a1dd63))
         }
       }
-    )
-  }
-}
-
-@Composable
-fun ConnectionSettingsScreen(
-  viewModel: NextDnsViewModel,
-  onBack: () -> Unit,
-  modifier: Modifier = Modifier
-) {
-  Column(
-    modifier = modifier.fillMaxSize().testTag("settings_connection_page")
-  ) {
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      IconButton(
-        onClick = onBack,
-        modifier = Modifier.testTag("settings_connection_back")
-      ) {
-        Icon(
-          imageVector = Icons.Default.ArrowBack,
-          contentDescription = AppStrings.get(R.string.ui_80ad54ad05),
-          tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-      }
-      Column(modifier = Modifier.weight(1f)) {
-        Text(
-          text = AppStrings.get(R.string.nav_connection),
-          style = MaterialTheme.typography.titleMedium,
-          color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-          text = AppStrings.get(R.string.settings_connection_summary),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-      }
-    }
-    AccountScreen(
-      viewModel = viewModel,
-      modifier = Modifier.fillMaxWidth().weight(1f)
     )
   }
 }

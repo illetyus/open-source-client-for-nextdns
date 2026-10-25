@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -85,7 +83,6 @@ fun SetupScreen(
         activeProfile = activeProfile,
         testResult = testResult,
         isDiagnosticRunning = isDiagnosticRunning,
-        onRefreshDiagnostic = { viewModel.runDiagnostic(showToast = true) },
         onOpenDnsSettings = {
           try {
             val intent = Intent(Settings.ACTION_WIRELESS_SETTINGS).apply {
@@ -106,6 +103,10 @@ fun SetupScreen(
           }
         }
       )
+    }
+
+    item {
+      NetworkDiagnosticsCard(viewModel)
     }
 
     item {
@@ -148,7 +149,6 @@ internal fun ConnectionStatusBanner(
   activeProfile: NextDnsProfile?,
   testResult: DiagnosticTestResult,
   isDiagnosticRunning: Boolean,
-  onRefreshDiagnostic: () -> Unit,
   onOpenDnsSettings: () -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -221,20 +221,10 @@ internal fun ConnectionStatusBanner(
     else -> MaterialTheme.colorScheme.error
   }
 
-  val infiniteTransition = rememberInfiniteTransition(label = "refresh_rotate")
-  val rotation by infiniteTransition.animateFloat(
-    initialValue = 0f,
-    targetValue = 360f,
-    animationSpec = infiniteRepeatable(
-      animation = tween(1000, easing = LinearEasing),
-      repeatMode = RepeatMode.Restart
-    ),
-    label = "rotation"
-  )
-
   Surface(
     modifier = modifier
       .fillMaxWidth()
+      .testTag("setup_connection_status_banner")
       .border(1.dp, borderColor, RoundedCornerShape(18.dp)),
     shape = RoundedCornerShape(18.dp),
     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -246,7 +236,7 @@ internal fun ConnectionStatusBanner(
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
       ) {
-        StatusBeacon(color = beaconColor, size = 10.dp, isPulsing = isUsingNextDns || isTesting)
+        StatusBeacon(color = beaconColor, size = 10.dp, isPulsing = isTesting)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
           Text(
             text = title,
@@ -285,11 +275,6 @@ internal fun ConnectionStatusBanner(
             Text(AppStrings.get(R.string.ui_447d7bdd67), fontSize = 9.sp,
               fontWeight = FontWeight.Bold, color = badgeTextColor)
           }
-        }
-        IconButton(onClick = onRefreshDiagnostic, enabled = !isTesting, modifier = Modifier.size(48.dp)) {
-          Icon(Icons.Default.Refresh, contentDescription = AppStrings.get(R.string.ui_3bb3f8b024),
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp).then(if (isTesting) Modifier.graphicsLayer { rotationZ = rotation } else Modifier))
         }
       }
 

@@ -597,8 +597,6 @@
     <string name="sync_all_success">"Tüm bölümler NextDNS ile eşitlendi."</string>
     <string name="account_status_connected">"API bağlı • %1$d profil"</string>
     <string name="account_status_connected_many">"API bağlı • %1$d profil"</string>
-    <string name="account_profile_action">NextDNS bağlantısını ve profilleri aç</string>
-    <string name="account_profile_return">Uygulamaya dön</string>
     <string name="account_status_connecting">"API bağlantısı denetleniyor…"</string>
     <string name="account_status_disconnected">"API bağlı değil"</string>
     <string name="account_status_error">"API bağlantısı kurulamadı"</string>
@@ -610,8 +608,6 @@
     <string name="legal_and_about">"Yasal bilgiler ve hakkında"</string>
     <string name="app_preferences">"Uygulama tercihleri"</string>
     <string name="nextdns_service_settings">"NextDNS hizmet ayarları"</string>
-    <string name="nav_connection">"NextDNS bağlantısı"</string>
-    <string name="settings_connection_summary">"API anahtarını, profilleri, bağlantı tanılamasını ve eşitlemeyi yönetin."</string>
     <string name="settings_delete_profile">"NextDNS profilini sil"</string>
     <string name="traffic_country_tap_hint">"Trafik ayrıntıları için haritada bir ülkeye dokunun veya ülke seçicisini kullanın."</string>
     <string name="traffic_map_unavailable">"Trafik haritası bilgisi alınamıyor."</string>

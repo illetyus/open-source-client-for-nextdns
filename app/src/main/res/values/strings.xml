@@ -598,8 +598,6 @@
     <string name="sync_all_success">"All sections synced with NextDNS."</string>
     <string name="account_status_connected">"API connected • %1$d profile"</string>
     <string name="account_status_connected_many">"API connected • %1$d profiles"</string>
-    <string name="account_profile_action">Open NextDNS connection and profiles</string>
-    <string name="account_profile_return">Return to the app</string>
     <string name="account_status_connecting">"Checking API connection…"</string>
     <string name="account_status_disconnected">"API not connected"</string>
     <string name="account_status_error">"Could not connect to the API"</string>
@@ -611,8 +609,6 @@
     <string name="legal_and_about">"Legal and about"</string>
     <string name="app_preferences">"App preferences"</string>
     <string name="nextdns_service_settings">"NextDNS service settings"</string>
-    <string name="nav_connection">"NextDNS connection"</string>
-    <string name="settings_connection_summary">"Manage your API key, profiles, connection diagnostics, and synchronization."</string>
     <string name="settings_delete_profile">"Delete NextDNS profile"</string>
     <string name="traffic_country_tap_hint">"Tap a country or use the selector to inspect its traffic."</string>
     <string name="traffic_map_unavailable">"Traffic map information is unavailable."</string>
