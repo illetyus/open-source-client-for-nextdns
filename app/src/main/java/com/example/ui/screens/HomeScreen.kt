@@ -486,6 +486,7 @@ fun HomeScreen(
     }
   }
   }
+  }
 
   // Dialog: Yeni Profil Oluştur
   if (showNewProfileDialog) {
