@@ -178,18 +178,59 @@ class NextDnsFaviconNetworkTest {
   }
 
   private fun png(side: Int): ByteArray {
-    val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
-    val dark = 0xff336699.toInt()
-    val light = 0xffcc8844.toInt()
-    val pixels = IntArray(side * side) { index ->
-      if ((index / side + index % side) % 2 == 0) dark else light
+    val scanline = ByteArray(1 + side * 4)
+    for (pixel in 0 until side) {
+      val offset = 1 + pixel * 4
+      scanline[offset] = 0x33
+      scanline[offset + 1] = 0x66
+      scanline[offset + 2] = 0x99.toByte()
+      scanline[offset + 3] = 0xff.toByte()
     }
-    bitmap.setPixels(pixels, 0, side, 0, 0, side, side)
-    return ByteArrayOutputStream().use { output ->
-      check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
-      bitmap.recycle()
+    val rawImage = ByteArrayOutputStream().use { output ->
+      repeat(side) { output.write(scanline) }
       output.toByteArray()
     }
+    val compressedImage = ByteArrayOutputStream().use { output ->
+      java.util.zip.DeflaterOutputStream(output).use { it.write(rawImage) }
+      output.toByteArray()
+    }
+    val png = ByteArrayOutputStream()
+    png.write(byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a))
+
+    fun writeChunk(type: String, data: ByteArray) {
+      val typeBytes = type.toByteArray(Charsets.US_ASCII)
+      val crc = java.util.zip.CRC32().apply { update(typeBytes); update(data) }
+      png.write(byteArrayOf(
+        (data.size ushr 24).toByte(),
+        (data.size ushr 16).toByte(),
+        (data.size ushr 8).toByte(),
+        data.size.toByte()
+      ))
+      png.write(typeBytes)
+      png.write(data)
+      png.write(byteArrayOf(
+        (crc.value ushr 24).toByte(),
+        (crc.value ushr 16).toByte(),
+        (crc.value ushr 8).toByte(),
+        crc.value.toByte()
+      ))
+    }
+
+    val header = ByteArrayOutputStream().also { output ->
+      java.io.DataOutputStream(output).use { data ->
+        data.writeInt(side)
+        data.writeInt(side)
+        data.writeByte(8)
+        data.writeByte(6)
+        data.writeByte(0)
+        data.writeByte(0)
+        data.writeByte(0)
+      }
+    }.toByteArray()
+    writeChunk("IHDR", header)
+    writeChunk("IDAT", compressedImage)
+    writeChunk("IEND", byteArrayOf())
+    return png.toByteArray()
   }
 
   private fun imageResponse(bytes: ByteArray): MockResponse =
