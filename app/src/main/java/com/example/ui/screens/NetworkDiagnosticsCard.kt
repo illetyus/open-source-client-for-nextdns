@@ -101,7 +101,8 @@ internal fun NetworkDiagnosticsCard(
                   testResult.latencyMs
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 11.5.sp
+                fontSize = 11.5.sp,
+                modifier = Modifier.testTag("setup_diagnostic_server")
               )
             }
             Text(

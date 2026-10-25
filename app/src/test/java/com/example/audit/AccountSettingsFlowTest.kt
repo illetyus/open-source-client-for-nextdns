@@ -146,10 +146,11 @@ class AccountSettingsFlowTest : AuditFixture() {
     assertTrue(requests.any { it == "GET /" || it.endsWith(" GET /") })
     rule.onNodeWithTag("setup_network_diagnostics").performScrollTo()
     rule.waitUntil(5_000) {
-      rule.onAllNodesWithText("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true)
+      rule.onAllNodesWithTag("setup_diagnostic_server")
         .fetchSemanticsNodes().isNotEmpty()
     }
-    rule.onNodeWithText("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true).assertExists()
+    rule.onNodeWithTag("setup_diagnostic_server")
+      .assertTextContains("SYNTHETIC_DIAGNOSTIC_PROTOCOL")
   }
 
   @Test fun connectedProfileStatusUsesLocalizedSingularAndPluralCounts() {
