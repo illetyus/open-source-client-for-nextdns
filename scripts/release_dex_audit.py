@@ -58,8 +58,30 @@ def type_descriptors(data):
     return result
 
 
-def audit_dex(data):
+def mapped_descriptors(mapping):
+    """Retain all original types, including R8 classes merged into a live class.
+
+    A mapping is evidence of optimizer input, not a reason to allow a fixture.
+    Inspect originals even when their code was inlined and their descriptor died.
+    """
+    originals = set()
+    for line in mapping.splitlines():
+        if not line or line.startswith('#') or line[0].isspace():
+            continue
+        header = re.fullmatch(r'([^\s:]+) -> ([^\s:]+):', line)
+        if not header:
+            raise ValueError('Malformed R8 class mapping')
+        originals.add(('L' + header[1].replace('.', '/') + ';').encode('utf-8'))
+    if mapping.strip() and not originals:
+        raise ValueError('R8 mapping contains no class headers')
+    return originals
+
+
+def audit_dex(data, mapping=None):
     descriptors = type_descriptors(data)
+    original_count = len(descriptors)
+    if mapping is not None:
+        descriptors |= mapped_descriptors(mapping)
     prefixes = (b'Lorg/robolectric/', b'Lokhttp3/mockwebserver/', b'Lorg/jacoco/',
                 b'Lcom/example/ReleaseSecurityRuntimeTest')
     retired_product_type_prefixes = (
@@ -77,7 +99,7 @@ def audit_dex(data):
                    b'garbage.php', b'empty.php'):
         if marker in data:
             raise TestCodeFound('Forbidden release marker: ' + marker.decode('ascii'))
-    return len(descriptors)
+    return original_count
 
 
 def apk_dex(path):
@@ -93,10 +115,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--release-apk', type=Path, default=root/'app/build/outputs/apk/release/app-release-unsigned.apk')
     parser.add_argument('--test-apk', type=Path)
+    parser.add_argument('--mapping', type=Path, help='Matching R8 mapping.txt; mandatory for a minified payload')
     parser.add_argument('--output', type=Path, default=root/'build/compliance/release-dex-audit.json')
     args = parser.parse_args()
     release = apk_dex(args.release_apk)
-    count = sum(audit_dex(data) for _, data in release)
+    mapping = args.mapping.read_text(encoding='utf-8') if args.mapping else None
+    if args.mapping and not mapping.strip():
+        raise ValueError('Empty R8 mapping')
+    count = sum(audit_dex(data, mapping=mapping) for _, data in release)
     fixture = [args.test_apk] if args.test_apk else list((root/'app/build/outputs/apk/androidTest/debug').glob('*.apk'))
     assert len(fixture) == 1
     rejected = []
@@ -118,5 +144,6 @@ if __name__ == '__main__':
     out.write_text(json.dumps({'commit': os.environ.get('GITHUB_SHA', 'local'),
         'releaseDexFiles': len(release), 'typeReferencesExamined': count,
         'testFixtureRejected': rejected, 'malformedDexRejected': True,
+        'r8MappingExamined': args.mapping is not None,
         'scope': 'Test/coverage type references and synthetic canary; ordinary production-library strings are allowed.'}, indent=2)+'\n')
     print(f'PASS: {len(release)} release DEX files / {count} type references; real test APK and malformed DEX rejected')

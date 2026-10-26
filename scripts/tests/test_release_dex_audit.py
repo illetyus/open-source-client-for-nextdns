@@ -8,6 +8,21 @@ import release_dex_audit as audit
 
 
 class RetiredFeatureDexAuditTest(unittest.TestCase):
+    @patch.object(audit, "type_descriptors", return_value={b"[La/b;"})
+    def test_obfuscated_fixture_reference_is_still_rejected(self, _):
+        mapping = "com.example.BenchmarkFixtureActivity -> a.b:\n    1:1:void onCreate():1:1 -> c\n"
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex", mapping=mapping)
+
+    @patch.object(audit, "type_descriptors", return_value={b"La/b;"})
+    def test_normal_obfuscated_production_class_is_allowed(self, _):
+        self.assertEqual(1, audit.audit_dex(b"synthetic dex", mapping="com.example.MainActivity -> a.b:\n"))
+
+    @patch.object(audit, "type_descriptors", return_value={b"La/b;"})
+    def test_merged_class_mapping_does_not_hide_a_fixture(self, _):
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex", mapping="one.Name -> a.b:\ncom.example.BenchmarkFixtureActivity -> a.b:\n")
+
     @patch.object(audit, "type_descriptors", return_value={
         b"Lcom/example/data/diagnostics/LibreSpeedClient;"
     })
