@@ -112,7 +112,9 @@ fun WorldMapChart(
       ) {
         val viewport = worldMapViewport(size.width, size.height)
         clipRect(viewport.left, viewport.top, viewport.right, viewport.bottom) {
-          renderCache?.paths(viewport, 0.9.dp.toPx())?.forEach { country ->
+          // Stroke's default miter limit is 4: include 4 * half-width plus
+          // one antialias pixel, so a seam copy's sharp outline cannot vanish.
+          renderCache?.paths(viewport, 1.8.dp.toPx() * 2f + 1f)?.forEach { country ->
             val metric = metricsByCode[country.code]
             val intensity = metric?.let {
               (ln(it.queries.coerceAtLeast(0L).toDouble() + 1.0) / ln(maxQueries.toDouble() + 1.0))

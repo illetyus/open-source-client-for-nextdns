@@ -145,13 +145,14 @@ fun LogsScreen(
     viewModel.setLogsSearchFilter(searchQuery)
   }
 
-  val detectedDevices = remember(logDevices) {
+  val locale = AppStrings.locale
+  val detectedDevices = remember(logDevices, locale) {
     val devices = logDevices.filter { it.id.isNotBlank() && it.id != NEXTDNS_UNIDENTIFIED_DEVICE_ID }.toMutableList()
     devices += DeviceMetric(
       id = NEXTDNS_UNIDENTIFIED_DEVICE_ID,
       name = AppStrings.get(R.string.logs_unidentified_device)
     )
-    devices.distinctBy { it.id }.sortedBy { it.name.lowercase() }
+    devices.distinctBy { it.id }.sortedBy { it.name.lowercase(locale) }
   }
 
   val filteredLogs = remember(logs, searchQuery, selectedSearchFilter, selectedDeviceFilter, selectedStatusFilter) {
@@ -242,7 +243,7 @@ fun LogsScreen(
       if (filteredLogs.isEmpty()) {
         item(key = "empty_logs") { EmptyLogsPlaceholder(searchQuery = searchQuery) }
       }
-      items(filteredLogs, key = { it.id }) { log ->
+      items(filteredLogs, key = { it.id }, contentType = { "log-entry" }) { log ->
         val isExpanded = expandedLogId == log.id
         LogItemRow(
           log = log,
