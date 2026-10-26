@@ -22,3 +22,4 @@ debug.keystore
 google-services.json
 __pycache__/
 *.py[cod]
+/.superpowers/

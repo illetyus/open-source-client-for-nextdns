@@ -1,6 +1,9 @@
 package com.example.macrobenchmark
 
 import android.content.Intent
+import android.graphics.Bitmap
+import java.io.ByteArrayOutputStream
+import okio.Buffer
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -41,7 +44,8 @@ internal class SyntheticNextDnsApi private constructor(
     private const val PROFILE_ID = "b00b1e"
     private const val PAGE_TWO_CURSOR = "benchmark-page-2"
 
-    fun start(): SyntheticNextDnsApi {
+    fun start(logRows: Int = 200): SyntheticNextDnsApi {
+      require(logRows in 100..1_000 && logRows % 100 == 0)
       val fixtureNow = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
       val certificate = HeldCertificate.Builder()
         .commonName("localhost")
@@ -52,7 +56,7 @@ internal class SyntheticNextDnsApi private constructor(
         .build()
       val server = MockWebServer().apply {
         useHttps(serverCertificates.sslSocketFactory(), false)
-        dispatcher = SyntheticApiDispatcher(fixtureNow)
+        dispatcher = SyntheticApiDispatcher(fixtureNow, logRows)
         start()
       }
       return SyntheticNextDnsApi(
@@ -63,9 +67,20 @@ internal class SyntheticNextDnsApi private constructor(
     }
   }
 
-  private class SyntheticApiDispatcher(private val fixtureNow: Instant) : Dispatcher() {
+  private class SyntheticApiDispatcher(private val fixtureNow: Instant, private val logRows: Int) : Dispatcher() {
+    private val favicon = ByteArrayOutputStream().use { output ->
+      val bitmap = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
+      bitmap.eraseColor(android.graphics.Color.rgb(42, 110, 170))
+      check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+      bitmap.recycle()
+      output.toByteArray()
+    }
+
     override fun dispatch(request: RecordedRequest): MockResponse {
       val path = request.requestUrl?.encodedPath.orEmpty()
+      if (path.startsWith("/favicons/")) return MockResponse()
+        .setHeader("Content-Type", "image/png")
+        .setBody(Buffer().write(favicon))
       val responseBody = when {
         path == "/profiles" -> """{"data":[{"id":"$PROFILE_ID","name":"Benchmark profile","fingerprint":"bench01"}]}"""
         path.matches(Regex("/profiles/[^/]+")) -> """{"data":{"id":"$PROFILE_ID","name":"Benchmark profile","fingerprint":"bench01"}}"""
@@ -85,14 +100,21 @@ internal class SyntheticNextDnsApi private constructor(
     }
 
     private fun syntheticLogs(request: RecordedRequest): String {
-      val secondPage = request.requestUrl?.queryParameter("cursor") == PAGE_TWO_CURSOR
-      val firstIndex = if (secondPage) 100 else 0
+      val cursor = request.requestUrl?.queryParameter("cursor")
+      val firstIndex = when (cursor) {
+        null -> 0
+        PAGE_TWO_CURSOR -> 100
+        else -> cursor.removePrefix("benchmark-offset-").toIntOrNull() ?: logRows
+      }
+      if (firstIndex !in 0 until logRows || firstIndex % 100 != 0) return """{"data":[]}"""
       val logs = (firstIndex until firstIndex + 100).joinToString(",") { index ->
         val timestamp = fixtureNow.minusSeconds(index.toLong() * 60L).toString()
         val status = if (index % 5 == 0) "blocked" else "allowed"
         """{"id":"bench-log-$index","timestamp":"$timestamp","domain":"site-$index.invalid","root":"site-$index.invalid","client":"Benchmark device","device":{"id":"bench-device","name":"Benchmark device","model":"synthetic"},"status":"$status","protocol":"DOH","reasons":[{"id":"blocklist","name":"Blocklist"}]}"""
       }
-      val pagination = if (secondPage) "" else ",\"meta\":{\"pagination\":{\"cursor\":\"$PAGE_TWO_CURSOR\"}}"
+      val nextIndex = firstIndex + 100
+      val nextCursor = if (nextIndex == 100) PAGE_TWO_CURSOR else "benchmark-offset-$nextIndex"
+      val pagination = if (nextIndex >= logRows) "" else ",\"meta\":{\"pagination\":{\"cursor\":\"$nextCursor\"}}"
       return """{"data":[$logs]$pagination}"""
     }
 

@@ -6,6 +6,7 @@ import android.util.Base64
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.ReportDrawn
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
@@ -28,6 +29,8 @@ import com.example.data.model.LogsTimeWindow
 import com.example.data.repository.NextDnsRepository
 import com.example.data.security.ApiKeyProtector
 import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.LocalNextDnsFaviconLoader
+import com.example.ui.screens.NextDnsFaviconLoader
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NextDnsViewModel
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +52,7 @@ import java.time.Instant
 
 /** Real Compose screens backed only by deterministic, local synthetic HTTPS data. */
 class BenchmarkFixtureActivity : ComponentActivity() {
+  private lateinit var fixtureFaviconLoader: NextDnsFaviconLoader
   @OptIn(ExperimentalComposeUiApi::class)
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -85,7 +89,9 @@ class BenchmarkFixtureActivity : ComponentActivity() {
                   .fillMaxSize()
                   .semantics { testTagsAsResourceId = true }
               ) {
-                HomeScreen(viewModel = viewModel)
+                CompositionLocalProvider(LocalNextDnsFaviconLoader provides fixtureFaviconLoader) {
+                  HomeScreen(viewModel = viewModel)
+                }
               }
             }
           }
@@ -128,6 +134,15 @@ class BenchmarkFixtureActivity : ComponentActivity() {
       .addConverterFactory(MoshiConverterFactory.create(NextDnsNetworkClient.moshi))
       .build()
       .create(NextDnsApiService::class.java)
+    fixtureFaviconLoader = NextDnsFaviconLoader(
+      client = fixtureClient,
+      urlsForDomain = { domain ->
+        // Deliberately local to this source set: production still rejects .invalid.
+        val key = domain.toByteArray(Charsets.UTF_8).joinToString("") { "%02x".format(it) }
+        listOf("3x", "2x", "1x").map { scale -> baseUrl.resolve("favicons/$key@$scale.png")!!.toString() }
+      },
+      allowedHost = baseUrl.host
+    )
     val diagnosticService = object : NextDnsTestService {
       override suspend fun testConnection(): Response<NextDnsTestResponse> = Response.success(
         NextDnsTestResponse(

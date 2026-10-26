@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
@@ -216,6 +217,10 @@ internal class NextDnsFaviconLoader(
 
 private val defaultNextDnsFaviconLoader = NextDnsFaviconLoader()
 
+// The benchmark variant supplies its own HTTPS-loopback loader. Production uses
+// the strict NextDNS resolver above, including its rejection of .invalid names.
+internal val LocalNextDnsFaviconLoader = staticCompositionLocalOf { defaultNextDnsFaviconLoader }
+
 @Composable
 fun FaviconImage(
   domain: String,
@@ -223,8 +228,9 @@ fun FaviconImage(
   fallbackLabel: String = domain
 ) {
   val appContext = LocalContext.current.applicationContext
-  val bitmap = produceState<Bitmap?>(initialValue = null, key1 = appContext, key2 = domain) {
-    value = defaultNextDnsFaviconLoader.load(domain)
+  val loader = LocalNextDnsFaviconLoader.current
+  val bitmap = produceState<Bitmap?>(initialValue = null, appContext, domain, loader) {
+    value = loader.load(domain)
   }.value
 
   if (bitmap == null) {
