@@ -66,6 +66,7 @@ fun WorldMapChart(
     }
   }
   val geometry = (mapState as? WorldMapLoadState.Ready)?.geometry
+  val renderCache = remember(geometry) { geometry?.let(::WorldMapRenderCache) }
   var selectedCountryCode by remember(countryData) { androidx.compose.runtime.mutableStateOf(countryData.firstOrNull()?.code) }
   val selectedMetric = countryData.firstOrNull { it.code == selectedCountryCode }
   val countryName = selectedCountryCode?.let(::localizedCountryName)
@@ -111,7 +112,7 @@ fun WorldMapChart(
       ) {
         val viewport = worldMapViewport(size.width, size.height)
         clipRect(viewport.left, viewport.top, viewport.right, viewport.bottom) {
-          geometry?.countries?.forEach { country ->
+          renderCache?.paths(viewport, 0.9.dp.toPx())?.forEach { country ->
             val metric = metricsByCode[country.code]
             val intensity = metric?.let {
               (ln(it.queries.coerceAtLeast(0L).toDouble() + 1.0) / ln(maxQueries.toDouble() + 1.0))
@@ -121,16 +122,13 @@ fun WorldMapChart(
             val fill = if (metric == null) noDataColor else mapColor.copy(alpha = 0.24f + intensity * 0.68f)
             val stroke = if (selected) mapColor else borderColor
 
-            country.polygons.forEach { polygon ->
-              for (seamShift in -1..1) {
-                val path = polygon.toPath(viewport, seamShift)
+            country.paths.forEach { path ->
                 drawPath(path, if (selected) mapColor else fill)
                 drawPath(
                   path,
                   stroke,
                   style = Stroke(width = if (selected) 1.8.dp.toPx() else 0.55.dp.toPx())
                 )
-              }
             }
           }
         }
@@ -262,6 +260,46 @@ internal data class WorldMapPoint(val x: Float, val y: Float)
 internal data class WorldMapPolygon(val rings: List<List<WorldMapPoint>>)
 internal data class WorldCountryOutline(val code: String, val polygons: List<WorldMapPolygon>)
 
+internal data class WorldCountryPaths(val code: String, val paths: List<Path>)
+
+internal class WorldMapRenderCache(private val geometry: WorldMapGeometry) {
+  private var cachedViewport: Rect? = null
+  private var cachedPadding = Float.NaN
+  private var cachedPaths = emptyList<WorldCountryPaths>()
+
+  // Only geometry/viewport/density affect these paths. Selection and live traffic
+  // change paint, so neither may invalidate this allocation-heavy projection.
+  fun paths(viewport: Rect, strokePadding: Float): List<WorldCountryPaths> {
+    if (viewport == cachedViewport && strokePadding == cachedPadding) return cachedPaths
+    cachedPaths = if (viewport.width <= 0f || viewport.height <= 0f) emptyList() else
+      geometry.countries.mapNotNull { country ->
+        val paths = country.polygons.flatMap { polygon ->
+          (-1..1).mapNotNull { shift ->
+            polygon.toPath(viewport, shift).takeIf { path ->
+              val bounds = path.getBounds()
+              bounds.right + strokePadding >= viewport.left &&
+                bounds.left - strokePadding <= viewport.right &&
+                bounds.bottom + strokePadding >= viewport.top &&
+                bounds.top - strokePadding <= viewport.bottom
+            }
+          }
+        }
+        paths.takeIf { it.isNotEmpty() }?.let { WorldCountryPaths(country.code, it) }
+      }
+    cachedViewport = viewport
+    cachedPadding = strokePadding
+    return cachedPaths
+  }
+}
+
+private object WorldMapGeometryCache {
+  private val lock = Any()
+  @Volatile private var loaded: WorldMapGeometry? = null
+  fun load(context: Context): WorldMapGeometry = loaded ?: synchronized(lock) {
+    loaded ?: WorldMapGeometry.load(context).also { loaded = it }
+  }
+}
+
 internal class WorldMapGeometry(val countries: List<WorldCountryOutline>) {
   fun countryAt(x: Float, y: Float): String? {
     if (x !in 0f..1f || y !in 0f..1f) return null
@@ -281,7 +319,7 @@ internal class WorldMapGeometry(val countries: List<WorldCountryOutline>) {
 }
 
 internal suspend fun loadWorldMapGeometry(context: Context): WorldMapGeometry =
-  withContext(Dispatchers.IO) { WorldMapGeometry.load(context) }
+  withContext(Dispatchers.IO) { WorldMapGeometryCache.load(context) }
 
 private sealed interface WorldMapLoadState {
   data object Loading : WorldMapLoadState
@@ -333,7 +371,8 @@ private fun WorldMapPolygon.toPath(viewport: Rect, seamShift: Int): Path = Path(
   rings.forEach { ring ->
     val first = ring.firstOrNull() ?: return@forEach
     moveTo(viewport.left + (first.x + seamShift) * viewport.width, viewport.top + first.y * viewport.height)
-    ring.drop(1).forEach { point ->
+    for (index in 1 until ring.size) {
+      val point = ring[index]
       lineTo(viewport.left + (point.x + seamShift) * viewport.width, viewport.top + point.y * viewport.height)
     }
     close()

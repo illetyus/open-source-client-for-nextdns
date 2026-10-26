@@ -23,6 +23,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -52,6 +54,40 @@ class NextDnsFaviconNetworkTest {
     assertNotNull(first)
     assertNotNull(second)
     assertEquals(1, server.requestCount)
+  }
+
+  @Test fun overlappingConsumersShareOneRequestAndBitmap() = runBlocking {
+    server.enqueue(imageResponse(PNG_BYTES).setBodyDelay(200, TimeUnit.MILLISECONDS))
+    val loader = loader()
+    val first = async(start = CoroutineStart.UNDISPATCHED) { loader.load("example.com") }
+    val second = async(start = CoroutineStart.UNDISPATCHED) { loader.load("EXAMPLE.COM.") }
+
+    val a = first.await()
+    val b = second.await()
+    assertNotNull(a)
+    assertTrue("Consumers should share the decoded bitmap", a === b)
+    assertEquals("Only one network request for overlapping consumers", 1, server.requestCount)
+  }
+
+  @Test fun cancellingOneConsumerDoesNotCancelAnother() = runBlocking {
+    server.enqueue(imageResponse(PNG_BYTES).setBodyDelay(200, TimeUnit.MILLISECONDS))
+    val loader = loader()
+    val first = async(start = CoroutineStart.UNDISPATCHED) { loader.load("example.com") }
+    val second = async(start = CoroutineStart.UNDISPATCHED) { loader.load("example.com") }
+    assertNotNull(server.takeRequest(2, TimeUnit.SECONDS))
+    first.cancelAndJoin()
+
+    assertNotNull("The remaining consumer still receives its image", second.await())
+    assertEquals(1, server.requestCount)
+  }
+
+  @Test fun failedSharedLoadCanBeRetried() = runBlocking {
+    server.enqueue(MockResponse().setResponseCode(503))
+    val loader = loader()
+    assertNull(loader.load("example.com"))
+    server.enqueue(imageResponse(PNG_BYTES))
+    assertNotNull(loader.load("example.com"))
+    assertEquals("Failures must not be negatively cached", 2, server.requestCount)
   }
 
   @Test fun highResolutionSourceIsRetainedForSharperDomainIcons() = runBlocking {
