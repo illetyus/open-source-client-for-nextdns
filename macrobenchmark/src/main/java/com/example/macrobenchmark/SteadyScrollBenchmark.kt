@@ -25,11 +25,14 @@ class SteadyScrollBenchmark {
   @Test fun denylist() = scroll("denylist")
   @Test fun allowlist() = scroll("allowlist")
   @Test fun analytics() = scroll("analytics")
+  @Test fun analyticsMap() = scroll("analytics", anchor = "world_country_map")
+  @Test fun analyticsSeries() = scroll("analytics", anchor = "analytics_series_line_chart")
+  @Test fun analyticsDevices() = scroll("analytics", anchor = "analytics_devices_card", deviceCount = 500)
   @Test fun logs200() = scroll("logs", logRows = 200)
   @Test fun logs1000() = scroll("logs", logRows = 1_000)
   @Test fun settings() = scroll("settings")
 
-  private fun scroll(screen: String, logRows: Int = 200) {
+  private fun scroll(screen: String, logRows: Int = 200, anchor: String? = null, deviceCount: Int = 1) {
     val args = InstrumentationRegistry.getArguments()
     val profileRequired = args.getString("scroll.profile") == "required"
     val compilation = if (profileRequired) {
@@ -39,7 +42,7 @@ class SteadyScrollBenchmark {
     } else {
       CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Disable, warmupIterations = 3)
     }
-    SyntheticNextDnsApi.start(logRows = logRows).use { fixture ->
+    SyntheticNextDnsApi.start(logRows = logRows, deviceCount = deviceCount).use { fixture ->
       try {
         rule.measureRepeated(
           packageName = SyntheticNextDnsApi.TARGET_PACKAGE,
@@ -67,6 +70,21 @@ class SteadyScrollBenchmark {
               }
             }
             check(reached) { "Could not prepare $screen outside the measurement window" }
+            if (screen == "analytics") {
+              check(device.wait(Until.hasObject(By.res("analytics_ready")), 30_000)) {
+                "Both analytics summary and series must finish before scrolling"
+              }
+            }
+            if (screen == "allowlist" || screen == "denylist") {
+              check(device.wait(Until.hasObject(By.text("rule-0.invalid")), 15_000)) {
+                "A populated list is required; empty placeholders cannot certify scrolling"
+              }
+            }
+            if (screen == "privacy") {
+              check(device.wait(Until.hasObject(By.text("Benchmark list 0")), 15_000)) {
+                "Profile privacy endpoints must populate active blocklists"
+              }
+            }
             if (screen == "logs") {
               check(device.wait(Until.hasObject(By.textContains("site-0.invalid")), 15_000))
               repeat(logRows / 100 - 1) { page ->
@@ -88,6 +106,20 @@ class SteadyScrollBenchmark {
                 }
               }
               check(device.hasObject(By.textContains("site-0.invalid")))
+            }
+            if (anchor != null) {
+              var found = device.findObject(By.res(anchor))
+              var swipes = 0
+              while (found == null && swipes++ < 80) {
+                device.swipe(device.displayWidth / 2, (device.displayHeight * .82).toInt(),
+                  device.displayWidth / 2, (device.displayHeight * .32).toInt(), 12)
+                found = device.wait(Until.findObject(By.res(anchor)), 100)
+              }
+              checkNotNull(found) { "Deep scroll target $anchor was not reached" }
+              if (anchor == "world_country_map") {
+                check(device.wait(Until.gone(By.res("world_map_loading")), 15_000))
+                check(!device.hasObject(By.res("world_map_unavailable")))
+              }
             }
             device.waitForIdle()
           }

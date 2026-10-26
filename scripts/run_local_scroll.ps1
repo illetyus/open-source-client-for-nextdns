@@ -7,7 +7,8 @@ param(
     [Parameter(Mandatory)][string]$TestApk,
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string]$SourceCommit,
     [ValidateSet('warmup', 'none', 'required')][string]$Compilation = 'warmup',
-    [string]$SdkRoot = $env:ANDROID_SDK_ROOT
+    [string]$SdkRoot = $env:ANDROID_SDK_ROOT,
+    [string]$PythonPath = 'python'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -70,11 +71,11 @@ $instrumentArgs += "$testPackage/androidx.test.runner.AndroidJUnitRunner"
 try {
     $testOutput = Invoke-Device $instrumentArgs
     $testOutput | Set-Content "$evidencePath/instrumentation.txt"
-    if (($testOutput -join "`n") -notmatch 'OK \(10 tests\)' -or
+    if (($testOutput -join "`n") -notmatch 'OK \(13 tests\)' -or
         ($testOutput -join "`n") -match 'FAILURES!!!|INSTRUMENTATION_FAILED') {
-        throw 'Scroll instrumentation did not complete all ten scenarios'
+        throw 'Scroll instrumentation did not complete all thirteen scenarios'
     }
-    $metadata.status = 'RECORDED_REQUIRES_TRACE_REVIEW'
+    $metadata.status = 'INSTRUMENTATION_FINISHED_CAPTURE_NOT_VALIDATED'
 } finally {
     Invoke-Device @('pull', $deviceOutput, "$evidencePath/raw") | Out-Null
     Invoke-Device @('shell', 'dumpsys', 'display') | Set-Content "$evidencePath/display-after.txt"
@@ -82,5 +83,9 @@ try {
     $metadata.finishedAt = (Get-Date).ToUniversalTime().ToString('o')
     $metadata | ConvertTo-Json | Set-Content -LiteralPath "$evidencePath/metadata.json" -Encoding utf8
 }
+& $PythonPath (Join-Path $PSScriptRoot 'verify_scroll_capture.py') $evidencePath
+if ($LASTEXITCODE -ne 0) { throw 'Missing or invalid raw benchmark capture; no recorded-success claim' }
+$metadata.status = 'RECORDED_REQUIRES_TRACE_REVIEW'
+$metadata | ConvertTo-Json | Set-Content -LiteralPath "$evidencePath/metadata.json" -Encoding utf8
 # Never turn panel mode or a successful instrumentation exit into a smoothness PASS.
 Write-Output "Local evidence: $evidencePath. Review actual frame cadence and paired traces before acceptance."
