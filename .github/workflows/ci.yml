@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main", "phase7-ci-quality", "phase8-compliance" ]
+    branches: [ "main", "phase7-ci-quality", "phase8-compliance", "test/espresso-screen-flows-2026-10-25" ]
 
 permissions:
   contents: read
@@ -145,7 +145,7 @@ jobs:
           retention-days: 7
 
       - name: Assemble Release (unsigned on CI)
-        run: ./gradlew :app:assembleRelease :app:bundleRelease :app:assembleDebugAndroidTest --no-daemon
+        run: ./gradlew :app:assembleRelease :app:bundleRelease :app:assembleDebugAndroidTest -PscrollMinify=true --no-daemon
         shell: bash
 
       - name: Release Dependency and Privacy SDK Gate
@@ -161,7 +161,7 @@ jobs:
         shell: bash
 
       - name: Reject test DEX types and validate against real test APK
-        run: python3 scripts/release_dex_audit.py
+        run: python3 scripts/release_dex_audit.py --mapping app/build/outputs/mapping/release/mapping.txt
         shell: bash
 
       - name: Upload coverage to Codecov
@@ -207,5 +207,6 @@ jobs:
             app/build/outputs/apk/release/*.apk
             macrobenchmark/build/outputs/apk/benchmark/*.apk
             app/build/outputs/bundle/release/*.aab
+            app/build/outputs/mapping/release/
           if-no-files-found: warn
           retention-days: 14

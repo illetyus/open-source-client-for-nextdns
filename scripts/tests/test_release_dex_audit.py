@@ -23,6 +23,13 @@ class RetiredFeatureDexAuditTest(unittest.TestCase):
         with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
             audit.audit_dex(b"synthetic dex", mapping="one.Name -> a.b:\ncom.example.BenchmarkFixtureActivity -> a.b:\n")
 
+    @patch.object(audit, "type_descriptors", return_value={b"La/b;"})
+    def test_inlined_fixture_origin_without_class_header_is_rejected(self, _):
+        mapping = ("com.example.MainActivity -> a.b:\n"
+            "    1:2:void com.example.BenchmarkFixtureActivity.onCreate(android.os.Bundle):3:4 -> c\n")
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex", mapping=mapping)
+
     @patch.object(audit, "type_descriptors", return_value={
         b"Lcom/example/data/diagnostics/LibreSpeedClient;"
     })

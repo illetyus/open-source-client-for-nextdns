@@ -66,7 +66,15 @@ def mapped_descriptors(mapping):
     """
     originals = set()
     for line in mapping.splitlines():
-        if not line or line.startswith('#') or line[0].isspace():
+        if not line or line.lstrip().startswith('#'):
+            continue
+        if line[0].isspace():
+            # Inlined methods may retain their qualified original owner only in
+            # a member entry, with no surviving original class header at all.
+            signature = line.split(' -> ', 1)[0]
+            method = re.search(r'([\w$]+(?:\.[\w$]+)+)\.[\w$<>]+\(', signature)
+            if method:
+                originals.add(('L' + method[1].replace('.', '/') + ';').encode('utf-8'))
             continue
         header = re.fullmatch(r'([^\s:]+) -> ([^\s:]+):', line)
         if not header:

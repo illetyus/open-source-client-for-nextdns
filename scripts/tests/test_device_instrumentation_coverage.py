@@ -27,7 +27,7 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         self.assertIn("sum(summaries) == REQUIRED_RUNTIME_TESTS", verifier)
         self.assertIn("statuses.count('1') == REQUIRED_RUNTIME_TESTS and statuses.count('0') == REQUIRED_RUNTIME_TESTS", verifier)
         self.assertIn("'tests':REQUIRED_RUNTIME_TESTS", verifier)
-        self.assertIn("REQUIRED_RUNTIME_TESTS = 17", helper)
+        self.assertIn("REQUIRED_RUNTIME_TESTS = 18", helper)
 
     def test_permission_flow_uses_the_platform_prompt(self):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')

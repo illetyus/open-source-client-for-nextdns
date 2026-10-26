@@ -16,7 +16,7 @@ keytool -genkeypair -keystore "$key" -storetype PKCS12 -alias upload -keyalg RSA
 "$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \
   --key-pass env:NEXTDNS_CI_AUDIT_PASSWORD --out "$out/release-runtime.apk" app/build/outputs/apk/release/app-release-unsigned.apk
 "$tools/apksigner" verify --verbose --print-certs "$out/release-runtime.apk" > "$out/signature.txt"
-./gradlew :app:assembleReleaseAndroidTest -PreleaseRuntimeAudit=true --no-daemon
+./gradlew :app:assembleReleaseAndroidTest -PreleaseRuntimeAudit=true -PscrollMinify=true --no-daemon
 test_apk=$(find app/build/outputs/apk/androidTest/release -name '*.apk' -type f)
 test -n "$test_apk"
 "$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \

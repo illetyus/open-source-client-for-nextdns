@@ -49,8 +49,12 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      // Compare optimizer-only APKs before changing the default review payload.
+      // Promotion requires the minified runtime and physical scroll gates.
+      isMinifyEnabled = providers.gradleProperty("scrollMinify").orNull == "true"
+      isShrinkResources = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      testProguardFiles("test-proguard-rules.pro")
       // Release packaging is tested unsigned when CI has no signing secrets.
       if (signingRequested) signingConfig = signingConfigs.getByName("release")
     }
