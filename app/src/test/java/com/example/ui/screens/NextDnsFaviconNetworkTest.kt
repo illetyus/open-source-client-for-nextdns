@@ -11,6 +11,7 @@ import okhttp3.EventListener
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -184,9 +185,9 @@ class NextDnsFaviconNetworkTest {
     val callCancelled = CountDownLatch(1)
     server.enqueue(
       MockResponse()
-        .setHeadersDelay(5, TimeUnit.SECONDS)
-        .setBody(Buffer().write(PNG_BYTES))
-        .addHeader("Content-Type", "image/png")
+        // Hold the socket until cancellation, rather than racing a five-second
+        // headers timer against MockWebServer's own five-second shutdown limit.
+        .setSocketPolicy(SocketPolicy.NO_RESPONSE)
     )
     val client = OkHttpClient.Builder()
       .eventListenerFactory {
