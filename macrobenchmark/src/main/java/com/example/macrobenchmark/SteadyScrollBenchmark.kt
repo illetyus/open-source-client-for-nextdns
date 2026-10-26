@@ -8,6 +8,7 @@ import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.Until
 import org.junit.Rule
 import org.junit.Test
@@ -57,11 +58,17 @@ class SteadyScrollBenchmark {
             var reached = screen == "setup"
             repeat(16) {
               if (!reached) {
-                device.findObject(By.res("tab_$screen"))?.let { tab ->
-                  if (tab.visibleBounds.width() > 0) {
-                    tab.click()
-                    reached = device.wait(Until.hasObject(By.res("screen_$screen")), 15_000)
+                try {
+                  device.findObject(By.res("tab_$screen"))?.let { tab ->
+                    if (tab.visibleBounds.width() > 0) {
+                      tab.click()
+                      reached = device.wait(Until.hasObject(By.res("screen_$screen")), 15_000)
+                    }
                   }
+                } catch (_: StaleObjectException) {
+                  // Match the existing authenticated journey: reacquire a node
+                  // replaced by Compose before choosing another tab/gesture.
+                  return@repeat
                 }
                 if (!reached) device.swipe(
                   (device.displayWidth * .84).toInt(), (device.displayHeight * .20).toInt(),
