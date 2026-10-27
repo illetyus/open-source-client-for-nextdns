@@ -1,0 +1,61 @@
+# Scroll candidate defect ledger
+
+This ledger belongs to PR #37 and the approved local scroll plan. None of these
+entries grants physical-device performance acceptance or public-release approval.
+
+## SCROLL-01: minified instrumentation desugaring collision
+
+**Reproduced; fix under verification.** CI run `40362123060`, head `977f336`,
+completed its build, JVM, Lint, DEX and dependency checks, then crashed before
+running the 18 required native tests. Both permission phases returned
+`INSTRUMENTATION_RESULT: shortMsg=Process crashed.`
+
+Logcat reports a `VerifyError`: `j$.time.ZoneOffset` is not assignable to
+`j$.time.ZoneId` in the instrumentation process. The actual signed artifact pair
+contains these different definitions:
+
+| Artifact | Class | Direct superclass |
+|---|---|---|
+| application | `j$.time.ZoneOffset` | `j$.time.ZoneId` |
+| instrumentation | `j$.time.ZoneOffset` | `j$.time.a0` |
+
+The independently optimized test copy shadows the application's definition in
+the shared class loader. The same pair also loses `Duration` to
+`TemporalAmount` assignability. This establishes a test packaging compatibility
+failure; a standalone application launch has not established a production crash.
+
+Candidate fix: give release-test L8 the application's generated keep rules and
+mapping, without disabling application R8 or changing production behavior.
+AGP 9.1.1's internal task API is version-specific and must be reconsidered on AGP
+upgrades. A new DEX-pair preflight checks inherited type assignability before
+creating the emulator. This does not validate every member ABI or replace native
+execution. The old signed pair is correctly rejected by the new preflight.
+
+Primary implementation reference: [Android build tools: L8 mapping
+handling](https://android.googlesource.com/platform/tools/base/+/98389f491c2db62d780ebc04e555a58d471fcb46%5E%21/).
+This source explains mapping output; it is not evidence that an upstream fix for
+this collision is present in the pinned version.
+
+## SCROLL-02: Unicode URL memo aliases rejected input
+
+**Regression added; fix pending its failing result.** The new URL memo used a
+lowercased raw hostname as its key, before applying the original IDN validator.
+IDNA2003 accepts `\u00df.example.org`, whereas it rejects
+`\u1e9e.example.org`; lowercasing makes their memo keys equal. Loading the valid
+input first can therefore give the rejected input an icon.
+
+The MockWebServer regression uses the real production URL validator, fetches one
+valid image, and requires the rejected input to return no image and issue no
+additional request. The planned fix retains the original trimmed input in the
+resolution memo. Validated canonical URLs still identify shared HTTP jobs and
+decoded images. The fixed HTTPS host and existing network guards remain in force.
+
+## SCROLL-03: repeated log timestamp parsing
+
+**Implemented; focused behavior checks passed.** Four characterization tests
+passed on the original parser. After extraction and row-level memoization of the
+parsed instant, five tests passed, including recomposition of the retained row
+after an English-to-Turkish language change. Age and localized units are still
+computed from the current clock and current language. Unknown text and existing
+timestamp formats retain their behavior. This is a source optimization candidate;
+its frame-time benefit has not been measured on the physical phone.

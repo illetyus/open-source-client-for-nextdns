@@ -22,6 +22,7 @@ test -n "$test_apk"
 "$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \
   --key-pass env:NEXTDNS_CI_AUDIT_PASSWORD --out "$out/release-runtime-test.apk" "$test_apk"
 unset NEXTDNS_CI_AUDIT_PASSWORD
+python3 scripts/verify_desugar_pair.py "$out/release-runtime.apk" "$out/release-runtime-test.apk"
 # Android SDK licenses are already accepted on the hosted Android build runner.
 "$sdk_manager" 'system-images;android-35;default;x86_64' 'emulator' 'platform-tools'
 # Use one explicit AVD location for both command-line tools and the emulator.
