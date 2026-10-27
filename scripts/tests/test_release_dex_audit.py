@@ -8,6 +8,21 @@ import release_dex_audit as audit
 
 
 class RetiredFeatureDexAuditTest(unittest.TestCase):
+    @patch.object(audit, "type_descriptors", return_value={b"Lcom/example/performance/BenchmarkFrameRecorder;"})
+    def test_new_benchmark_diagnostics_are_rejected_from_release(self, _):
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex")
+
+    @patch.object(audit, "type_descriptors", return_value={b"La/b;"})
+    def test_obfuscated_benchmark_icon_fixture_is_rejected(self, _):
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex", mapping="com.example.performance.BenchmarkIconMode -> a.b:\n")
+
+    @patch.object(audit, "type_descriptors", return_value={b"Landroidx/metrics/performance/JankStats;"})
+    def test_benchmark_only_jankstats_dependency_is_rejected_from_release(self, _):
+        with self.assertRaises(audit.TestCodeFound):
+            audit.audit_dex(b"synthetic dex")
+
     @patch.object(audit, "type_descriptors", return_value={b"[La/b;"})
     def test_obfuscated_fixture_reference_is_still_rejected(self, _):
         mapping = "com.example.BenchmarkFixtureActivity -> a.b:\n    1:1:void onCreate():1:1 -> c\n"

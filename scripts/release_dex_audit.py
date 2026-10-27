@@ -95,14 +95,21 @@ def audit_dex(data, mapping=None):
     retired_product_type_prefixes = (
         b'Lcom/example/data/diagnostics/LibreSpeedClient',
         b'Lcom/example/ui/screens/SpeedTestDialog',
+    )
+    benchmark_fixture_prefixes = (
         b'Lcom/example/BenchmarkFixtureActivity',
+        b'Lcom/example/performance/Benchmark',
     )
     for descriptor in sorted(descriptors):
-        if descriptor.lstrip(b'[').startswith(prefixes):
+        normalized = descriptor.lstrip(b'[')
+        if normalized.startswith(prefixes):
             raise TestCodeFound('Forbidden test type: ' + descriptor.decode('ascii', errors='replace'))
-        if descriptor.lstrip(b'[').startswith(retired_product_type_prefixes):
-            reason = 'Benchmark fixture type' if descriptor.startswith(b'Lcom/example/BenchmarkFixtureActivity') else 'Retired product type'
-            raise TestCodeFound(reason + ': ' + descriptor.decode('ascii'))
+        if normalized.startswith(benchmark_fixture_prefixes):
+            raise TestCodeFound('Benchmark fixture type: ' + descriptor.decode('ascii'))
+        if normalized.startswith(b'Landroidx/metrics/performance/'):
+            raise TestCodeFound('Benchmark-only diagnostic SDK: ' + descriptor.decode('ascii'))
+        if normalized.startswith(retired_product_type_prefixes):
+            raise TestCodeFound('Retired product type: ' + descriptor.decode('ascii'))
     for marker in (b'$jacoco', b'RELEASE_AUDIT_SYNTHETIC_CANARY_20261009',
                    b'garbage.php', b'empty.php'):
         if marker in data:
