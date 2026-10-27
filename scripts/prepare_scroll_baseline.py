@@ -36,10 +36,22 @@ def prepare(root, destination, baseline_ref):
                 raise ValueError('Archive path escaped the baseline source folder')
         files.extractall(source)
 
-    harness = ('macrobenchmark/src/main/java/com/example/macrobenchmark/SteadyScrollBenchmark.kt',
-        'macrobenchmark/src/main/java/com/example/macrobenchmark/SyntheticNextDnsApi.kt')
+    harness = tuple(str(path.relative_to(root)).replace('\\', '/') for path in sorted(
+        (root / 'macrobenchmark/src/main').rglob('*.kt'))) + (
+        'app/src/benchmark/java/com/example/BenchmarkFixtureActivity.kt',
+        'app/src/benchmark/java/com/example/performance/BenchmarkFrameSamples.kt',
+        'app/src/benchmark/java/com/example/performance/BenchmarkFrameRecorder.kt')
     for relative in harness:
+        (source / relative).parent.mkdir(parents=True, exist_ok=True)
         (source / relative).write_bytes((root / relative).read_bytes())
+
+    # Diagnostic-only dependency, identical on both sides; never copy candidate
+    # production build settings or main implementation into the baseline.
+    build = source / 'app/build.gradle.kts'
+    dependency = 'androidx.metrics:metrics-performance:1.0.0'
+    build.write_text(build.read_text(encoding='utf-8') +
+        '\ndependencies { add("benchmarkImplementation", "' + dependency + '") }\n',
+        encoding='utf-8', newline='\n')
 
     # The exported commit already contains the strict, injected favicon provider.
     # Verify it, rather than accidentally copying the candidate's shared-flight loader.
@@ -75,6 +87,7 @@ def prepare(root, destination, baseline_ref):
         raise ValueError('Production baseline changed outside the measurement-only analytics markers')
     manifest = {'baselineSourceCommit': commit, 'sourceArchiveSha256': digest(archive),
         'measurementHarnessSha256': {name: digest(source / name) for name in harness},
+        'benchmarkDependencyOverlaySha256': digest(build),
         'mainMeasurementOnlyOverlay': {relative: digest(screen)},
         'originalMainSourceSha256': original_main,
         'scope': 'Unoptimized source plus two readiness/deep-target test tags and current synthetic measurement harness; no device acceptance.'}

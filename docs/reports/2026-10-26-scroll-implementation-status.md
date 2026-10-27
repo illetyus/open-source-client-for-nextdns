@@ -2,6 +2,12 @@
 
 26 Ekim 2026. Dal: `perf/local-scroll-smoothness-2026-10-26`. Başlangıç kaynak commit'i: `e395981af203e1b44adcf9b69ef05dfa4c7d71f7`. PR #36 bağımlılığı korunmaktadır.
 
+27 Ekim güncellemesi: [hata defteri](2026-10-27-scroll-defect-ledger.md) ve
+[isteğe bağlı kare tanılaması](2026-10-27-benchmark-frame-diagnostics.md) daha yeni
+kanıtları içerir. Aşağıdaki 26 Ekim sayıları tarihsel kontrol sonuçlarıdır. CI459
+çalışma zamanı açılışında çöktü; CI460 yeni APK-pair kontrolünde durdu. Native
+uyumluluk ve fiziksel akıcılık kabulü açık kalmaktadır.
+
 **Akıcılık kabulü henüz verilmedi.** Aşağıdaki sonuçlar kaynak davranışı, yerel testler ve paket bütünlüğünü kanıtlar. Fiziksel Galaxy S20 FE üzerinde 60/120 Hz karşılaştırması yapılmadı; ADB listesi boş ve Windows'ta Samsung/Android USB aygıtı görülmedi.
 
 ## Uygulanan kaynak adayları

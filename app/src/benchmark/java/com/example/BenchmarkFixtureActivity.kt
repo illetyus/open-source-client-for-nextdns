@@ -52,7 +52,29 @@ import java.time.Instant
 
 /** Real Compose screens backed only by deterministic, local synthetic HTTPS data. */
 class BenchmarkFixtureActivity : ComponentActivity() {
+  private var frameRecorder: com.example.performance.BenchmarkFrameRecorder? = null
   private lateinit var fixtureFaviconLoader: NextDnsFaviconLoader
+
+  override fun onResume() {
+    super.onResume()
+    if (!intent.getBooleanExtra("benchmark_diagnostics", false)) return
+    val capture = intent.getStringExtra("benchmark_capture") ?: return
+    val scenario = intent.getStringExtra("benchmark_scenario") ?: return
+    val safeLabel = Regex("[A-Za-z0-9_-]{1,96}")
+    require(safeLabel.matches(capture) && safeLabel.matches(scenario))
+    window.decorView.post {
+      if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) && frameRecorder == null) {
+        frameRecorder = com.example.performance.BenchmarkFrameRecorder(this, capture, scenario)
+      }
+    }
+  }
+
+  override fun onStop() {
+    frameRecorder?.stopAndWrite()
+    frameRecorder = null
+    super.onStop()
+  }
+
   @OptIn(ExperimentalComposeUiApi::class)
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)

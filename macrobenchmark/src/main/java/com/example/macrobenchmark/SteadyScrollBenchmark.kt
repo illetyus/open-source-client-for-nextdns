@@ -35,6 +35,9 @@ class SteadyScrollBenchmark {
 
   private fun scroll(screen: String, logRows: Int = 200, anchor: String? = null, deviceCount: Int = 1) {
     val args = InstrumentationRegistry.getArguments()
+    val diagnostics = args.getString("scroll.diagnostics") == "true"
+    val capture = args.getString("scroll.captureId") ?: "manual"
+    val scenario = "$screen-${anchor ?: "top"}-$logRows-$deviceCount"
     val profileRequired = args.getString("scroll.profile") == "required"
     val compilation = if (profileRequired) {
       CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require, warmupIterations = 3)
@@ -52,7 +55,13 @@ class SteadyScrollBenchmark {
           startupMode = StartupMode.WARM,
           iterations = 10,
           setupBlock = {
-            startActivityAndWait(fixture.intentForFixture())
+            startActivityAndWait(fixture.intentForFixture().apply {
+              if (diagnostics) {
+                putExtra("benchmark_diagnostics", true)
+                putExtra("benchmark_capture", capture)
+                putExtra("benchmark_scenario", scenario)
+              }
+            })
             check(device.wait(Until.hasObject(By.res("tab_setup")), 15_000))
             // Each retry reacquires Compose nodes; no retained UiObject2 across transitions.
             var reached = screen == "setup"
@@ -146,8 +155,29 @@ class SteadyScrollBenchmark {
           }
         }
       } finally {
-        androidx.test.uiautomator.UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-          .executeShellCommand("am force-stop ${SyntheticNextDnsApi.TARGET_PACKAGE}")
+        val device = androidx.test.uiautomator.UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        try {
+          if (diagnostics) {
+            // All file waiting is after measureRepeated, never inside motion.
+            device.pressHome()
+            val directory = "/sdcard/Android/media/${SyntheticNextDnsApi.TARGET_PACKAGE}/scroll-diagnostics/$capture/$scenario"
+            check(Regex("[A-Za-z0-9_-]{1,96}").matches(capture))
+            val deadline = android.os.SystemClock.uptimeMillis() + 15_000L
+            var complete = false
+            while (!complete && android.os.SystemClock.uptimeMillis() < deadline) {
+              val files = device.executeShellCommand("ls $directory")
+                .lineSequence().map { it.trim() }.toList()
+              // Diagnostic activity captures can include compilation warmups;
+              // the core Perfetto gate separately validates measured iterations.
+              // A .tmp file is never treated as committed.
+              complete = files.count { it.endsWith(".json") } >= 10 && files.none { it.endsWith(".tmp") }
+              if (!complete) android.os.SystemClock.sleep(100)
+            }
+            check(complete) { "Missing committed diagnostic frame files for $scenario" }
+          }
+        } finally {
+          device.executeShellCommand("am force-stop ${SyntheticNextDnsApi.TARGET_PACKAGE}")
+        }
       }
     }
   }

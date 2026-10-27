@@ -7,6 +7,7 @@ param(
     [Parameter(Mandatory)][string]$TestApk,
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string]$SourceCommit,
     [ValidateSet('warmup', 'none', 'required')][string]$Compilation = 'warmup',
+    [switch]$Diagnostics,
     [string]$SdkRoot = $env:ANDROID_SDK_ROOT,
     [string]$PythonPath = 'python'
 )
@@ -52,6 +53,8 @@ $metadata = [ordered]@{
     appSha256 = (Get-FileHash -LiteralPath $AppApk -Algorithm SHA256).Hash.ToLowerInvariant()
     testSha256 = (Get-FileHash -LiteralPath $TestApk -Algorithm SHA256).Hash.ToLowerInvariant()
     compilation = $Compilation; startedAt = (Get-Date).ToUniversalTime().ToString('o')
+    diagnostics = [bool]$Diagnostics
+    diagnosticsScope = 'Optional activity captures include preparation and warmups; not presentation acceptance'
     status = 'COLLECTING'; performanceAccepted = $false
 }
 $metadata | ConvertTo-Json | Set-Content -LiteralPath "$evidencePath/metadata.json" -Encoding utf8
@@ -67,6 +70,7 @@ $instrumentArgs = @('shell', 'am', 'instrument', '-w', '-r',
     '-e', 'androidx.benchmark.fullTracing.enable', 'true')
 if ($Compilation -eq 'required') { $instrumentArgs += @('-e', 'scroll.profile', 'required') }
 if ($Compilation -eq 'none') { $instrumentArgs += @('-e', 'scroll.compilation', 'none') }
+if ($Diagnostics) { $instrumentArgs += @('-e', 'scroll.diagnostics', 'true', '-e', 'scroll.captureId', $stamp) }
 $instrumentArgs += "$testPackage/androidx.test.runner.AndroidJUnitRunner"
 try {
     $testOutput = Invoke-Device $instrumentArgs
@@ -78,6 +82,9 @@ try {
     $metadata.status = 'INSTRUMENTATION_FINISHED_CAPTURE_NOT_VALIDATED'
 } finally {
     Invoke-Device @('pull', $deviceOutput, "$evidencePath/raw") | Out-Null
+    if ($Diagnostics) {
+        Invoke-Device @('pull', "/sdcard/Android/media/$targetPackage/scroll-diagnostics/$stamp", "$evidencePath/diagnostics") | Out-Null
+    }
     Invoke-Device @('shell', 'dumpsys', 'display') | Set-Content "$evidencePath/display-after.txt"
     Invoke-Device @('shell', 'dumpsys', 'thermalservice') | Set-Content "$evidencePath/thermal-after.txt"
     $metadata.finishedAt = (Get-Date).ToUniversalTime().ToString('o')

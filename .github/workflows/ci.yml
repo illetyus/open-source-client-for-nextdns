@@ -127,8 +127,22 @@ jobs:
         run: ./gradlew :app:assembleDebug --no-daemon
         shell: bash
 
-      - name: Compile release-like Macrobenchmark harness
-        run: ./gradlew :app:assembleBenchmark :macrobenchmark:assembleBenchmark --no-daemon
+      - name: Compile same-source R8-off benchmark and measurement harness
+        run: |
+          ./gradlew :app:assembleBenchmark :macrobenchmark:assembleBenchmark --no-daemon
+          mkdir -p build/compliance/scroll
+          cp app/build/outputs/apk/benchmark/app-benchmark.apk build/compliance/scroll/candidate-r8-off.apk
+        shell: bash
+
+      - name: Build same-source optimized benchmark for runtime smoke
+        run: |
+          ./gradlew :app:assembleBenchmark -PscrollMinify=true --no-daemon
+          cp app/build/outputs/apk/benchmark/app-benchmark.apk build/compliance/scroll/candidate-r8-on.apk
+          sha256sum build/compliance/scroll/candidate-r8-off.apk build/compliance/scroll/candidate-r8-on.apk > build/compliance/scroll/SHA256SUMS
+        shell: bash
+
+      - name: Benchmark-only diagnostic unit tests
+        run: ./gradlew :app:testBenchmarkUnitTest --tests '*BenchmarkFrameSamplesTest' -PbenchmarkUnitTests=true --no-daemon
         shell: bash
 
       - name: Upload UI branding screenshots
@@ -140,6 +154,7 @@ jobs:
             app/build/outputs/roborazzi/branding/*.png
             app/build/outputs/roborazzi/localization/*.png
             app/build/test-results/testDebugUnitTest/*.xml
+            app/build/test-results/testBenchmarkUnitTest/*.xml
             app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
           if-no-files-found: warn
           retention-days: 7
@@ -208,5 +223,6 @@ jobs:
             macrobenchmark/build/outputs/apk/benchmark/*.apk
             app/build/outputs/bundle/release/*.aab
             app/build/outputs/mapping/release/
+            app/build/outputs/mapping/benchmark/
           if-no-files-found: warn
           retention-days: 14

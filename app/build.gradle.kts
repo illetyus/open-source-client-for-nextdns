@@ -86,6 +86,12 @@ android {
   if (providers.gradleProperty("releaseRuntimeAudit").orNull == "true") {
     testBuildType = "release"
   }
+  if (providers.gradleProperty("benchmarkUnitTests").orNull == "true") {
+    require(providers.gradleProperty("releaseRuntimeAudit").orNull != "true") {
+      "Benchmark unit checks and release instrumentation use separate Gradle invocations"
+    }
+    testBuildType = "benchmark"
+  }
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
@@ -204,5 +210,6 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   add("benchmarkImplementation", libs.androidx.compose.runtime.tracing)
   add("benchmarkImplementation", "com.squareup.okhttp3:okhttp-tls:4.10.0")
+  add("benchmarkImplementation", "androidx.metrics:metrics-performance:1.0.0")
   "ksp"(libs.moshi.kotlin.codegen)
 }
