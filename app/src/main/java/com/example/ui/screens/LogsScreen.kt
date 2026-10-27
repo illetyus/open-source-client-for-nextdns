@@ -56,11 +56,9 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.Locale
 
-fun formatRelativeTime(timestampStr: String): String {
+private fun parseLogEpochMillis(timestampStr: String): Long? =
   try {
-    if (timestampStr.isBlank()) return AppStrings.get(R.string.ui_68af8fa298)
-    if (timestampStr.endsWith(AppStrings.get(R.string.ui_16ef24fc3b)) || timestampStr == AppStrings.get(R.string.ui_68af8fa298)) return timestampStr
-    val time = if (timestampStr.contains("T")) {
+    if (timestampStr.contains("T")) {
       try {
         Instant.parse(timestampStr).toEpochMilli()
       } catch (_: Exception) {
@@ -76,9 +74,21 @@ fun formatRelativeTime(timestampStr: String): String {
       if (d != null) {
         if (d < 100000000000L) (d * 1000).toLong() else d.toLong()
       } else {
-        return timestampStr
+        null
       }
     }
+  } catch (_: Exception) {
+    null
+  }
+
+fun formatRelativeTime(timestampStr: String): String =
+  formatRelativeTime(timestampStr, parseLogEpochMillis(timestampStr))
+
+private fun formatRelativeTime(timestampStr: String, parsedTime: Long?): String {
+  try {
+    if (timestampStr.isBlank()) return AppStrings.get(R.string.ui_68af8fa298)
+    if (timestampStr.endsWith(AppStrings.get(R.string.ui_16ef24fc3b)) || timestampStr == AppStrings.get(R.string.ui_68af8fa298)) return timestampStr
+    val time = parsedTime ?: return timestampStr
     val now = System.currentTimeMillis()
     val diffSeconds = (now - time) / 1000
     return when {
@@ -761,6 +771,9 @@ internal fun LogItemRow(
   modifier: Modifier = Modifier
 ) {
   val context = LocalContext.current
+  // The instant is immutable for this wire value. Age and translated units are
+  // still resolved on every render, including a language change on the same row.
+  val timestampEpochMillis = remember(log.timestamp) { parseLogEpochMillis(log.timestamp) }
   val isBlocked = log.blocked
   val statusColor = when (log.status) {
     "blocked", "error" -> MaterialTheme.colorScheme.error
@@ -875,7 +888,7 @@ internal fun LogItemRow(
         )
 
         Text(
-          text = formatRelativeTime(log.timestamp),
+          text = formatRelativeTime(log.timestamp, timestampEpochMillis),
           color = MaterialTheme.colorScheme.outline,
           fontSize = 10.sp
         )
