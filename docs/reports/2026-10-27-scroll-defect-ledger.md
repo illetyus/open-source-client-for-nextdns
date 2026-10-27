@@ -24,8 +24,22 @@ the shared class loader. The same pair also loses `Duration` to
 `TemporalAmount` assignability. This establishes a test packaging compatibility
 failure; a standalone application launch has not established a production crash.
 
-Candidate fix: give release-test L8 the application's generated keep rules and
-mapping, without disabling application R8 or changing production behavior.
+The first candidate gave release-test L8 the application's generated keep rules
+and mapping. CI `40485271181` built both APKs but the preflight correctly rejected
+another divergence: `j$.time.a` lost `j$.time.b` assignability. The application's
+mapping identifies `Clock$SystemClock -> a` and `Clock -> b`. Sharing mapping
+alone is insufficient for two independently optimized closed-world libraries.
+
+The second candidate retains stable backport types in both application and test
+L8 (`-dontobfuscate`, `-dontoptimize`), the same settings AGP 9.1.1 uses for its
+non-minified backport library. The test copy additionally retains the app's
+generated backport API keep rules. Application R8 remains enabled and optimized;
+backport dead-code removal remains enabled. This trades potential backport-only
+optimization/size gains for a consistent shared runtime ABI; the tradeoff still
+needs native execution and physical performance comparison. The local real APK
+pair built successfully in 26 minutes 3 seconds; the unchanged preflight passed
+for 187 shared classes. This is type-hierarchy evidence, not a member ABI or
+native runtime PASS.
 AGP 9.1.1's internal task API is version-specific and must be reconsidered on AGP
 upgrades. A new DEX-pair preflight checks inherited type assignability before
 creating the emulator. This does not validate every member ABI or replace native
@@ -34,7 +48,8 @@ execution. The old signed pair is correctly rejected by the new preflight.
 Primary implementation reference: [Android build tools: L8 mapping
 handling](https://android.googlesource.com/platform/tools/base/+/98389f491c2db62d780ebc04e555a58d471fcb46%5E%21/).
 This source explains mapping output; it is not evidence that an upstream fix for
-this collision is present in the pinned version.
+this collision is present in the pinned version. Neither failed CI run is a
+native compatibility PASS; the second stopped before emulator creation.
 
 ## SCROLL-02: Unicode URL memo aliases rejected input
 

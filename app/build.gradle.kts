@@ -104,21 +104,25 @@ tasks.withType<Test>().configureEach {
 // AGP 9.1.1 runs L8 independently for the app and its instrumentation APK.
 // Instrumentation loads its classes first: a separately renamed j$.time.ZoneId
 // can therefore shadow the app's ZoneOffset with an incompatible superclass.
-// Keep the app's desugared API and naming in the test copy as well. This changes
-// only the release test compilation; the optimized application is untouched.
+// Separate closed-world L8 optimizations cannot safely share a class loader:
+// applymapping alone still permits different hierarchies (e.g. Clock/SystemClock).
+// Retain stable backport definitions, matching AGP's non-minified L8 settings,
+// and keep the app's desugared API in the test copy. App R8 remains optimized;
+// only backport-library optimization/renaming is disabled, not dead-code removal.
 // This version-pinned internal-task workaround must be reviewed with AGP upgrades.
 tasks.withType<com.android.build.gradle.internal.tasks.L8DexDesugarLibTask>().configureEach {
-  if (name == "l8DexDesugarLibReleaseAndroidTest" &&
-    providers.gradleProperty("scrollMinify").orNull == "true") {
+  val stableBackportTasks = setOf("l8DexDesugarLibRelease", "l8DexDesugarLibBenchmark",
+    "l8DexDesugarLibReleaseAndroidTest", "l8DexDesugarLibBenchmarkAndroidTest")
+  if (name in stableBackportTasks && providers.gradleProperty("scrollMinify").orNull == "true") {
+    keepRulesConfigurations.addAll("-dontobfuscate", "-dontoptimize")
+  }
+  if (name == "l8DexDesugarLibReleaseAndroidTest" && providers.gradleProperty("scrollMinify").orNull == "true") {
     val appL8 = tasks.named<com.android.build.gradle.internal.tasks.L8DexDesugarLibTask>(
       "l8DexDesugarLibRelease"
     )
     dependsOn(appL8)
     keepRulesConfigurations.add(appL8.flatMap { it.keepRules }.map {
       "-include \"${it.asFile.invariantSeparatorsPath}\""
-    })
-    keepRulesConfigurations.add(appL8.flatMap { it.outputMappingFile }.map {
-      "-applymapping \"${it.asFile.invariantSeparatorsPath}\""
     })
   }
 }
