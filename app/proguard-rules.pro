@@ -2,6 +2,11 @@
 # Preserve names, constructors and Kotlin metadata; do not keep the UI or repository.
 -keepattributes Signature,InnerClasses,EnclosingMethod,RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault
 
+# AndroidJUnitRunner calls this shared dependency after app shrinking. Its
+# provided test classpath does not package a second copy, so the public API must
+# survive in the real release payload. Keep this one entry point, not the SDK.
+-keep class androidx.tracing.Trace { public *; }
+
 # Optional JVM-only TLS providers, guarded by OkHttp Platform availability checks.
 # Narrower than Square's official consumer rules in parent-4.12.0/okhttp/.../okhttp3.pro.
 # Android's built-in TLS provider and certificate verification are unchanged.
