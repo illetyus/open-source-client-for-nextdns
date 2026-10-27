@@ -57,6 +57,28 @@ class NextDnsFaviconNetworkTest {
     assertEquals(1, server.requestCount)
   }
 
+  @Test fun cachedUnicodeHostnameDoesNotBypassOriginalInputValidation() = runBlocking {
+    // IDNA2003 accepts sharp s, but rejects capital sharp s. Lowercasing the
+    // memo key first would let the rejected input reuse an accepted resolution.
+    val accepted = "\u00df.example.org"
+    val rejected = "\u1e9e.example.org"
+    assertTrue(nextDnsFaviconUrls(accepted).isNotEmpty())
+    assertTrue(nextDnsFaviconUrls(rejected).isEmpty())
+    server.enqueue(imageResponse(PNG_BYTES))
+    val loader = NextDnsFaviconLoader(
+      urlsForDomain = { input ->
+        if (nextDnsFaviconUrls(input).isEmpty()) emptyList()
+        else listOf(server.url("/favicon").toString())
+      },
+      allowedHost = server.hostName,
+      allowHttpForTests = true
+    )
+
+    assertNotNull(loader.load(accepted))
+    assertNull("An earlier cache entry must not turn rejected input into an icon", loader.load(rejected))
+    assertEquals(1, server.requestCount)
+  }
+
   @Test fun overlappingConsumersShareOneRequestAndBitmap() = runBlocking {
     server.enqueue(imageResponse(PNG_BYTES).setBodyDelay(200, TimeUnit.MILLISECONDS))
     val loader = loader()

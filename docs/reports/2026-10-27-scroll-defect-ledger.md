@@ -38,7 +38,7 @@ this collision is present in the pinned version.
 
 ## SCROLL-02: Unicode URL memo aliases rejected input
 
-**Regression added; fix pending its failing result.** The new URL memo used a
+**Fixed; focused regressions passed.** The new URL memo used a
 lowercased raw hostname as its key, before applying the original IDN validator.
 IDNA2003 accepts `\u00df.example.org`, whereas it rejects
 `\u1e9e.example.org`; lowercasing makes their memo keys equal. Loading the valid
@@ -46,9 +46,13 @@ input first can therefore give the rejected input an icon.
 
 The MockWebServer regression uses the real production URL validator, fetches one
 valid image, and requires the rejected input to return no image and issue no
-additional request. The planned fix retains the original trimmed input in the
+additional request. Before the fix it failed because the rejected input returned
+a `Bitmap` (one test, 12 minutes 22 seconds). The fix retains the original trimmed input in the
 resolution memo. Validated canonical URLs still identify shared HTTP jobs and
 decoded images. The fixed HTTPS host and existing network guards remain in force.
+The complete favicon network/URL/domain-mapping suites plus timestamp tests passed:
+28 tests, zero failures/errors/skips, 8 minutes 20 seconds. Shared requests,
+individual/last-consumer cancellation, retry and image guards remain covered.
 
 ## SCROLL-03: repeated log timestamp parsing
 

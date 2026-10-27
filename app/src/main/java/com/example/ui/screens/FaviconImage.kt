@@ -117,7 +117,9 @@ internal class NextDnsFaviconLoader(
 
   suspend fun load(domain: String): Bitmap? = withContext(Dispatchers.IO) {
     // IDN validation and URL encoding need not run on a scrolling row's Main thread.
-    val domainKey = domain.trim().lowercase(Locale.ROOT)
+    // Validate each distinct raw IDN input before canonical URL/image sharing.
+    // Lowercasing here could alias an IDNA-rejected hostname to a cached one.
+    val domainKey = domain.trim()
     val urls = resolvedUrls.get(domainKey) ?: urlsForDomain(domain).distinct().take(3).also {
       if (it.isNotEmpty()) resolvedUrls.put(domainKey, it)
     }
