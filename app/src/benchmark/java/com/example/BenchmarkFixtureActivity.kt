@@ -10,6 +10,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
@@ -54,6 +55,7 @@ import java.time.Instant
 class BenchmarkFixtureActivity : ComponentActivity() {
   private var frameRecorder: com.example.performance.BenchmarkFrameRecorder? = null
   private lateinit var fixtureFaviconLoader: NextDnsFaviconLoader
+  private var fixtureIconMode = com.example.performance.BenchmarkIconMode.UNIQUE
 
   override fun onResume() {
     super.onResume()
@@ -109,6 +111,7 @@ class BenchmarkFixtureActivity : ComponentActivity() {
               Box(
                 modifier = Modifier
                   .fillMaxSize()
+                  .testTag("fixture_icon_mode_${fixtureIconMode.argument}")
                   .semantics { testTagsAsResourceId = true }
               ) {
                 CompositionLocalProvider(LocalNextDnsFaviconLoader provides fixtureFaviconLoader) {
@@ -156,15 +159,23 @@ class BenchmarkFixtureActivity : ComponentActivity() {
       .addConverterFactory(MoshiConverterFactory.create(NextDnsNetworkClient.moshi))
       .build()
       .create(NextDnsApiService::class.java)
+    val iconMode = com.example.performance.BenchmarkIconMode.fromArgument(
+      intent.getStringExtra("benchmark_icon_mode")
+    )
+    fixtureIconMode = iconMode
     fixtureFaviconLoader = NextDnsFaviconLoader(
       client = fixtureClient,
       urlsForDomain = { domain ->
         // Deliberately local to this source set: production still rejects .invalid.
-        val key = domain.toByteArray(Charsets.UTF_8).joinToString("") { "%02x".format(it) }
-        listOf("3x", "2x", "1x").map { scale -> baseUrl.resolve("favicons/$key@$scale.png")!!.toString() }
+        iconMode.pathsFor(domain).map { path -> checkNotNull(baseUrl.resolve(path)).toString() }
       },
       allowedHost = baseUrl.host
     )
+    if (iconMode.preload) {
+      checkNotNull(fixtureFaviconLoader.load("benchmark-prime.invalid")) {
+        "Warm repeated-icon workload requires a decoded icon before UI preparation"
+      }
+    }
     val diagnosticService = object : NextDnsTestService {
       override suspend fun testConnection(): Response<NextDnsTestResponse> = Response.success(
         NextDnsTestResponse(

@@ -209,6 +209,8 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
   add("benchmarkImplementation", libs.androidx.compose.runtime.tracing)
+  // Match the binary shipped by Macrobenchmark; runtime-tracing alone selects 1.0.0.
+  add("benchmarkImplementation", libs.androidx.tracing.perfetto)
   add("benchmarkImplementation", "com.squareup.okhttp3:okhttp-tls:4.10.0")
   add("benchmarkImplementation", "androidx.metrics:metrics-performance:1.0.0")
   "ksp"(libs.moshi.kotlin.codegen)

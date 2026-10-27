@@ -37,7 +37,9 @@ class SteadyScrollBenchmark {
     val args = InstrumentationRegistry.getArguments()
     val diagnostics = args.getString("scroll.diagnostics") == "true"
     val capture = args.getString("scroll.captureId") ?: "manual"
-    val scenario = "$screen-${anchor ?: "top"}-$logRows-$deviceCount"
+    val icons = args.getString("scroll.icons") ?: "unique"
+    require(icons in setOf("unique", "repeated", "warm-repeated"))
+    val scenario = "$screen-${anchor ?: "top"}-$logRows-$deviceCount-$icons"
     val profileRequired = args.getString("scroll.profile") == "required"
     val compilation = if (profileRequired) {
       CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require, warmupIterations = 3)
@@ -56,12 +58,16 @@ class SteadyScrollBenchmark {
           iterations = 10,
           setupBlock = {
             startActivityAndWait(fixture.intentForFixture().apply {
+              putExtra("benchmark_icon_mode", icons)
               if (diagnostics) {
                 putExtra("benchmark_diagnostics", true)
                 putExtra("benchmark_capture", capture)
                 putExtra("benchmark_scenario", scenario)
               }
             })
+            check(device.wait(Until.hasObject(By.res("fixture_icon_mode_$icons")), 15_000)) {
+              "The fixture must acknowledge the requested icon workload before measurement"
+            }
             check(device.wait(Until.hasObject(By.res("tab_setup")), 15_000))
             // Each retry reacquires Compose nodes; no retained UiObject2 across transitions.
             var reached = screen == "setup"

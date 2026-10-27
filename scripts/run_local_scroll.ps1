@@ -8,6 +8,7 @@ param(
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string]$SourceCommit,
     [ValidateSet('warmup', 'none', 'required')][string]$Compilation = 'warmup',
     [switch]$Diagnostics,
+    [ValidateSet('unique', 'repeated', 'warm-repeated')][string]$IconWorkload = 'unique',
     [string]$SdkRoot = $env:ANDROID_SDK_ROOT,
     [string]$PythonPath = 'python'
 )
@@ -38,6 +39,8 @@ $TestApk = (Resolve-Path -LiteralPath $TestApk).Path
 if ((Get-ApkPackage $AppApk) -ne $targetPackage) { throw 'Only the isolated .benchmark APK is accepted' }
 $testPackage = Get-ApkPackage $TestApk
 if ($testPackage -ne 'com.example.macrobenchmark') { throw 'Unexpected instrumentation APK package' }
+& $PythonPath (Join-Path $PSScriptRoot 'verify_perfetto_binary.py') $AppApk $TestApk
+if ($LASTEXITCODE -ne 0) { throw 'Packaged Perfetto binary and application metadata do not match' }
 if ((Invoke-Device @('get-state')) -ne 'device') { throw 'Authorize the USB device first' }
 if ((Invoke-Device @('shell', 'getprop', 'ro.kernel.qemu')) -eq '1') { throw 'An emulator cannot certify scrolling' }
 $model = (Invoke-Device @('shell', 'getprop', 'ro.product.model')) -join ''
@@ -54,6 +57,7 @@ $metadata = [ordered]@{
     testSha256 = (Get-FileHash -LiteralPath $TestApk -Algorithm SHA256).Hash.ToLowerInvariant()
     compilation = $Compilation; startedAt = (Get-Date).ToUniversalTime().ToString('o')
     diagnostics = [bool]$Diagnostics
+    iconWorkload = $IconWorkload
     diagnosticsScope = 'Optional activity captures include preparation and warmups; not presentation acceptance'
     status = 'COLLECTING'; performanceAccepted = $false
 }
@@ -67,6 +71,7 @@ Invoke-Device @('shell', 'mkdir', '-p', $deviceOutput) | Out-Null
 $instrumentArgs = @('shell', 'am', 'instrument', '-w', '-r',
     '-e', 'class', 'com.example.macrobenchmark.SteadyScrollBenchmark',
     '-e', 'additionalTestOutputDir', $deviceOutput,
+    '-e', 'scroll.icons', $IconWorkload,
     '-e', 'androidx.benchmark.fullTracing.enable', 'true')
 if ($Compilation -eq 'required') { $instrumentArgs += @('-e', 'scroll.profile', 'required') }
 if ($Compilation -eq 'none') { $instrumentArgs += @('-e', 'scroll.compilation', 'none') }

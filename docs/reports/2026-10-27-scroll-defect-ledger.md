@@ -78,3 +78,40 @@ after an English-to-Turkish language change. Age and localized units are still
 computed from the current clock and current language. Unknown text and existing
 timestamp formats retain their behavior. This is a source optimization candidate;
 its frame-time benefit has not been measured on the physical phone.
+
+## SCROLL-04: native test runner tracing entry point removed
+
+CI 462 (`40496744540`, commit `92fb828`) passed the 187-class backport
+hierarchy preflight, then failed before native tests with
+`NoClassDefFoundError: androidx.tracing.Trace` in `AndroidJUnitRunner.onCreate`.
+The application shrinker removed a shared dependency that instrumentation
+expects from its provided application classpath. A narrow public API keep rule
+for this class is prepared. It remains unverified until an optimized APK pair
+actually runs all 18 native tests. This is a different failure from SCROLL-01.
+
+## SCROLL-05: Perfetto client/binary mismatch prevents physical measurement
+
+The first physical one-scenario pipeline pilot failed before measured frames:
+the application's Perfetto client required 1.0.0 while the measurement APK
+contained the 1.0.1 binary. Its arm64 SHA-256 was
+`56f3ee5ac2acffb4da14a9656e2793fe38eed6d2a50c67954b09972572caa2b7`,
+identical to the cached published 1.0.1 AAR. This rules out stripping or a
+corrupt packaged binary as the explanation for this artifact pair.
+
+The benchmark-only application dependency now explicitly selects 1.0.1;
+the measurement catalog and baseline export use the same version. A packaged
+checksum preflight rejects the old APK pair before installation. Five focused
+checks cover matching, differing, missing and unterminated metadata cases.
+Rebuilding and repeating the real native handshake are still required.
+
+[AndroidX Tracing release notes](https://developer.android.com/jetpack/androidx/releases/tracing)
+document the coordinated 1.0.1 client/binary release, including 16 KB support.
+
+## Physical setup evidence
+
+USB serial `RF8T11LKPMZ`, model `SM-G780G`, Android 16 / SDK 36. Both isolated
+benchmark packages were installed and their `pm path` results confirmed. The
+diagnostic lifecycle smoke passed one test on the actual phone and exported
+660 frame callbacks with no buffer loss. The recorded display mode was 120 Hz;
+this is neither 120 presented FPS nor a smoothness acceptance result. The
+production installation and global refresh settings were not changed.

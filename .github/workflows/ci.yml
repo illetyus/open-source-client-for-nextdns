@@ -130,6 +130,7 @@ jobs:
       - name: Compile same-source R8-off benchmark and measurement harness
         run: |
           ./gradlew :app:assembleBenchmark :macrobenchmark:assembleBenchmark --no-daemon
+          python scripts/verify_perfetto_binary.py app/build/outputs/apk/benchmark/app-benchmark.apk macrobenchmark/build/outputs/apk/benchmark/macrobenchmark-benchmark.apk
           mkdir -p build/compliance/scroll
           cp app/build/outputs/apk/benchmark/app-benchmark.apk build/compliance/scroll/candidate-r8-off.apk
         shell: bash
@@ -137,12 +138,13 @@ jobs:
       - name: Build same-source optimized benchmark for runtime smoke
         run: |
           ./gradlew :app:assembleBenchmark -PscrollMinify=true --no-daemon
+          python scripts/verify_perfetto_binary.py app/build/outputs/apk/benchmark/app-benchmark.apk macrobenchmark/build/outputs/apk/benchmark/macrobenchmark-benchmark.apk
           cp app/build/outputs/apk/benchmark/app-benchmark.apk build/compliance/scroll/candidate-r8-on.apk
           sha256sum build/compliance/scroll/candidate-r8-off.apk build/compliance/scroll/candidate-r8-on.apk > build/compliance/scroll/SHA256SUMS
         shell: bash
 
-      - name: Benchmark-only diagnostic unit tests
-        run: ./gradlew :app:testBenchmarkUnitTest --tests '*BenchmarkFrameSamplesTest' -PbenchmarkUnitTests=true --no-daemon
+      - name: Benchmark-only performance fixture unit tests
+        run: ./gradlew :app:testBenchmarkUnitTest --tests 'com.example.performance.*Test' -PbenchmarkUnitTests=true --no-daemon
         shell: bash
 
       - name: Upload UI branding screenshots

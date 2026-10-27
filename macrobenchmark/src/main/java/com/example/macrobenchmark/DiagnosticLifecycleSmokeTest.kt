@@ -29,6 +29,8 @@ class DiagnosticLifecycleSmokeTest {
           .putExtra("benchmark_capture", capture)
           .putExtra("benchmark_scenario", "setup-smoke"))
         assertTrue("Real fixture UI must load", device.wait(Until.hasObject(By.res("screen_setup")), 30_000))
+        assertTrue("The default icon workload must be acknowledged",
+          device.wait(Until.hasObject(By.res("fixture_icon_mode_unique")), 15_000))
         val x = device.displayWidth / 2
         val top = (device.displayHeight * .35).toInt()
         val bottom = (device.displayHeight * .80).toInt()

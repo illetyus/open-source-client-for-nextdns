@@ -6,6 +6,7 @@ The immutable Git archive and explicit measurement-only overlays form its proven
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import zipfile
@@ -36,11 +37,9 @@ def prepare(root, destination, baseline_ref):
                 raise ValueError('Archive path escaped the baseline source folder')
         files.extractall(source)
 
-    harness = tuple(str(path.relative_to(root)).replace('\\', '/') for path in sorted(
-        (root / 'macrobenchmark/src/main').rglob('*.kt'))) + (
-        'app/src/benchmark/java/com/example/BenchmarkFixtureActivity.kt',
-        'app/src/benchmark/java/com/example/performance/BenchmarkFrameSamples.kt',
-        'app/src/benchmark/java/com/example/performance/BenchmarkFrameRecorder.kt')
+    harness = tuple(str(path.relative_to(root)).replace('\\', '/')
+        for directory in ('macrobenchmark/src/main', 'app/src/benchmark/java')
+        for path in sorted((root / directory).rglob('*.kt')))
     for relative in harness:
         (source / relative).parent.mkdir(parents=True, exist_ok=True)
         (source / relative).write_bytes((root / relative).read_bytes())
@@ -49,8 +48,16 @@ def prepare(root, destination, baseline_ref):
     # production build settings or main implementation into the baseline.
     build = source / 'app/build.gradle.kts'
     dependency = 'androidx.metrics:metrics-performance:1.0.0'
+    # Both sides must use the same client/checksum metadata as the measurement
+    # APK's Perfetto binary. This overlay only changes the benchmark variant.
+    catalog = (root / 'gradle/libs.versions.toml').read_text(encoding='utf-8')
+    perfetto = re.search(r'^tracingPerfetto = "([0-9.]+)"$', catalog, re.MULTILINE)
+    if perfetto is None:
+        raise ValueError('Missing explicit Perfetto version for the paired harness')
     build.write_text(build.read_text(encoding='utf-8') +
-        '\ndependencies { add("benchmarkImplementation", "' + dependency + '") }\n',
+        '\ndependencies { add("benchmarkImplementation", "' + dependency + '")\n' +
+        'add("benchmarkImplementation", "androidx.tracing:tracing-perfetto:' +
+        perfetto[1] + '") }\n',
         encoding='utf-8', newline='\n')
 
     # The exported commit already contains the strict, injected favicon provider.
@@ -86,6 +93,7 @@ def prepare(root, destination, baseline_ref):
     if changed != {relative}:
         raise ValueError('Production baseline changed outside the measurement-only analytics markers')
     manifest = {'baselineSourceCommit': commit, 'sourceArchiveSha256': digest(archive),
+        'measurementApkPolicy': 'Use one current-tree measurement APK for both apps and require identical testSha256 values; do not build measurement APKs independently from this archive.',
         'measurementHarnessSha256': {name: digest(source / name) for name in harness},
         'benchmarkDependencyOverlaySha256': digest(build),
         'mainMeasurementOnlyOverlay': {relative: digest(screen)},
