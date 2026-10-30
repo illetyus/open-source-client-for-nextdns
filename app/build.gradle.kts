@@ -173,6 +173,9 @@ dependencies {
   implementation(libs.androidx.compose.ui.graphics)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
+  // AndroidX Test Core 1.7.0 calls SuspendToFutureAdapter, introduced in
+  // 1.2.0. Instrumentation uses the app's shared runtime copy, so align it.
+  implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
   implementation(libs.androidx.core.splashscreen)
   implementation(libs.androidx.datastore.preferences)
   implementation(libs.androidx.lifecycle.runtime.compose)

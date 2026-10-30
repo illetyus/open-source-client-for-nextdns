@@ -89,6 +89,14 @@ expects from its provided application classpath. A narrow public API keep rule
 for this class is prepared. It remains unverified until an optimized APK pair
 actually runs all 18 native tests. This is a different failure from SCROLL-01.
 
+CI 463 (`40535368277`) rebuilt the narrow Trace rule and advanced to a different
+runner startup failure: `TestDirCalculator` could not resolve `kotlin.LazyKt`.
+This establishes a wider shared-API shrinking problem; adding facade names one
+at a time is insufficient. Original-bytecode reference tracing is being evaluated
+to retain exact externally called members while leaving unrelated implementation
+free to shrink. No blanket Kotlin/Compose/application rule has been added. The
+required 18 native tests have still not executed successfully.
+
 ## SCROLL-05: Perfetto client/binary mismatch prevents physical measurement
 
 The first physical one-scenario pipeline pilot failed before measured frames:
