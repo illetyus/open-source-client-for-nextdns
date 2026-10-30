@@ -19,6 +19,12 @@ identical `testSha256` values in every paired capture. The archive retains its
 original measurement dependency catalog, so an independently built measurement
 APK from that archive is not a supported comparison protocol.
 
+`scripts/verify_scroll_pair.py` checks both completed 13-scenario capture
+structures, SHA-256 metadata, device and declared workload/compilation settings
+before comparison. It explicitly leaves performance acceptance false. The check
+does not prove matching app dependency graphs, actual display cadence, motion
+windows or comparable thermal conditions; those require separate evidence.
+
 Six focused workload tests plus five frame-buffer tests passed (11 total).
 The physical diagnostic smoke also passed the default workload acknowledgment.
 No workload has yet passed the full paired physical performance acceptance.
