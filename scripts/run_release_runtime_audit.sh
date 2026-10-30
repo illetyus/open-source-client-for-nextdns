@@ -16,12 +16,13 @@ keytool -genkeypair -keystore "$key" -storetype PKCS12 -alias upload -keyalg RSA
 "$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \
   --key-pass env:NEXTDNS_CI_AUDIT_PASSWORD --out "$out/release-runtime.apk" app/build/outputs/apk/release/app-release-unsigned.apk
 "$tools/apksigner" verify --verbose --print-certs "$out/release-runtime.apk" > "$out/signature.txt"
-./gradlew :app:assembleReleaseAndroidTest -PreleaseRuntimeAudit=true --no-daemon
+./gradlew :app:assembleReleaseAndroidTest -PreleaseRuntimeAudit=true -PscrollMinify=true --no-daemon
 test_apk=$(find app/build/outputs/apk/androidTest/release -name '*.apk' -type f)
 test -n "$test_apk"
 "$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \
   --key-pass env:NEXTDNS_CI_AUDIT_PASSWORD --out "$out/release-runtime-test.apk" "$test_apk"
 unset NEXTDNS_CI_AUDIT_PASSWORD
+python3 scripts/verify_desugar_pair.py "$out/release-runtime.apk" "$out/release-runtime-test.apk"
 # Android SDK licenses are already accepted on the hosted Android build runner.
 "$sdk_manager" 'system-images;android-35;default;x86_64' 'emulator' 'platform-tools'
 # Use one explicit AVD location for both command-line tools and the emulator.
@@ -36,9 +37,10 @@ test -f "$ANDROID_AVD_HOME/nextdns-release-audit.ini"
 "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx 'nextdns-release-audit'
 sudo chmod 666 /dev/kvm
 "$ANDROID_HOME/emulator/emulator" -avd nextdns-release-audit -no-window -no-audio -no-boot-anim \
-  -no-snapshot -gpu swiftshader_indirect -memory 2048 > "$out/emulator.log" 2>&1 &
+  -port 5554 -no-snapshot -gpu swiftshader_indirect -memory 2048 > "$out/emulator.log" 2>&1 &
 emulator_pid=$!
 trap 'kill "$emulator_pid" 2>/dev/null || true' EXIT
+export ANDROID_SERIAL=emulator-5554
 timeout 180 adb wait-for-device
 for attempt in $(seq 1 120); do
   if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = '1' ]; then break; fi
@@ -62,5 +64,19 @@ timeout 240 adb shell am instrument -w -r -e class \
 cat "$out/instrumentation-denied.txt" "$out/instrumentation-granted.txt" > "$out/instrumentation.txt"
 adb logcat -d -v threadtime > "$out/logcat.txt"
 python3 scripts/verify_release_runtime.py
+
+# A separate self-instrumenting fixture checks diagnostic lifecycle/export only.
+# It does not use MacrobenchmarkRule, suppress device errors, or certify FPS.
+adb install -r app/build/outputs/apk/benchmark/app-benchmark.apk
+adb install -r -t macrobenchmark/build/outputs/apk/benchmark/macrobenchmark-benchmark.apk
+adb logcat -c
+smoke_status=0
+timeout 120 adb shell am instrument -w -r -e class \
+  com.example.macrobenchmark.DiagnosticLifecycleSmokeTest \
+  com.example.macrobenchmark/androidx.test.runner.AndroidJUnitRunner > "$out/diagnostic-smoke.txt" || smoke_status=$?
+adb logcat -d -v threadtime > "$out/logcat-with-diagnostic.txt"
+test "$smoke_status" -eq 0
+grep -Fx 'OK (1 test)' "$out/diagnostic-smoke.txt"
+adb pull /sdcard/Android/media/com.aistudio.nextdns.mgrqvt.benchmark/scroll-diagnostics "$out/frame-diagnostics"
 
 

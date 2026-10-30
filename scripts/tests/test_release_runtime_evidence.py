@@ -16,7 +16,7 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
         validate_runtime_summary(self.summary(tests=REQUIRED_RUNTIME_TESTS))
 
     def test_rejects_old_runtime_test_count(self):
-        for old_count in (10, 12):
+        for old_count in (10, 12, 17):
             with self.subTest(old_count=old_count):
                 with self.assertRaisesRegex(ValueError, f"exactly {REQUIRED_RUNTIME_TESTS} tests"):
                     validate_runtime_summary(self.summary(tests=old_count))

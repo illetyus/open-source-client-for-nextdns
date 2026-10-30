@@ -1,6 +1,9 @@
 package com.example.macrobenchmark
 
 import android.content.Intent
+import android.graphics.Bitmap
+import java.io.ByteArrayOutputStream
+import okio.Buffer
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -41,7 +44,9 @@ internal class SyntheticNextDnsApi private constructor(
     private const val PROFILE_ID = "b00b1e"
     private const val PAGE_TWO_CURSOR = "benchmark-page-2"
 
-    fun start(): SyntheticNextDnsApi {
+    fun start(logRows: Int = 200, deviceCount: Int = 1): SyntheticNextDnsApi {
+      require(logRows in 100..1_000 && logRows % 100 == 0)
+      require(deviceCount in 1..500)
       val fixtureNow = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
       val certificate = HeldCertificate.Builder()
         .commonName("localhost")
@@ -52,7 +57,7 @@ internal class SyntheticNextDnsApi private constructor(
         .build()
       val server = MockWebServer().apply {
         useHttps(serverCertificates.sslSocketFactory(), false)
-        dispatcher = SyntheticApiDispatcher(fixtureNow)
+        dispatcher = SyntheticApiDispatcher(fixtureNow, logRows, deviceCount)
         start()
       }
       return SyntheticNextDnsApi(
@@ -63,16 +68,32 @@ internal class SyntheticNextDnsApi private constructor(
     }
   }
 
-  private class SyntheticApiDispatcher(private val fixtureNow: Instant) : Dispatcher() {
+  private class SyntheticApiDispatcher(private val fixtureNow: Instant, private val logRows: Int,
+    private val deviceCount: Int) : Dispatcher() {
+    private val favicon = ByteArrayOutputStream().use { output ->
+      val bitmap = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
+      bitmap.eraseColor(android.graphics.Color.rgb(42, 110, 170))
+      check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+      bitmap.recycle()
+      output.toByteArray()
+    }
+
     override fun dispatch(request: RecordedRequest): MockResponse {
       val path = request.requestUrl?.encodedPath.orEmpty()
+      if (path.startsWith("/favicons/")) return MockResponse()
+        .setHeader("Content-Type", "image/png")
+        .setBody(Buffer().write(favicon))
       val responseBody = when {
         path == "/profiles" -> """{"data":[{"id":"$PROFILE_ID","name":"Benchmark profile","fingerprint":"bench01"}]}"""
         path.matches(Regex("/profiles/[^/]+")) -> """{"data":{"id":"$PROFILE_ID","name":"Benchmark profile","fingerprint":"bench01"}}"""
         path.endsWith("/logs") -> syntheticLogs(request)
         path.contains("/analytics/") && path.endsWith(";series") -> syntheticSeries(request)
         path.contains("/analytics/") -> syntheticAnalytics(request)
-        path.endsWith("/security") || path.endsWith("/privacy") ||
+        path.endsWith("/allowlist") || path.endsWith("/denylist") -> syntheticRules()
+        path.endsWith("/privacy") -> """{"data":{"blocklists":${blocklists()},"natives":[{"id":"apple"},{"id":"windows"},{"id":"samsung"}],"disguisedTrackers":true}}"""
+        path.endsWith("/privacy/blocklists") -> """{"data":${blocklists()}}"""
+        path.endsWith("/privacy/natives") -> """{"data":[{"id":"apple"},{"id":"windows"},{"id":"samsung"},{"id":"alexa"},{"id":"roku"},{"id":"sonos"}]}"""
+        path.endsWith("/security") ||
           path.endsWith("/parentalControl") || path.endsWith("/settings") -> """{"data":{}}"""
         path.endsWith("/allowlist") || path.endsWith("/denylist") ||
           path.contains("/privacy/") || path.contains("/parentalControl/") -> """{"data":[]}"""
@@ -85,14 +106,21 @@ internal class SyntheticNextDnsApi private constructor(
     }
 
     private fun syntheticLogs(request: RecordedRequest): String {
-      val secondPage = request.requestUrl?.queryParameter("cursor") == PAGE_TWO_CURSOR
-      val firstIndex = if (secondPage) 100 else 0
+      val cursor = request.requestUrl?.queryParameter("cursor")
+      val firstIndex = when (cursor) {
+        null -> 0
+        PAGE_TWO_CURSOR -> 100
+        else -> cursor.removePrefix("benchmark-offset-").toIntOrNull() ?: logRows
+      }
+      if (firstIndex !in 0 until logRows || firstIndex % 100 != 0) return """{"data":[]}"""
       val logs = (firstIndex until firstIndex + 100).joinToString(",") { index ->
         val timestamp = fixtureNow.minusSeconds(index.toLong() * 60L).toString()
         val status = if (index % 5 == 0) "blocked" else "allowed"
         """{"id":"bench-log-$index","timestamp":"$timestamp","domain":"site-$index.invalid","root":"site-$index.invalid","client":"Benchmark device","device":{"id":"bench-device","name":"Benchmark device","model":"synthetic"},"status":"$status","protocol":"DOH","reasons":[{"id":"blocklist","name":"Blocklist"}]}"""
       }
-      val pagination = if (secondPage) "" else ",\"meta\":{\"pagination\":{\"cursor\":\"$PAGE_TWO_CURSOR\"}}"
+      val nextIndex = firstIndex + 100
+      val nextCursor = if (nextIndex == 100) PAGE_TWO_CURSOR else "benchmark-offset-$nextIndex"
+      val pagination = if (nextIndex >= logRows) "" else ",\"meta\":{\"pagination\":{\"cursor\":\"$nextCursor\"}}"
       return """{"data":[$logs]$pagination}"""
     }
 
@@ -101,7 +129,9 @@ internal class SyntheticNextDnsApi private constructor(
       val path = request.requestUrl?.encodedPath.orEmpty()
       val data = when {
         path.endsWith("/status") -> """[{"status":"blocked","queries":32},{"status":"allowed","queries":168}]"""
-        path.endsWith("/devices") -> """[{"id":"bench-device","name":"Benchmark device","model":"synthetic","queries":200}]"""
+        path.endsWith("/devices") -> (0 until deviceCount).joinToString(",", "[", "]") { index ->
+          """{"id":"bench-device-$index","name":"Benchmark device $index","model":"synthetic","queries":200}"""
+        }
         path.endsWith("/domains") -> """[{"domain":"site-1.invalid","root":"site-1.invalid","queries":80}]"""
         path.endsWith("/reasons") -> """[{"id":"blocklist","name":"Blocklist","queries":32}]"""
         path.endsWith("/destinations") && type == "gafam" -> """[{"company":"Google","queries":58},{"company":"Microsoft","queries":23}]"""
@@ -115,6 +145,14 @@ internal class SyntheticNextDnsApi private constructor(
         else -> "[]"
       }
       return """{"data":$data}"""
+    }
+
+    private fun syntheticRules(): String = (0 until 100).joinToString(",", "{\"data\":[", "]}") {
+      """{"id":"rule-$it.invalid","active":true}"""
+    }
+
+    private fun blocklists(): String = (0 until 50).joinToString(",", "[", "]") {
+      """{"id":"benchmark-list-$it","name":"Benchmark list $it","description":"Synthetic list","entries":10000,"website":"https://list-$it.invalid"}"""
     }
 
     private fun syntheticSeries(request: RecordedRequest): String {

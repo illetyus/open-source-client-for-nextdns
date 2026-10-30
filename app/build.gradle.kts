@@ -49,8 +49,12 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      // Compare optimizer-only APKs before changing the default review payload.
+      // Promotion requires the minified runtime and physical scroll gates.
+      isMinifyEnabled = providers.gradleProperty("scrollMinify").orNull == "true"
+      isShrinkResources = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      testProguardFiles("test-proguard-rules.pro")
       // Release packaging is tested unsigned when CI has no signing secrets.
       if (signingRequested) signingConfig = signingConfigs.getByName("release")
     }
@@ -82,6 +86,12 @@ android {
   if (providers.gradleProperty("releaseRuntimeAudit").orNull == "true") {
     testBuildType = "release"
   }
+  if (providers.gradleProperty("benchmarkUnitTests").orNull == "true") {
+    require(providers.gradleProperty("releaseRuntimeAudit").orNull != "true") {
+      "Benchmark unit checks and release instrumentation use separate Gradle invocations"
+    }
+    testBuildType = "benchmark"
+  }
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
@@ -94,6 +104,32 @@ tasks.withType<Test>().configureEach {
     isIncludeNoLocationClasses = true
     includes = listOf("com.example.*")
     excludes = listOf("jdk.internal.*")
+  }
+}
+
+// AGP 9.1.1 runs L8 independently for the app and its instrumentation APK.
+// Instrumentation loads its classes first: a separately renamed j$.time.ZoneId
+// can therefore shadow the app's ZoneOffset with an incompatible superclass.
+// Separate closed-world L8 optimizations cannot safely share a class loader:
+// applymapping alone still permits different hierarchies (e.g. Clock/SystemClock).
+// Retain stable backport definitions, matching AGP's non-minified L8 settings,
+// and keep the app's desugared API in the test copy. App R8 remains optimized;
+// only backport-library optimization/renaming is disabled, not dead-code removal.
+// This version-pinned internal-task workaround must be reviewed with AGP upgrades.
+tasks.withType<com.android.build.gradle.internal.tasks.L8DexDesugarLibTask>().configureEach {
+  val stableBackportTasks = setOf("l8DexDesugarLibRelease", "l8DexDesugarLibBenchmark",
+    "l8DexDesugarLibReleaseAndroidTest", "l8DexDesugarLibBenchmarkAndroidTest")
+  if (name in stableBackportTasks && providers.gradleProperty("scrollMinify").orNull == "true") {
+    keepRulesConfigurations.addAll("-dontobfuscate", "-dontoptimize")
+  }
+  if (name == "l8DexDesugarLibReleaseAndroidTest" && providers.gradleProperty("scrollMinify").orNull == "true") {
+    val appL8 = tasks.named<com.android.build.gradle.internal.tasks.L8DexDesugarLibTask>(
+      "l8DexDesugarLibRelease"
+    )
+    dependsOn(appL8)
+    keepRulesConfigurations.add(appL8.flatMap { it.keepRules }.map {
+      "-include \"${it.asFile.invariantSeparatorsPath}\""
+    })
   }
 }
 
@@ -137,6 +173,9 @@ dependencies {
   implementation(libs.androidx.compose.ui.graphics)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
+  // AndroidX Test Core 1.7.0 calls SuspendToFutureAdapter, introduced in
+  // 1.2.0. Instrumentation uses the app's shared runtime copy, so align it.
+  implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
   implementation(libs.androidx.core.splashscreen)
   implementation(libs.androidx.datastore.preferences)
   implementation(libs.androidx.lifecycle.runtime.compose)
@@ -173,6 +212,9 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
   add("benchmarkImplementation", libs.androidx.compose.runtime.tracing)
+  // Match the binary shipped by Macrobenchmark; runtime-tracing alone selects 1.0.0.
+  add("benchmarkImplementation", libs.androidx.tracing.perfetto)
   add("benchmarkImplementation", "com.squareup.okhttp3:okhttp-tls:4.10.0")
+  add("benchmarkImplementation", "androidx.metrics:metrics-performance:1.0.0")
   "ksp"(libs.moshi.kotlin.codegen)
 }

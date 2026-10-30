@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main", "phase7-ci-quality", "phase8-compliance" ]
+    branches: [ "main", "phase7-ci-quality", "phase8-compliance", "test/espresso-screen-flows-2026-10-25" ]
 
 permissions:
   contents: read
@@ -127,8 +127,24 @@ jobs:
         run: ./gradlew :app:assembleDebug --no-daemon
         shell: bash
 
-      - name: Compile release-like Macrobenchmark harness
-        run: ./gradlew :app:assembleBenchmark :macrobenchmark:assembleBenchmark --no-daemon
+      - name: Compile same-source R8-off benchmark and measurement harness
+        run: |
+          ./gradlew :app:assembleBenchmark :macrobenchmark:assembleBenchmark --no-daemon
+          python scripts/verify_perfetto_binary.py app/build/outputs/apk/benchmark/app-benchmark.apk macrobenchmark/build/outputs/apk/benchmark/macrobenchmark-benchmark.apk
+          mkdir -p build/compliance/scroll
+          cp app/build/outputs/apk/benchmark/app-benchmark.apk build/compliance/scroll/candidate-r8-off.apk
+        shell: bash
+
+      - name: Build same-source optimized benchmark for runtime smoke
+        run: |
+          ./gradlew :app:assembleBenchmark -PscrollMinify=true --no-daemon
+          python scripts/verify_perfetto_binary.py app/build/outputs/apk/benchmark/app-benchmark.apk macrobenchmark/build/outputs/apk/benchmark/macrobenchmark-benchmark.apk
+          cp app/build/outputs/apk/benchmark/app-benchmark.apk build/compliance/scroll/candidate-r8-on.apk
+          sha256sum build/compliance/scroll/candidate-r8-off.apk build/compliance/scroll/candidate-r8-on.apk > build/compliance/scroll/SHA256SUMS
+        shell: bash
+
+      - name: Benchmark-only performance fixture unit tests
+        run: ./gradlew :app:testBenchmarkUnitTest --tests 'com.example.performance.*Test' -PbenchmarkUnitTests=true --no-daemon
         shell: bash
 
       - name: Upload UI branding screenshots
@@ -140,12 +156,13 @@ jobs:
             app/build/outputs/roborazzi/branding/*.png
             app/build/outputs/roborazzi/localization/*.png
             app/build/test-results/testDebugUnitTest/*.xml
+            app/build/test-results/testBenchmarkUnitTest/*.xml
             app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
           if-no-files-found: warn
           retention-days: 7
 
       - name: Assemble Release (unsigned on CI)
-        run: ./gradlew :app:assembleRelease :app:bundleRelease :app:assembleDebugAndroidTest --no-daemon
+        run: ./gradlew :app:assembleRelease :app:bundleRelease :app:assembleDebugAndroidTest -PscrollMinify=true --no-daemon
         shell: bash
 
       - name: Release Dependency and Privacy SDK Gate
@@ -161,7 +178,7 @@ jobs:
         shell: bash
 
       - name: Reject test DEX types and validate against real test APK
-        run: python3 scripts/release_dex_audit.py
+        run: python3 scripts/release_dex_audit.py --mapping app/build/outputs/mapping/release/mapping.txt
         shell: bash
 
       - name: Upload coverage to Codecov
@@ -207,5 +224,7 @@ jobs:
             app/build/outputs/apk/release/*.apk
             macrobenchmark/build/outputs/apk/benchmark/*.apk
             app/build/outputs/bundle/release/*.aab
+            app/build/outputs/mapping/release/
+            app/build/outputs/mapping/benchmark/
           if-no-files-found: warn
           retention-days: 14

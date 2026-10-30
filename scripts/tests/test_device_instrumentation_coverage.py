@@ -27,7 +27,7 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         self.assertIn("sum(summaries) == REQUIRED_RUNTIME_TESTS", verifier)
         self.assertIn("statuses.count('1') == REQUIRED_RUNTIME_TESTS and statuses.count('0') == REQUIRED_RUNTIME_TESTS", verifier)
         self.assertIn("'tests':REQUIRED_RUNTIME_TESTS", verifier)
-        self.assertIn("REQUIRED_RUNTIME_TESTS = 17", helper)
+        self.assertIn("REQUIRED_RUNTIME_TESTS = 18", helper)
 
     def test_permission_flow_uses_the_platform_prompt(self):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
@@ -41,7 +41,18 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         self.assertIn('adb shell pm grant com.aistudio.nextdns.mgrqvt android.permission.POST_NOTIFICATIONS', runner)
         self.assertLess(runner.index('pm revoke'), runner.index(denied_test))
         self.assertLess(runner.index('pm grant'), runner.index(granted_test))
-        self.assertEqual(2, runner.count('am instrument'))
+        commands = runner.replace('\\\n', ' ').splitlines()
+        native_commands = [command for command in commands if 'am instrument' in command and
+                           'com.aistudio.nextdns.mgrqvt.test/androidx.test.runner.AndroidJUnitRunner' in command]
+        self.assertEqual(2, len(native_commands))
+        self.assertEqual(1, sum(denied_test in command for command in native_commands))
+        self.assertEqual(1, sum(granted_test in command for command in native_commands))
+        diagnostic_commands = [command for command in commands if 'am instrument' in command and
+                               'com.example.macrobenchmark/androidx.test.runner.AndroidJUnitRunner' in command]
+        self.assertEqual(1, len(diagnostic_commands))
+        self.assertIn('DiagnosticLifecycleSmokeTest', diagnostic_commands[0])
+        self.assertLess(runner.index('python3 scripts/verify_release_runtime.py'),
+                        runner.index('com.example.macrobenchmark.DiagnosticLifecycleSmokeTest'))
         self.assertIn('instrumentation-denied.txt', runner)
         self.assertIn('instrumentation-granted.txt', runner)
         notification_test = (ROOT / 'app/src/androidTest/java/com/example/NativeNotificationPermissionTest.kt').read_text(encoding='utf8')
