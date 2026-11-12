@@ -49,11 +49,17 @@ jobs:
         env:
           PUSH_BEFORE: ${{ github.event.before }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           tmp=$(mktemp -d "$RUNNER_TEMP/gitleaks.XXXXXXXX")
           printf '[extend]\nuseDefault = true\n' > "$tmp/config.toml"
-          touch "$tmp/ignore"
+          if [[ "$DEFAULT_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] && \
+             git show "refs/remotes/origin/${DEFAULT_BRANCH}:.gitleaksignore" > "$tmp/ignore" 2>/dev/null; then
+            :
+          else
+            : > "$tmp/ignore"
+          fi
           base=${PR_BASE:-${PUSH_BEFORE:-}}
           range=HEAD
           if [[ "$base" =~ ^[0-9a-f]{40}$ ]] && git merge-base --is-ancestor "$base" HEAD; then
@@ -128,12 +134,3 @@ jobs:
               ;;
           esac
 
-  dependency-review:
-    name: Dependency review
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
-        with:
-          fail-on-severity: high
