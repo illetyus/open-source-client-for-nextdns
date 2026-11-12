@@ -1,0 +1,139 @@
+name: Repository security
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * 2'
+
+permissions:
+  contents: read
+
+jobs:
+  security-baseline:
+    name: Security baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install verified scanner binaries
+        id: scanners
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools_dir=$(mktemp -d "$RUNNER_TEMP/scanners.XXXXXXXX")
+          cd "$tools_dir"
+          download() {
+            local url=$1 file=$2 sha=$3
+            curl --fail --silent --show-error --location --retry 2 \
+              --proto '=https' --proto-redir '=https' --max-time 90 "$url" -o "$file"
+            printf '%s  %s\n' "$sha" "$file" | sha256sum --check --status
+          }
+          download 'https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz' gitleaks.tar.gz '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+          download 'https://github.com/google/osv-scanner/releases/download/v2.7.1/osv-scanner_linux_amd64' osv-scanner 'fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8'
+          download 'https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-unknown-linux-gnu.tar.gz' zizmor.tar.gz 'bb110cc765eca9cd7efb2e284a956be5974c60027b0970f16397d86208a9957b'
+          tar -xzf gitleaks.tar.gz --no-same-owner gitleaks
+          tar -xzf zizmor.tar.gz --no-same-owner zizmor
+          chmod +x gitleaks osv-scanner zizmor
+          echo "$tools_dir" >> "$GITHUB_PATH"
+
+      - name: Scan commits for secrets
+        if: ${{ !cancelled() && steps.scanners.outcome == 'success' }}
+        shell: bash
+        env:
+          PUSH_BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp -d "$RUNNER_TEMP/gitleaks.XXXXXXXX")
+          printf '[extend]\nuseDefault = true\n' > "$tmp/config.toml"
+          touch "$tmp/ignore"
+          base=${PR_BASE:-${PUSH_BEFORE:-}}
+          range=HEAD
+          if [[ "$base" =~ ^[0-9a-f]{40}$ ]] && git merge-base --is-ancestor "$base" HEAD; then
+            range="$base..HEAD"
+          fi
+          if ! gitleaks git --config "$tmp/config.toml" --gitleaks-ignore-path "$tmp/ignore" \
+               --ignore-gitleaks-allow --log-opts="$range" --redact=100 --no-banner \
+               --report-format json --report-path "$tmp/report.json" . > "$tmp/scanner.log" 2>&1; then
+            python3 - "$tmp/report.json" <<'PY'
+          import collections
+          import json
+          import sys
+          from pathlib import Path
+
+          report = Path(sys.argv[1])
+          if report.is_file():
+              findings = collections.Counter(item["RuleID"] for item in json.loads(report.read_text()))
+              print("Secret rule counts:", dict(findings))
+          PY
+            echo '::error::Secret scan reported a finding or could not complete. Review using a private session.'
+            exit 1
+          fi
+          echo 'Secret scan completed.'
+
+      - name: Audit workflow security
+        if: ${{ !cancelled() && steps.scanners.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp -d "$RUNNER_TEMP/zizmor.XXXXXXXX")
+          if ! zizmor --offline --strict-collection --no-config --min-severity high --format json . > "$tmp/result.json" 2> "$tmp/scanner.log"; then
+            python3 - "$tmp/result.json" <<'PY'
+          import collections
+          import json
+          import sys
+          from pathlib import Path
+
+          try:
+              findings = json.loads(Path(sys.argv[1]).read_text())
+          except (ValueError, OSError):
+              findings = []
+          if isinstance(findings, list):
+              print("Workflow finding counts:", dict(collections.Counter(row.get("ident", "unknown") for row in findings)))
+          PY
+            echo '::error::Workflow audit reported a high-severity finding or could not complete.'
+            exit 1
+          fi
+          echo 'Workflow audit completed.'
+
+      - name: Scan resolved dependencies
+        if: ${{ !cancelled() && steps.scanners.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp -d "$RUNNER_TEMP/osv.XXXXXXXX")
+          printf '# No vulnerability overrides\n' > "$tmp/config.toml"
+          status=0
+          osv-scanner scan source --recursive --no-resolve --config "$tmp/config.toml" \
+            --format json . > "$tmp/result.json" 2> "$tmp/scanner.log" || status=$?
+          case "$status" in
+            0) echo 'Dependency scan completed.' ;;
+            128)
+              if git ls-files | grep -E '(^|/)(package-lock\.json|Cargo\.lock|gradle\.lockfile|requirements\.txt|uv\.lock|go\.mod|poetry\.lock)$' > /dev/null; then
+                echo '::error::A supported manifest is present, but OSV found no packages.'
+                exit 1
+              fi
+              echo 'No supported resolved packages found. Dependency scan has no coverage for this commit.' >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            *)
+              echo "::error::Dependency scanner returned exit $status. Review advisory results in a private session."
+              exit 1
+              ;;
+          esac
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
+        with:
+          fail-on-severity: high
