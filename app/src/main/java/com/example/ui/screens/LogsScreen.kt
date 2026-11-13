@@ -806,11 +806,9 @@ internal fun LogItemRow(
               .background(statusColor)
           )
           Spacer(modifier = Modifier.width(8.dp))
-          Icon(
-            imageVector = Icons.Default.Language,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(16.dp).testTag("logs_local_domain_icon")
+          FaviconImage(
+            domain = log.domain,
+            modifier = Modifier.size(16.dp).clip(RoundedCornerShape(4.dp))
           )
           Spacer(modifier = Modifier.width(8.dp))
           Text(

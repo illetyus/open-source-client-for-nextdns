@@ -43,7 +43,8 @@ fun SecurityScreen(
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
-      .padding(horizontal = 16.dp),
+      .padding(horizontal = 16.dp)
+      .testTag("security_settings_list"),
     contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
@@ -156,6 +157,95 @@ fun SecurityScreen(
         subtitle = AppStrings.get(R.string.ui_b1fff1587d),
         checked = settings.parkedDomains,
         onCheckedChange = { viewModel.toggleSecurityFeature("parkedDomains", it) }
+      )
+    }
+
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_data_drop_services_title),
+        checked = settings.dataDropServices,
+        feature = "dataDropServices",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_decentralized_web_gateways_title),
+        checked = settings.decentralizedWebGateways,
+        feature = "decentralizedWebGateways",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_dns_data_exfiltration_title),
+        checked = settings.dnsDataExfiltration,
+        feature = "dnsDataExfiltration",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_dns_payload_delivery_title),
+        checked = settings.dnsPayloadDelivery,
+        feature = "dnsPayloadDelivery",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_fast_flux_networks_title),
+        checked = settings.fastFluxNetworks,
+        feature = "fastFluxNetworks",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_free_hosting_domains_title),
+        checked = settings.freeHostingDomains,
+        feature = "freeHostingDomains",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_high_risk_tlds_title),
+        checked = settings.highRiskTlds,
+        feature = "highRiskTlds",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_newly_active_domains_title),
+        checked = settings.newlyActiveDomains,
+        feature = "newlyActiveDomains",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_residential_hosting_title),
+        checked = settings.residentialHosting,
+        feature = "residentialHosting",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_tunneling_endpoints_title),
+        checked = settings.tunnelingEndpoints,
+        feature = "tunnelingEndpoints",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_untrusted_certificates_title),
+        checked = settings.untrustedCertificates,
+        feature = "untrustedCertificates",
+        viewModel = viewModel
       )
     }
 
@@ -286,6 +376,22 @@ fun SecurityScreen(
       dismissButton = {}
     )
   }
+}
+
+@Composable
+private fun ObservedSecurityToggle(
+  title: String,
+  checked: Boolean,
+  feature: String,
+  viewModel: NextDnsViewModel
+) {
+  NextDnsSettingToggle(
+    title = title,
+    subtitle = AppStrings.get(R.string.security_api_toggle_description),
+    checked = checked,
+    onCheckedChange = { viewModel.toggleSecurityFeature(feature, it) },
+    modifier = Modifier.testTag("security_flag_$feature")
+  )
 }
 
 @Composable

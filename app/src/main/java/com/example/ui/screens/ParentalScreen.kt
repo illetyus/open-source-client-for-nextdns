@@ -151,7 +151,7 @@ private fun ParentalServiceItemCard(
   onRemove: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val domain = if (service.id.lowercase() == "steam") "steampowered.com" else "${service.id.lowercase()}.com"
+  val domain = parentalServiceFaviconDomain(service.id, service.website).orEmpty()
 
   Surface(
     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -179,6 +179,7 @@ private fun ParentalServiceItemCard(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
           FaviconImage(
             domain = domain,
+            fallbackLabel = service.name,
             modifier = Modifier.size(18.dp).clip(RoundedCornerShape(4.dp))
           )
           Text(
@@ -406,7 +407,7 @@ private fun AddParentalServiceDialog(
         verticalArrangement = Arrangement.spacedBy(8.dp)
       ) {
         items(inactiveServices) { srv ->
-          val domain = if (srv.id.lowercase() == "steam") "steampowered.com" else "${srv.id.lowercase()}.com"
+          val domain = parentalServiceFaviconDomain(srv.id, srv.website).orEmpty()
           Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(10.dp),
@@ -428,6 +429,7 @@ private fun AddParentalServiceDialog(
               Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FaviconImage(
                   domain = domain,
+                  fallbackLabel = srv.name,
                   modifier = Modifier.size(16.dp).clip(RoundedCornerShape(4.dp))
                 )
                 Text(srv.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Medium)

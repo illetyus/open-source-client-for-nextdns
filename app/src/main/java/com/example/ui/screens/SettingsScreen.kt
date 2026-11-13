@@ -146,7 +146,6 @@ fun SettingsScreen(
 
   var showDeleteProfileDialog by remember { mutableStateOf(false) }
   val profileName = activeProfile?.name ?: AppStrings.get(R.string.ui_0a4d547a3f)
-
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
@@ -160,6 +159,10 @@ fun SettingsScreen(
         title = AppStrings.get(R.string.nextdns_service_settings),
         tag = "settings_section_service"
       )
+    }
+
+    item {
+      ApiConnectionSettingsSection(viewModel)
     }
 
     item {
@@ -191,6 +194,13 @@ fun SettingsScreen(
       Web3Section(
         web3Enabled = configSettings.web3,
         onToggleWeb3 = { viewModel.toggleWeb3(it) }
+      )
+    }
+
+    item {
+      BypassAgeVerificationSection(
+        enabled = configSettings.bypassAgeVerification,
+        onToggle = { viewModel.toggleBypassAgeVerification(it) }
       )
     }
 
@@ -801,6 +811,40 @@ fun Web3Section(
           onCheckedChange = onToggleWeb3
         )
       }
+    }
+  }
+}
+
+@Composable
+fun BypassAgeVerificationSection(
+  enabled: Boolean,
+  onToggle: (Boolean) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  NextDnsCard(
+    title = AppStrings.get(R.string.bypass_age_verification_title),
+    subtitle = AppStrings.get(R.string.bypass_age_verification_description),
+    modifier = modifier
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .testTag("settings_bypass_age_verification")
+        .bounceClick { onToggle(!enabled) }
+        .padding(vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+      Text(
+        text = AppStrings.get(R.string.bypass_age_verification_enable),
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.5.sp
+      )
+      NextDnsSwitch(
+        checked = enabled,
+        onCheckedChange = onToggle
+      )
     }
   }
 }

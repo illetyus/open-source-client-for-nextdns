@@ -286,16 +286,7 @@ private fun NativeTrackingItemCard(
   onRemove: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val domain = when (nat.id) {
-    "windows" -> "microsoft.com"
-    "apple" -> "apple.com"
-    "samsung" -> "samsung.com"
-    "xiaomi" -> "mi.com"
-    "huawei" -> "huawei.com"
-    "roku" -> "roku.com"
-    "sonos" -> "sonos.com"
-    else -> "nextdns.io"
-  }
+  val domain = nativeTrackingFaviconDomain(nat.id).orEmpty()
 
   Surface(
     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -323,6 +314,7 @@ private fun NativeTrackingItemCard(
         )
         FaviconImage(
           domain = domain,
+          fallbackLabel = nat.name,
           modifier = Modifier
             .size(24.dp)
             .clip(RoundedCornerShape(4.dp))
@@ -636,16 +628,7 @@ private fun AddNativeTrackingDialog(
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
           inactiveNatives.forEach { nat ->
-            val domain = when (nat.id) {
-              "windows" -> "microsoft.com"
-              "apple" -> "apple.com"
-              "samsung" -> "samsung.com"
-              "xiaomi" -> "mi.com"
-              "huawei" -> "huawei.com"
-              "roku" -> "roku.com"
-              "sonos" -> "sonos.com"
-              else -> "nextdns.io"
-            }
+            val domain = nativeTrackingFaviconDomain(nat.id).orEmpty()
 
             Surface(
               color = MaterialTheme.colorScheme.surfaceVariant,
@@ -672,7 +655,8 @@ private fun AddNativeTrackingDialog(
                 ) {
                   FaviconImage(
                     domain = domain,
-                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))
+                    fallbackLabel = nat.name,
+                    modifier = Modifier.size(32.dp).clip(RoundedCornerShape(4.dp))
                   )
                   Column {
                     Text(nat.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 13.sp)
