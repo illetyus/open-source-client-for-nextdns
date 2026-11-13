@@ -7,6 +7,29 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class DeviceInstrumentationCoverageTest(unittest.TestCase):
+    def test_minified_release_runtime_abi_rules_are_audit_only(self):
+        runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
+        gradle = (ROOT / 'app/build.gradle.kts').read_text(encoding='utf8')
+        rules = (ROOT / 'app/proguard-release-test-abi.pro').read_text(encoding='utf8')
+
+        self.assertIn('production-release-apk.sha256', runner)
+        self.assertIn('assembleRelease', runner)
+        self.assertIn('-PreleaseRuntimeAudit=true', runner)
+        self.assertIn('restore_production_release', runner)
+        self.assertIn('release-runtime-audit-unsigned.apk', runner)
+        self.assertRegex(gradle, r'releaseRuntimeAudit[\s\S]{0,180}proguardFiles')
+        for symbol in (
+            'androidx.tracing.Trace',
+            'kotlin.LazyKt',
+            'kotlin.jvm.internal.Reflection',
+            'kotlin.reflect.KClass',
+            'kotlin.io.FilesKt',
+            'kotlinx.coroutines.BuildersKt',
+            'com.example.data.local.NextDnsPreferences',
+            'com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory',
+        ):
+            self.assertIn(symbol, rules)
+
     def test_release_emulator_audit_executes_native_device_flows(self):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
         verifier = (ROOT / 'scripts/verify_release_runtime.py').read_text(encoding='utf8')

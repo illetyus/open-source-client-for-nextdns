@@ -26,15 +26,21 @@ statuses = re.findall(r'^INSTRUMENTATION_STATUS_CODE: (-?\d+)\s*$', text, re.M)
 assert statuses.count('1') == REQUIRED_RUNTIME_TESTS and statuses.count('0') == REQUIRED_RUNTIME_TESTS, f'Require {REQUIRED_RUNTIME_TESTS} started and successfully completed tests'
 assert all(status in ('0', '1') for status in statuses), 'Errors, failures, ignored tests or assumptions are not release evidence'
 assert 'RELEASE_AUDIT_SYNTHETIC_CANARY_20261009' not in (out/'logcat.txt').read_text(encoding='utf8'), 'Synthetic credential appeared in logcat'
-unsigned = root/'app/build/outputs/apk/release/app-release-unsigned.apk'
+restored_production = root/'app/build/outputs/apk/release/app-release-unsigned.apk'
+unsigned = out/'release-runtime-audit-unsigned.apk'
 signed = out/'release-runtime.apk'
+production_hash = hashlib.sha256(restored_production.read_bytes()).hexdigest()
+expected_production_hash = (out/'production-release-apk.sha256').read_text(encoding='utf8').strip()
+assert production_hash == expected_production_hash, 'Runtime audit did not restore the production release APK'
 assert entries(unsigned) == entries(signed), 'Runtime APK differs beyond signing records'
 report = {'commit':os.environ['GITHUB_SHA'], 'tests':REQUIRED_RUNTIME_TESTS, 'failures':0, 'skipped':0,
           'nativeTestClasses':native_test_classes,
           'emulator':{'api':35,'image':'system-images;android-35;default;x86_64'},
-          'unsignedApkSha256':hashlib.sha256(unsigned.read_bytes()).hexdigest(),
+          'productionApkSha256':production_hash,
+          'runtimeAuditUnsignedApkSha256':hashlib.sha256(unsigned.read_bytes()).hexdigest(),
           'runtimeApkSha256':hashlib.sha256(signed.read_bytes()).hexdigest(),
           'payloadSha256':digest(unsigned), 'payloadIdenticalExceptSignature':True,
+          'testAbiRulesAuditOnly':True,
           'canaryAbsentFromLogcat':True, 'signer':'ephemeral CI key; never a production signing approval',
           'networkScope':'local TLS fixtures, trust rejection, redirect/downgrade and cleartext rejection; no real account or BrowserStack run'}
 (out/'release-runtime-evidence.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')

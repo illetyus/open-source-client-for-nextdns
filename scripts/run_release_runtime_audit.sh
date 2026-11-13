@@ -13,12 +13,31 @@ NEXTDNS_CI_AUDIT_PASSWORD="$(openssl rand -hex 32)"
 echo "::add-mask::$NEXTDNS_CI_AUDIT_PASSWORD"
 keytool -genkeypair -keystore "$key" -storetype PKCS12 -alias upload -keyalg RSA -keysize 3072 -validity 2 \
   -dname 'CN=Disposable CI release audit' -storepass:env NEXTDNS_CI_AUDIT_PASSWORD -keypass:env NEXTDNS_CI_AUDIT_PASSWORD -noprompt
-"$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \
-  --key-pass env:NEXTDNS_CI_AUDIT_PASSWORD --out "$out/release-runtime.apk" app/build/outputs/apk/release/app-release-unsigned.apk
-"$tools/apksigner" verify --verbose --print-certs "$out/release-runtime.apk" > "$out/signature.txt"
-./gradlew :app:assembleReleaseAndroidTest -PreleaseRuntimeAudit=true -PscrollMinify=true --no-daemon
+production_apk=app/build/outputs/apk/release/app-release-unsigned.apk
+production_mapping=app/build/outputs/mapping/release
+production_apk_backup="$RUNNER_TEMP/release-production-unsigned.apk"
+production_mapping_backup="$RUNNER_TEMP/release-production-mapping"
+test -f "$production_apk"
+test -d "$production_mapping"
+cp "$production_apk" "$production_apk_backup"
+sha256sum "$production_apk_backup" | cut -d ' ' -f 1 > "$out/production-release-apk.sha256"
+cp -a "$production_mapping" "$production_mapping_backup"
+restore_production_release() {
+  cp "$production_apk_backup" "$production_apk"
+  rm -rf "$production_mapping"
+  cp -a "$production_mapping_backup" "$production_mapping"
+  diff -qr "$production_mapping_backup" "$production_mapping"
+}
+trap restore_production_release EXIT
+./gradlew :app:assembleRelease :app:assembleReleaseAndroidTest \
+  -PreleaseRuntimeAudit=true -PscrollMinify=true --no-daemon
+cp "$production_apk" "$out/release-runtime-audit-unsigned.apk"
 test_apk=$(find app/build/outputs/apk/androidTest/release -name '*.apk' -type f)
 test -n "$test_apk"
+restore_production_release
+"$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \
+  --key-pass env:NEXTDNS_CI_AUDIT_PASSWORD --out "$out/release-runtime.apk" "$out/release-runtime-audit-unsigned.apk"
+"$tools/apksigner" verify --verbose --print-certs "$out/release-runtime.apk" > "$out/signature.txt"
 "$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \
   --key-pass env:NEXTDNS_CI_AUDIT_PASSWORD --out "$out/release-runtime-test.apk" "$test_apk"
 unset NEXTDNS_CI_AUDIT_PASSWORD
@@ -39,7 +58,7 @@ sudo chmod 666 /dev/kvm
 "$ANDROID_HOME/emulator/emulator" -avd nextdns-release-audit -no-window -no-audio -no-boot-anim \
   -port 5554 -no-snapshot -gpu swiftshader_indirect -memory 2048 > "$out/emulator.log" 2>&1 &
 emulator_pid=$!
-trap 'kill "$emulator_pid" 2>/dev/null || true' EXIT
+trap 'kill "$emulator_pid" 2>/dev/null || true; restore_production_release' EXIT
 export ANDROID_SERIAL=emulator-5554
 timeout 180 adb wait-for-device
 for attempt in $(seq 1 120); do

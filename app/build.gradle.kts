@@ -27,6 +27,7 @@ android {
   val releaseStorePassword = System.getenv("STORE_PASSWORD")
   val releaseKeyPassword = System.getenv("KEY_PASSWORD")
   val releaseKeyAlias = System.getenv("KEY_ALIAS") ?: "upload"
+  val releaseRuntimeAudit = providers.gradleProperty("releaseRuntimeAudit").orNull == "true"
   val signingInputs = listOf(releaseKeystorePath, releaseStorePassword, releaseKeyPassword)
   val signingRequested = signingInputs.any { !it.isNullOrBlank() }
   val signingComplete = signingInputs.all { !it.isNullOrBlank() }
@@ -54,6 +55,10 @@ android {
       isMinifyEnabled = providers.gradleProperty("scrollMinify").orNull == "true"
       isShrinkResources = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      if (releaseRuntimeAudit) {
+        require(isMinifyEnabled) { "Release runtime audit requires the minified release variant" }
+        proguardFiles("proguard-release-test-abi.pro")
+      }
       testProguardFiles("test-proguard-rules.pro")
       // Release packaging is tested unsigned when CI has no signing secrets.
       if (signingRequested) signingConfig = signingConfigs.getByName("release")
@@ -83,7 +88,7 @@ android {
   testOptions { unitTests { isIncludeAndroidResources = true } }
   // A disposable CI emulator can instrument the release payload. The default
   // device-test variant remains debug for BrowserStack's existing workflow.
-  if (providers.gradleProperty("releaseRuntimeAudit").orNull == "true") {
+  if (releaseRuntimeAudit) {
     testBuildType = "release"
   }
   if (providers.gradleProperty("benchmarkUnitTests").orNull == "true") {
