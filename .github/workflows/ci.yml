@@ -141,7 +141,7 @@ jobs:
 
       - name: Setup Snyk CLI
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: snyk/actions/setup@ce71ff9eda12bc48837b2855bca31364cdfa93e2 # v1.0.0
+        uses: snyk/actions/setup@11b673cfb4b0dc0d860a1323caa199d54950dcce # v1.0.0
 
       - name: Snyk High-Severity Dependency Gate
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
