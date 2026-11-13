@@ -24,11 +24,16 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
             'kotlin.jvm.internal.Reflection',
             'kotlin.reflect.KClass',
             'kotlin.io.FilesKt',
+            'kotlin.text.StringsKt',
             'kotlinx.coroutines.BuildersKt',
             'com.example.data.local.NextDnsPreferences',
             'com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory',
         ):
             self.assertIn(symbol, rules)
+        self.assertIn(
+            'contains$default(java.lang.CharSequence,java.lang.CharSequence,boolean,int,java.lang.Object)',
+            rules,
+        )
 
     def test_release_emulator_audit_executes_native_device_flows(self):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
