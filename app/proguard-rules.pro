@@ -7,6 +7,12 @@
 # survive in the real release payload. Keep this one entry point, not the SDK.
 -keep class androidx.tracing.Trace { public *; }
 
+# AndroidX Test Core's TestDirCalculator calls this Kotlin stdlib facade from
+# the instrumentation APK. The test APK omits the app-shared stdlib copy, while
+# R8 sees no app reference and removes the facade. Preserve this small runtime
+# entry point in minified release APKs so AndroidJUnitRunner can start.
+-keep class kotlin.LazyKt { *; }
+
 # Optional JVM-only TLS providers, guarded by OkHttp Platform availability checks.
 # Narrower than Square's official consumer rules in parent-4.12.0/okhttp/.../okhttp3.pro.
 # Android's built-in TLS provider and certificate verification are unchanged.
