@@ -131,6 +131,7 @@ jobs:
         shell: bash
 
       - name: Upload coverage to Codecov
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -139,9 +140,11 @@ jobs:
           fail_ci_if_error: true
 
       - name: Setup Snyk CLI
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: snyk/actions/setup@ce71ff9eda12bc48837b2855bca31364cdfa93e2 # v1.0.0
 
       - name: Snyk High-Severity Dependency Gate
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           snyk test --sub-project=app --configuration-matching='^releaseRuntimeClasspath$' --project-name=open-source-client-for-nextdns-app-release --severity-threshold=high --json-file-output=build/compliance/snyk-app-release.json -- --no-daemon
           python3 scripts/verify_snyk_scope.py

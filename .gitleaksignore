@@ -1,0 +1,4 @@
+# Reviewed test fixtures and a preference-key name, not credentials.
+8d2c375ac28b484b7298a33109d987f85c6410c0:docs/release/code-quality-fix-evidence-2026-10-10.json:generic-api-key:346
+80239ab164f5af1cc6fb3bc7db48c20687bc210c:app/src/test/java/com/example/data/local/NextDnsPreferencesSecurityTest.kt:generic-api-key:99
+909a6dfc52ecccbfa98c1b4a3f07b18c7a6c40c7:app/src/main/java/com/example/data/local/NextDnsPreferences.kt:generic-api-key:24
