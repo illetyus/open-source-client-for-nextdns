@@ -193,6 +193,7 @@ jobs:
         uses: snyk/actions/setup@ce71ff9eda12bc48837b2855bca31364cdfa93e2 # v1.0.0
 
       - name: Snyk High-Severity Dependency Gate
+        id: snyk-release
         run: |
           snyk test --sub-project=app --configuration-matching='^releaseRuntimeClasspath$' --project-name=open-source-client-for-nextdns-app-release --severity-threshold=high --json-file-output=build/compliance/snyk-app-release.json -- --no-daemon
           python3 scripts/verify_snyk_scope.py
@@ -208,6 +209,9 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Signed release payload security on Android emulator
+        # Collect runtime evidence even if the independent dependency scan fails.
+        # The Snyk result still determines the overall job conclusion.
+        if: success() || (failure() && steps.snyk-release.conclusion == 'failure')
         run: bash scripts/run_release_runtime_audit.sh
         shell: bash
 
