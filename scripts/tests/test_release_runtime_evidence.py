@@ -3,10 +3,26 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from release_runtime_evidence import REQUIRED_RUNTIME_TESTS, validate_runtime_summary
+from release_runtime_evidence import REQUIRED_RUNTIME_TESTS, instrumentation_failure_summary, validate_runtime_summary
 
 
 class ReleaseRuntimeEvidenceTest(unittest.TestCase):
+    def test_failure_summary_retains_early_and_late_failures(self):
+        output = (
+            "1) first(com.example.AuditTest)\n"
+            "java.lang.NoSuchMethodError: missing binding\n"
+            "    at com.example.AuditTest.first(AuditTest.kt:5)\n"
+            + "    at android.app.Instrumentation.run(Instrumentation.java:1)\n" * 90
+            + "2) last(com.example.AuditTest)\n"
+            "java.lang.AssertionError: unexpected result\n"
+            "Tests run: 2, Failures: 2\n"
+        )
+        summary = instrumentation_failure_summary(output)
+        self.assertIn("NoSuchMethodError", summary)
+        self.assertIn("AuditTest.kt:5", summary)
+        self.assertIn("AssertionError", summary)
+        self.assertNotIn("android.app.Instrumentation.run", summary)
+
     def summary(self, **updates):
         value = {"tests": REQUIRED_RUNTIME_TESTS, "failures": 0, "skipped": 0}
         value.update(updates)

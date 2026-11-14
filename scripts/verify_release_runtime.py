@@ -5,7 +5,7 @@ import os
 import re
 from pathlib import Path
 from package_payload import digest, entries
-from release_runtime_evidence import REQUIRED_RUNTIME_TESTS
+from release_runtime_evidence import REQUIRED_RUNTIME_TESTS, instrumentation_failure_summary
 
 root = Path(__file__).resolve().parents[1]
 out = root/'build/compliance/runtime'
@@ -19,7 +19,7 @@ native_test_classes = [
     'com.example.WorldMapStrictModeTest',
 ]
 summaries = [int(count) for count in re.findall(r'OK \((\d+) tests?\)', text)]
-assert sum(summaries) == REQUIRED_RUNTIME_TESTS and 'INSTRUMENTATION_CODE: -1' in text, text[-3000:]
+assert sum(summaries) == REQUIRED_RUNTIME_TESTS and 'INSTRUMENTATION_CODE: -1' in text, instrumentation_failure_summary(text)
 assert all(test_class in text for test_class in native_test_classes), 'Every native release test class must appear in instrumentation output'
 assert not any(marker in text for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'Process crashed', 'INSTRUMENTATION_STATUS_CODE: -2'))
 statuses = re.findall(r'^INSTRUMENTATION_STATUS_CODE: (-?\d+)\s*$', text, re.M)

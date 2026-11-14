@@ -11,6 +11,7 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
         gradle = (ROOT / 'app/build.gradle.kts').read_text(encoding='utf8')
         rules = (ROOT / 'app/proguard-release-test-abi.pro').read_text(encoding='utf8')
+        production_rules = (ROOT / 'app/proguard-rules.pro').read_text(encoding='utf8')
 
         self.assertIn('production-release-apk.sha256', runner)
         self.assertIn('assembleRelease', runner)
@@ -18,22 +19,19 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         self.assertIn('restore_production_release', runner)
         self.assertIn('release-runtime-audit-unsigned.apk', runner)
         self.assertRegex(gradle, r'releaseRuntimeAudit[\s\S]{0,180}proguardFiles')
-        for symbol in (
-            'androidx.tracing.Trace',
-            'kotlin.LazyKt',
-            'kotlin.jvm.internal.Reflection',
-            'kotlin.reflect.KClass',
-            'kotlin.io.FilesKt',
-            'kotlin.text.StringsKt',
-            'kotlinx.coroutines.BuildersKt',
-            'com.example.data.local.NextDnsPreferences',
-            'com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory',
+        for rule in (
+            '-keep class androidx.** { *; }',
+            '-keep class com.squareup.moshi.** { *; }',
+            '-keep class kotlin.** { *; }',
+            '-keep class kotlinx.coroutines.** { *; }',
+            '-keep class okhttp3.** { *; }',
+            '-keep class okio.** { *; }',
+            '-keep class retrofit2.** { *; }',
+            '-keep class com.example.data.** { *; }',
+            'com.example.ui.screens.WorldMapChartKt',
         ):
-            self.assertIn(symbol, rules)
-        self.assertIn(
-            'contains$default(java.lang.CharSequence,java.lang.CharSequence,boolean,int,java.lang.Object)',
-            rules,
-        )
+            self.assertIn(rule, rules)
+            self.assertNotIn(rule, production_rules)
 
     def test_release_emulator_audit_executes_native_device_flows(self):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
