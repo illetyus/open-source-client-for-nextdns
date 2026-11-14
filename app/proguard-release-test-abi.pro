@@ -25,6 +25,9 @@
 -keep class com.example.ui.viewmodel.** { *; }
 -keep class com.example.ui.screens.LogsScreenKt { *; }
 -keep class com.example.ui.screens.WorldMapChartKt { *; }
+-keep class com.example.ui.screens.WorldMapGeometry {
+    public java.util.List getCountries();
+}
 -keep class com.example.MainActivity { *; }
 -keep class com.example.NextDnsApp { *; }
 -keep class com.example.BuildConfig { *; }
