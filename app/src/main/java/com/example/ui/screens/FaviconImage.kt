@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
@@ -23,6 +24,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
@@ -100,15 +106,46 @@ internal class NextDnsFaviconLoader(
   private val allowedHost: String = FAVICON_HOST,
   private val allowHttpForTests: Boolean = false
 ) {
+  private class Flight(val result: Deferred<Bitmap?>, var consumers: Int = 0)
+  private val flightLock = Any()
+  private val flights = mutableMapOf<String, Flight>()
+  private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+  private val resolvedUrls = LruCache<String, List<String>>(128)
   private val cache = object : LruCache<String, Bitmap>(MAX_FAVICON_CACHE_BYTES) {
     override fun sizeOf(key: String, value: Bitmap): Int = value.allocationByteCount
   }
 
-  suspend fun load(domain: String): Bitmap? {
-    val urls = urlsForDomain(domain).distinct().take(3)
-    val cacheKey = urls.firstOrNull() ?: return null
-    cache.get(cacheKey)?.let { return it }
+  suspend fun load(domain: String): Bitmap? = withContext(Dispatchers.IO) {
+    // IDN validation and URL encoding need not run on a scrolling row's Main thread.
+    // Validate each distinct raw IDN input before canonical URL/image sharing.
+    // Lowercasing here could alias an IDNA-rejected hostname to a cached one.
+    val domainKey = domain.trim()
+    val urls = resolvedUrls.get(domainKey) ?: urlsForDomain(domain).distinct().take(3).also {
+      if (it.isNotEmpty()) resolvedUrls.put(domainKey, it)
+    }
+    val cacheKey = urls.firstOrNull() ?: return@withContext null
+    val flight = synchronized(flightLock) {
+      cache.get(cacheKey)?.let { return@withContext it }
+      flights.getOrPut(cacheKey) {
+        Flight(scope.async(start = CoroutineStart.LAZY) { loadUrls(cacheKey, urls) })
+      }.also { it.consumers++ }
+    }
+    try {
+      // await does not propagate one consumer's cancellation into the shared Deferred.
+      flight.result.await()
+    } finally {
+      synchronized(flightLock) {
+        flight.consumers--
+        if (flight.consumers == 0) {
+          if (flights[cacheKey] === flight) flights.remove(cacheKey)
+          // Cancel before releasing the lock so a replacement owns a fresh request.
+          flight.result.cancel()
+        }
+      }
+    }
+  }
 
+  private suspend fun loadUrls(cacheKey: String, urls: List<String>): Bitmap? {
     return withTimeoutOrNull(FAVICON_TOTAL_TIMEOUT_MS.toLong()) {
       for (url in urls) {
         val downloaded = download(url) ?: continue
@@ -216,6 +253,10 @@ internal class NextDnsFaviconLoader(
 
 private val defaultNextDnsFaviconLoader = NextDnsFaviconLoader()
 
+// The benchmark variant supplies its own HTTPS-loopback loader. Production uses
+// the strict NextDNS resolver above, including its rejection of .invalid names.
+internal val LocalNextDnsFaviconLoader = staticCompositionLocalOf { defaultNextDnsFaviconLoader }
+
 @Composable
 fun FaviconImage(
   domain: String,
@@ -223,8 +264,9 @@ fun FaviconImage(
   fallbackLabel: String = domain
 ) {
   val appContext = LocalContext.current.applicationContext
-  val bitmap = produceState<Bitmap?>(initialValue = null, key1 = appContext, key2 = domain) {
-    value = defaultNextDnsFaviconLoader.load(domain)
+  val loader = LocalNextDnsFaviconLoader.current
+  val bitmap = produceState<Bitmap?>(initialValue = null, appContext, domain, loader) {
+    value = loader.load(domain)
   }.value
 
   if (bitmap == null) {

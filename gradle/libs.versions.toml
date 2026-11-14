@@ -33,7 +33,7 @@ composeRuntimeTracing = "1.7.0-rc01"
 benchmark = "1.5.0"
 profileInstaller = "1.4.0"
 uiAutomator = "2.3.0"
-tracingPerfetto = "1.0.0"
+tracingPerfetto = "1.0.1"
 
 
 [libraries]

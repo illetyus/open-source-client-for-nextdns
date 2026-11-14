@@ -11,6 +11,7 @@ import okhttp3.EventListener
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,6 +24,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -52,6 +55,62 @@ class NextDnsFaviconNetworkTest {
     assertNotNull(first)
     assertNotNull(second)
     assertEquals(1, server.requestCount)
+  }
+
+  @Test fun cachedUnicodeHostnameDoesNotBypassOriginalInputValidation() = runBlocking {
+    // IDNA2003 accepts sharp s, but rejects capital sharp s. Lowercasing the
+    // memo key first would let the rejected input reuse an accepted resolution.
+    val accepted = "\u00df.example.org"
+    val rejected = "\u1e9e.example.org"
+    assertTrue(nextDnsFaviconUrls(accepted).isNotEmpty())
+    assertTrue(nextDnsFaviconUrls(rejected).isEmpty())
+    server.enqueue(imageResponse(PNG_BYTES))
+    val loader = NextDnsFaviconLoader(
+      urlsForDomain = { input ->
+        if (nextDnsFaviconUrls(input).isEmpty()) emptyList()
+        else listOf(server.url("/favicon").toString())
+      },
+      allowedHost = server.hostName,
+      allowHttpForTests = true
+    )
+
+    assertNotNull(loader.load(accepted))
+    assertNull("An earlier cache entry must not turn rejected input into an icon", loader.load(rejected))
+    assertEquals(1, server.requestCount)
+  }
+
+  @Test fun overlappingConsumersShareOneRequestAndBitmap() = runBlocking {
+    server.enqueue(imageResponse(PNG_BYTES).setBodyDelay(200, TimeUnit.MILLISECONDS))
+    val loader = loader()
+    val first = async(start = CoroutineStart.UNDISPATCHED) { loader.load("example.com") }
+    val second = async(start = CoroutineStart.UNDISPATCHED) { loader.load("EXAMPLE.COM.") }
+
+    val a = first.await()
+    val b = second.await()
+    assertNotNull(a)
+    assertTrue("Consumers should share the decoded bitmap", a === b)
+    assertEquals("Only one network request for overlapping consumers", 1, server.requestCount)
+  }
+
+  @Test fun cancellingOneConsumerDoesNotCancelAnother() = runBlocking {
+    server.enqueue(imageResponse(PNG_BYTES).setBodyDelay(200, TimeUnit.MILLISECONDS))
+    val loader = loader()
+    val first = async(start = CoroutineStart.UNDISPATCHED) { loader.load("example.com") }
+    val second = async(start = CoroutineStart.UNDISPATCHED) { loader.load("example.com") }
+    assertNotNull(server.takeRequest(2, TimeUnit.SECONDS))
+    first.cancelAndJoin()
+
+    assertNotNull("The remaining consumer still receives its image", second.await())
+    assertEquals(1, server.requestCount)
+  }
+
+  @Test fun failedSharedLoadCanBeRetried() = runBlocking {
+    server.enqueue(MockResponse().setResponseCode(503))
+    val loader = loader()
+    assertNull(loader.load("example.com"))
+    server.enqueue(imageResponse(PNG_BYTES))
+    assertNotNull(loader.load("example.com"))
+    assertEquals("Failures must not be negatively cached", 2, server.requestCount)
   }
 
   @Test fun highResolutionSourceIsRetainedForSharperDomainIcons() = runBlocking {
@@ -148,9 +207,9 @@ class NextDnsFaviconNetworkTest {
     val callCancelled = CountDownLatch(1)
     server.enqueue(
       MockResponse()
-        .setHeadersDelay(5, TimeUnit.SECONDS)
-        .setBody(Buffer().write(PNG_BYTES))
-        .addHeader("Content-Type", "image/png")
+        // Hold the socket until cancellation, rather than racing a five-second
+        // headers timer against MockWebServer's own five-second shutdown limit.
+        .setSocketPolicy(SocketPolicy.NO_RESPONSE)
     )
     val client = OkHttpClient.Builder()
       .eventListenerFactory {

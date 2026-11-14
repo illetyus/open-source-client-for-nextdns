@@ -248,6 +248,8 @@ private fun AnalyticsLineChart(
   val lineColor = MaterialTheme.colorScheme.primary
   val gridColor = MaterialTheme.colorScheme.outlineVariant
   val description = AppStrings.get(R.string.analytics_series_chart_accessibility, rowLabel)
+  val values = row.points
+  val maxValue = remember(values) { values.maxOfOrNull { it.queries ?: 0L }?.coerceAtLeast(1L) ?: 1L }
   Canvas(
     modifier = modifier
       .clip(RoundedCornerShape(12.dp))
@@ -266,16 +268,16 @@ private fun AnalyticsLineChart(
     val right = size.width - 10.dp.toPx()
     val top = 12.dp.toPx()
     val bottom = size.height - 16.dp.toPx()
-    val maxValue = row.points.mapNotNull(SeriesPoint::queries).maxOrNull()?.coerceAtLeast(1L) ?: 1L
     repeat(4) { line ->
       val y = top + (bottom - top) * line / 3f
       drawLine(gridColor, Offset(left, y), Offset(right, y), strokeWidth = 1.dp.toPx())
     }
-    val values = row.points
     fun x(index: Int): Float = if (values.size <= 1) (left + right) / 2f
       else left + (right - left) * index / (values.size - 1).toFloat()
     fun y(value: Long): Float = bottom - (bottom - top) * (value.toDouble() / maxValue.toDouble()).toFloat()
-    values.zipWithNext().forEachIndexed { index, (first, second) ->
+    for (index in 0 until values.lastIndex) {
+      val first = values[index]
+      val second = values[index + 1]
       if (first.queries != null && second.queries != null) {
         drawLine(
           color = lineColor,
