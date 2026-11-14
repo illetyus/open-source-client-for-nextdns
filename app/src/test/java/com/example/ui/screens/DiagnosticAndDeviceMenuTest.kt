@@ -31,7 +31,7 @@ class DiagnosticAndDeviceMenuTest {
     LocalePreferences.setSelection(context, "en")
     var profile by mutableStateOf<NextDnsProfile?>(NextDnsProfile("aaaaaa", "A", "fp0123456789abcdef"))
     var result by mutableStateOf(DiagnosticTestResult(status = "ok", profileId = "fp0123456789abcdef", lastTestedTime = 1_000))
-    rule.setContent { AppTheme { ConnectionStatusBanner(profile, result, false, {}, {}) } }
+    rule.setContent { AppTheme { ConnectionStatusBanner(profile, result, false, {}) } }
     rule.onNodeWithText(AppStrings.get(R.string.ui_934b24bdc9)).assertIsDisplayed()
     rule.runOnIdle { result = result.copy(errorMessage = "Fixture timeout") }
     rule.onNodeWithText(AppStrings.get(R.string.ui_934b24bdc9)).assertDoesNotExist()

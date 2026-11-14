@@ -13,12 +13,12 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
         return value
 
     def test_accepts_current_complete_runtime_evidence(self):
-        validate_runtime_summary(self.summary(tests=17))
+        validate_runtime_summary(self.summary(tests=REQUIRED_RUNTIME_TESTS))
 
     def test_rejects_old_runtime_test_count(self):
         for old_count in (10, 12):
             with self.subTest(old_count=old_count):
-                with self.assertRaisesRegex(ValueError, "exactly 17 tests"):
+                with self.assertRaisesRegex(ValueError, f"exactly {REQUIRED_RUNTIME_TESTS} tests"):
                     validate_runtime_summary(self.summary(tests=old_count))
 
     def test_release_runtime_verifier_keeps_all_p06_classes_and_aggregates_runs(self):
@@ -28,7 +28,7 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
             "NativeApiFixtureTest",
             "NativeLegalViewportTest",
             "NativeLoginNavigationTest",
-            "NativeNotificationPermissionTest",
+            "NativeNotificationRuntimeAuditTest",
             "ReleaseSecurityRuntimeTest",
             "WorldMapStrictModeTest",
         ):

@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertContentDescriptionContains
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -70,6 +71,29 @@ class AnalyticsSeriesChartTest {
     rule.onNodeWithTag("analytics_series_selected_point")
       .assertTextContains(AppStrings.get(R.string.analytics_series_no_value), substring = true)
     rule.onNodeWithTag("analytics_series_rows").assertExists()
+  }
+
+  @Test fun knownStatusSeriesLabelsUseTheSelectedLanguage() {
+    LocalePreferences.setSelection(ApplicationProvider.getApplicationContext<NextDnsApp>(), "tr")
+    val row = SeriesRow(
+      key = "blocked",
+      label = "blocked",
+      points = listOf(SeriesPoint(Instant.parse("2026-10-20T00:00:00Z"), 3L))
+    )
+    rule.setContent {
+      AppTheme {
+        AnalyticsSeriesChart(
+          state = AnalyticsSeriesState(rows = listOf(row), intervalSeconds = 3_600L),
+          selectedMetric = SeriesMetric.STATUS, domainStatus = null, rootGrouped = false,
+          onMetricSelected = {}, onDomainStatusSelected = {}, onRootGroupedChanged = {}
+        )
+      }
+    }
+
+    rule.onNodeWithText("Engellendi").assertExists()
+    rule.onNodeWithText("Seçili: Engellendi").assertExists()
+    rule.onNodeWithTag("analytics_series_line_chart")
+      .assertContentDescriptionContains("Engellendi", substring = true)
   }
 
   @Test fun domainSeriesExposeOnlyDocumentedStatusAndRootControls() {

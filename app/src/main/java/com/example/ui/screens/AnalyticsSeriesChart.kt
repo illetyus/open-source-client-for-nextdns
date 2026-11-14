@@ -52,6 +52,17 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.text.NumberFormat
 
+private fun analyticsSeriesRowLabel(row: SeriesRow, metric: SeriesMetric): String {
+  if (metric != SeriesMetric.STATUS) return row.label
+  return when ((row.key.ifBlank { row.label }).trim().lowercase(java.util.Locale.ROOT)) {
+    "allowed" -> AppStrings.get(R.string.state_allowed)
+    "blocked" -> AppStrings.get(R.string.state_blocked)
+    "default" -> AppStrings.get(R.string.logs_status_default)
+    "error" -> AppStrings.get(R.string.logs_status_error)
+    else -> row.label
+  }
+}
+
 @Composable
 fun AnalyticsSeriesChart(
   state: AnalyticsSeriesState,
@@ -67,6 +78,7 @@ fun AnalyticsSeriesChart(
   var selectedRowKey by remember(state.rows) { mutableStateOf(state.rows.firstOrNull()?.key) }
   var selectedPointIndex by remember(state.rows) { mutableStateOf(0) }
   val selectedRow = state.rows.firstOrNull { it.key == selectedRowKey } ?: state.rows.firstOrNull()
+  val selectedRowLabel = selectedRow?.let { analyticsSeriesRowLabel(it, selectedMetric) }
   val selectedPoint = selectedRow?.points?.getOrNull(selectedPointIndex)
   val numberFormat = remember(AppStrings.locale) { NumberFormat.getIntegerInstance(AppStrings.locale) }
   val timestampFormatter = remember(AppStrings.locale) {
@@ -153,15 +165,17 @@ fun AnalyticsSeriesChart(
         SeriesRowSelector(
           rows = state.rows,
           selectedKey = selectedRow.key,
+          metric = selectedMetric,
           onSelect = { selectedRowKey = it; selectedPointIndex = 0 }
         )
         Text(
-          text = AppStrings.get(R.string.analytics_series_selected_entity, selectedRow.label),
+          text = AppStrings.get(R.string.analytics_series_selected_entity, selectedRowLabel.orEmpty()),
           style = MaterialTheme.typography.titleSmall,
           modifier = Modifier.padding(top = 8.dp)
         )
         AnalyticsLineChart(
           row = selectedRow,
+          rowLabel = selectedRowLabel.orEmpty(),
           selectedPointIndex = selectedPointIndex,
           onPointSelected = { selectedPointIndex = it },
           modifier = Modifier.fillMaxWidth().height(168.dp).padding(top = 8.dp)
@@ -202,7 +216,12 @@ fun AnalyticsSeriesChart(
 }
 
 @Composable
-private fun SeriesRowSelector(rows: List<SeriesRow>, selectedKey: String, onSelect: (String) -> Unit) {
+private fun SeriesRowSelector(
+  rows: List<SeriesRow>,
+  selectedKey: String,
+  metric: SeriesMetric,
+  onSelect: (String) -> Unit
+) {
   LazyRow(
     modifier = Modifier.fillMaxWidth().testTag("analytics_series_rows"),
     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -211,7 +230,7 @@ private fun SeriesRowSelector(rows: List<SeriesRow>, selectedKey: String, onSele
       FilterChip(
         selected = row.key == selectedKey,
         onClick = { onSelect(row.key) },
-        label = { Text(row.label, maxLines = 1) },
+        label = { Text(analyticsSeriesRowLabel(row, metric), maxLines = 1) },
         modifier = Modifier.testTag("analytics_series_row_$index")
       )
     }
@@ -221,13 +240,14 @@ private fun SeriesRowSelector(rows: List<SeriesRow>, selectedKey: String, onSele
 @Composable
 private fun AnalyticsLineChart(
   row: SeriesRow,
+  rowLabel: String,
   selectedPointIndex: Int,
   onPointSelected: (Int) -> Unit,
   modifier: Modifier = Modifier
 ) {
   val lineColor = MaterialTheme.colorScheme.primary
   val gridColor = MaterialTheme.colorScheme.outlineVariant
-  val description = AppStrings.get(R.string.analytics_series_chart_accessibility, row.label)
+  val description = AppStrings.get(R.string.analytics_series_chart_accessibility, rowLabel)
   Canvas(
     modifier = modifier
       .clip(RoundedCornerShape(12.dp))

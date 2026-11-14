@@ -187,6 +187,62 @@ class NextDnsApiContractTest {
   }
 
   @Test
+  fun securityResponseMapsEveryPublishedSecurityField() = runTest {
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody(
+          """{"data":{"threatIntelligenceFeeds":false,"aiThreatDetection":true,"googleSafeBrowsing":false,"cryptojacking":true,"dnsRebinding":false,"idnHomographs":true,"typosquatting":false,"dga":true,"nrd":false,"ddns":true,"parking":false,"csam":true,"tlds":[{"id":"ru"}]}}"""
+        )
+    )
+
+    val security = api.getSecurity("test-key", "profile-1").body()?.data
+
+    assertEquals(false, security?.threatIntelligenceFeeds)
+    assertEquals(true, security?.aiThreatDetection)
+    assertEquals(false, security?.googleSafeBrowsing)
+    assertEquals(true, security?.cryptojacking)
+    assertEquals(false, security?.dnsRebinding)
+    assertEquals(true, security?.idnHomographs)
+    assertEquals(false, security?.typosquatting)
+    assertEquals(true, security?.dga)
+    assertEquals(false, security?.nrd)
+    assertEquals(true, security?.ddns)
+    assertEquals(false, security?.parking)
+    assertEquals(true, security?.csam)
+    assertEquals(listOf("ru"), security?.tlds?.map { it.id })
+  }
+
+  @Test
+  fun bypassAgeVerificationUsesTheGeneralSettingsApiContract() = runTest {
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody("""{"data":{"bav":true}}""")
+    )
+
+    val settings = api.getSettings("test-key", "profile-1").body()?.data
+    val getRequest = server.takeRequest()
+
+    assertEquals(true, settings?.bav)
+    assertEquals("GET", getRequest.method)
+    assertEquals("/profiles/profile-1/settings", getRequest.path)
+
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody("""{"data":{}}""")
+    )
+
+    api.updateSettings("test-key", "profile-1", SettingsUpdateRequest(bav = false))
+    val patchRequest = server.takeRequest()
+
+    assertEquals("PATCH", patchRequest.method)
+    assertEquals("/profiles/profile-1/settings", patchRequest.path)
+    assertEquals("""{"bav":false}""", patchRequest.body.readUtf8())
+  }
+
+  @Test
   fun securityResponseRetainsUnknownJsonForReadOnlyDiscovery() = runTest {
     server.enqueue(
       MockResponse()
@@ -215,6 +271,40 @@ class NextDnsApiContractTest {
     val serialized = moshi.adapter(SecurityDto::class.java).toJson(security)
     assertFalse(serialized.contains("previewBoolean"))
     assertFalse(serialized.contains("value-hidden"))
+  }
+
+  @Test
+  fun observedSecurityApiFlagsAreTypedInsteadOfClassifiedAsUnknown() = runTest {
+    val fields = linkedMapOf(
+      "dataDropServices" to true,
+      "decentralizedWebGateways" to false,
+      "dnsDataExfiltration" to true,
+      "dnsPayloadDelivery" to false,
+      "fastFluxNetworks" to true,
+      "freeHostingDomains" to false,
+      "highRiskTlds" to true,
+      "newlyActiveDomains" to false,
+      "residentialHosting" to true,
+      "tunnelingEndpoints" to false,
+      "untrustedCertificates" to true
+    )
+    val json = fields.entries.joinToString(",", "{", "}") { (name, value) ->
+      "\"$name\":$value"
+    }
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody("""{"data":$json}""")
+    )
+
+    val security = api.getSecurity("test-key", "profile-1").body()?.data!!
+    val serialized = moshi.adapter(SecurityDto::class.java).toJson(security)
+    @Suppress("UNCHECKED_CAST")
+    val typedFields = moshi.adapter(Map::class.java).fromJson(serialized) as Map<String, Any?>
+
+    assertTrue("Observed API keys must leave the unknown-field bucket", security.unknownFields.isEmpty())
+    assertTrue("Observed API keys must not be shown as unverified read-only fields", security.discoverUnverifiedFields().fields.isEmpty())
+    fields.forEach { (name, value) -> assertEquals(value, typedFields[name]) }
   }
 
   @Test
@@ -343,10 +433,47 @@ class NextDnsApiContractTest {
 
     val request = server.takeRequest()
     val body = request.body.readUtf8()
+    assertEquals("PATCH", request.method)
+    assertEquals("/profiles/profile-1/security", request.path)
     assertTrue(body.contains("\"googleSafeBrowsing\":false"))
     assertFalse(body.contains("threatIntelligenceFeeds"))
     assertFalse(body.contains("aiThreatDetection"))
     assertFalse(body.contains("cryptojacking"))
+  }
+
+  @Test
+  fun securityMutationSupportsEachObservedApiFlagAsAnIsolatedPatch() = runTest {
+    val flags = listOf(
+      "dataDropServices" to true,
+      "decentralizedWebGateways" to false,
+      "dnsDataExfiltration" to true,
+      "dnsPayloadDelivery" to false,
+      "fastFluxNetworks" to true,
+      "freeHostingDomains" to false,
+      "highRiskTlds" to true,
+      "newlyActiveDomains" to false,
+      "residentialHosting" to true,
+      "tunnelingEndpoints" to false,
+      "untrustedCertificates" to true
+    )
+
+    flags.forEach { (name, value) ->
+      server.enqueue(
+        MockResponse()
+          .setResponseCode(200)
+          .setBody("""{"data":null}""")
+      )
+      val body = moshi.adapter(SecurityUpdateRequest::class.java)
+        .fromJson("""{"$name":$value}""")!!
+
+      val response = api.updateSecurity("test-key", "profile-1", body)
+      val request = server.takeRequest()
+
+      assertTrue(response.isSuccessful)
+      assertEquals("PATCH", request.method)
+      assertEquals("/profiles/profile-1/security", request.path)
+      assertEquals("""{"$name":$value}""", request.body.readUtf8())
+    }
   }
 
   @Test

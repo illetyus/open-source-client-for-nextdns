@@ -70,7 +70,7 @@ class LocaleRenderingTest {
         val density = LocalDensity.current
         CompositionLocalProvider(LocalDensity provides Density(density.density, 1.5f)) {
           AppTheme {
-            ConnectionStatusBanner(null, DiagnosticTestResult(), true, {}, {}, Modifier.padding(horizontal = 16.dp))
+            ConnectionStatusBanner(null, DiagnosticTestResult(), true, {}, Modifier.padding(horizontal = 16.dp))
           }
         }
       }

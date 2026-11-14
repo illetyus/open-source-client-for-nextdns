@@ -1301,7 +1301,7 @@
       "reason": "The user deferred the non-NextDNS speed-test feature; no public test server or endpoint was validated.",
       "removedByCommit": "111cc9c8cc5cb5ac52ff12cc3bb1cb5f51319bef",
       "regressions": [
-        "AccountSettingsFlowTest.speedTestEntryIsAbsentFromAccountScreen",
+        "AccountSettingsFlowTest.accountShortcutAndSeparateConnectionPageAreRemoved",
         "RetiredFeaturePreferencesTest.retiredSpeedSettingsAreClearedWithoutTouchingCredentialsThemeLocaleOrLegalAcceptance",
         "RetiredFeaturePreferencesTest.retiredSpeedSettingsCleanupIsIdempotent",
         "release_dex_audit rejects retired speed-test code and endpoint markers"

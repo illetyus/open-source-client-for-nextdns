@@ -58,7 +58,7 @@ class QualityRegressionEvidenceTest(unittest.TestCase):
 
     def test_retired_speed_regression_needs_removal_evidence(self):
         required = quality.REQUIRED
-        account_case = ("com.example.audit.AccountSettingsFlowTest", "speedTestEntryIsAbsentFromAccountScreen")
+        account_case = ("com.example.audit.AccountSettingsFlowTest", "accountShortcutAndSeparateConnectionPageAreRemoved")
         preferences_class = "com.example.data.local.RetiredFeaturePreferencesTest"
         self.assertIn(account_case, required["NDNS-061"])
         self.assertIn((preferences_class, "retiredSpeedSettingsAreClearedWithoutTouchingCredentialsThemeLocaleOrLegalAcceptance"), required["NDNS-061"])

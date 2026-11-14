@@ -517,6 +517,9 @@
     <string name="month_short_11">"Kas"</string>
     <string name="month_short_12">"Ara"</string>
     <string name="web3_description">"Web3, blok zinciri alan adları ve IPFS gibi dağıtık ağları kapsar. Bu ayar, NextDNS’in bu adları çözümlemesini etkinleştirir. Bazı tarayıcılarda adresin sonuna / eklemek gerekebilir (ör. vitalik.eth/)."</string>
+    <string name="bypass_age_verification_title">Yaş doğrulamasını atla</string>
+    <string name="bypass_age_verification_description">NextDNS profilinde desteklenen yaş doğrulama sayfalarını atlama seçeneğini etkinleştirir.</string>
+    <string name="bypass_age_verification_enable">Etkinleştir</string>
     <plurals name="seconds_ago">
         <item quantity="one">%1$d saniye önce</item>
         <item quantity="other">%1$d saniye önce</item>
@@ -594,8 +597,6 @@
     <string name="sync_all_success">"Tüm bölümler NextDNS ile eşitlendi."</string>
     <string name="account_status_connected">"API bağlı • %1$d profil"</string>
     <string name="account_status_connected_many">"API bağlı • %1$d profil"</string>
-    <string name="account_profile_action">NextDNS bağlantısını ve profilleri aç</string>
-    <string name="account_profile_return">Uygulamaya dön</string>
     <string name="account_status_connecting">"API bağlantısı denetleniyor…"</string>
     <string name="account_status_disconnected">"API bağlı değil"</string>
     <string name="account_status_error">"API bağlantısı kurulamadı"</string>
@@ -607,7 +608,6 @@
     <string name="legal_and_about">"Yasal bilgiler ve hakkında"</string>
     <string name="app_preferences">"Uygulama tercihleri"</string>
     <string name="nextdns_service_settings">"NextDNS hizmet ayarları"</string>
-    <string name="nav_connection">"NextDNS bağlantısı"</string>
     <string name="settings_delete_profile">"NextDNS profilini sil"</string>
     <string name="traffic_country_tap_hint">"Trafik ayrıntıları için haritada bir ülkeye dokunun veya ülke seçicisini kullanın."</string>
     <string name="traffic_map_unavailable">"Trafik haritası bilgisi alınamıyor."</string>
@@ -620,8 +620,8 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Bu ülkedeki en sık alan adları"</string>
     <string name="traffic_country_map_accessibility">"Etkileşimli trafik varış noktaları haritası. DNS trafiğini incelemek için haritadan veya ülke seçicisinden ülke seçin."</string>
-    <string name="security_unverified_title">Doğrulanmamış API güvenlik alanları</string>
-    <string name="security_unverified_explanation">Bu anahtarlar sunucu yanıtından geldi. Anlamları ve yazma desteği doğrulanmadı. Yalnızca Boolean değerleri gösterilir; buradan hiçbir alan değiştirilemez.</string>
+    <string name="security_unverified_title">Ek sunucu alanları (salt okunur)</string>
+    <string name="security_unverified_explanation">Bu anahtarlar yayımlanmış Güvenlik API şemasının dışındadır. Tanınan NextDNS seçenekleri ilgili ayar bölümlerinde gösterilir; bilinmeyen güvenlik alanları salt okunur kalır.</string>
     <string name="security_unverified_boolean">Boolean değeri: %1$s · salt okunur</string>
     <string name="security_unverified_text">Metin · değer gizli · salt okunur</string>
     <string name="security_unverified_number">Sayı · değer gizli · salt okunur</string>
@@ -662,6 +662,7 @@
     <string name="analytics_series_metric_encryption">DNS şifrelemesi</string>
     <string name="analytics_series_metric_protocols">Protokoller</string>
     <string name="analytics_series_metric_ips">IP adresleri</string>
+    <string name="analytics_ips_title">IP adresleri</string>
     <string name="analytics_series_metric_query_types">Sorgu türleri</string>
     <string name="analytics_series_metric_ip_versions">IP sürümleri</string>
     <string name="analytics_series_domain_all">Tüm durumlar</string>
@@ -675,4 +676,16 @@
     <string name="analytics_series_table_heading">Son zaman dilimleri</string>
     <string name="analytics_series_chart_accessibility">%1$s için etkileşimli zaman serisi grafiği. Zamanı ve sorgu sayısını incelemek için bir nokta seçin.</string>
     <string name="setup_profile_identity_unavailable">Profil kimliği doğrulanamadığı için kurulum yönergeleri kullanılamıyor.</string>
+    <string name="security_api_toggle_description">Seçili NextDNS profiline uygulanır.</string>
+    <string name="security_data_drop_services_title">Veri Bırakma Hizmetleri</string>
+    <string name="security_decentralized_web_gateways_title">Merkeziyetsiz Web Ağ Geçitleri</string>
+    <string name="security_dns_data_exfiltration_title">DNS Üzerinden Veri Sızdırma</string>
+    <string name="security_dns_payload_delivery_title">DNS Yük İletimi</string>
+    <string name="security_fast_flux_networks_title">Fast-Flux Ağları</string>
+    <string name="security_free_hosting_domains_title">Ücretsiz Barındırma Alan Adları</string>
+    <string name="security_high_risk_tlds_title">Yüksek Riskli Üst Düzey Alan Adları</string>
+    <string name="security_newly_active_domains_title">Yeni Etkinleşen Alan Adları</string>
+    <string name="security_residential_hosting_title">Konut Ağı Barındırması</string>
+    <string name="security_tunneling_endpoints_title">Tünel Uç Noktaları</string>
+    <string name="security_untrusted_certificates_title">Güvenilmeyen Sertifikalar</string>
 </resources>
