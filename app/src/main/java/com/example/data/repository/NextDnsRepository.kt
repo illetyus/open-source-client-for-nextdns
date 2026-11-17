@@ -100,8 +100,8 @@ class NextDnsRepository(
 
   private val _securitySettings = MutableStateFlow(SecuritySettings())
   val securitySettings = _securitySettings.asStateFlow()
-  private val _unverifiedSecurityFields = MutableStateFlow(SecurityFieldDiscovery())
-  val unverifiedSecurityFields = _unverifiedSecurityFields.asStateFlow()
+  private val _securityOptions = MutableStateFlow(SecurityOptions())
+  val securityOptions = _securityOptions.asStateFlow()
 
   private val _privacySettings = MutableStateFlow(PrivacySettings())
   val privacySettings = _privacySettings.asStateFlow()
@@ -213,7 +213,7 @@ class NextDnsRepository(
     _logsHistoryFilter.value = LogsHistoryFilter()
     resumeLogsStreamingAfterHistoryFilter = false
     _logsPaginationState.value = LogsPaginationState()
-    _unverifiedSecurityFields.value = SecurityFieldDiscovery()
+    _securityOptions.value = SecurityOptions()
     analyticsRequest = null
     analyticsSeriesGeneration++
     _analyticsSeries.value = AnalyticsSeriesState()
@@ -315,7 +315,10 @@ class NextDnsRepository(
     refreshSectionForSession(section)
   }
 
-  private suspend fun refreshSectionForSession(section: SyncSection): Boolean {
+  private suspend fun refreshSectionForSession(
+    section: SyncSection,
+    onSecurityRead: ((SecurityOptions) -> Unit)? = null
+  ): Boolean {
     val snapshot = checkNotNull(currentCoroutineContext()[SessionContext]).snapshot
     val key = snapshot.apiKey
     val profileId = snapshot.profileId
@@ -332,7 +335,7 @@ class NextDnsRepository(
     try {
       success = withContext(RefreshContext(section, token)) {
         when (section) {
-          SyncSection.SECURITY -> applySecuritySettingsFromApi(key, profileId)
+          SyncSection.SECURITY -> applySecuritySettingsFromApi(key, profileId, onSecurityRead)
           SyncSection.PRIVACY -> applyPrivacySettingsFromApi(key, profileId)
           SyncSection.PARENTAL -> applyParentalSettingsFromApi(key, profileId)
           SyncSection.DENYLIST -> applyDenylistFromApi(key, profileId)
@@ -369,6 +372,7 @@ class NextDnsRepository(
     section: SyncSection,
     operationName: String,
     verify: () -> Boolean,
+    onSecurityRead: ((SecurityOptions) -> Unit)? = null,
     action: suspend (apiKey: String, profileId: String) -> Response<NextDnsMutationResponse>
   ): Result<Unit> = withSessionContext {
     val snapshot = checkNotNull(currentCoroutineContext()[SessionContext]).snapshot
@@ -397,7 +401,8 @@ class NextDnsRepository(
         !response.isMutationAccepted() -> response.body()?.errors?.firstOrNull()?.detail
           ?: AppStrings.get(R.string.operation_http, response.code())
         // Read back the captured target, never recapture a different active profile.
-        !refreshSectionForSession(section) || !commitCurrentSession { verify() } -> AppStrings.get(R.string.ui_4940b95279)
+        !refreshSectionForSession(section, onSecurityRead) || !commitCurrentSession { verify() } ->
+          AppStrings.get(R.string.ui_4940b95279)
         else -> null
       }
       if (message != null) {
@@ -844,7 +849,11 @@ class NextDnsRepository(
   // Settings Loading Sub-Routines (Guard Clause & Single Responsibility)
   // =========================================================================
 
-  private suspend fun applySecuritySettingsFromApi(key: String, profileId: String): Boolean {
+  private suspend fun applySecuritySettingsFromApi(
+    key: String,
+    profileId: String,
+    onSecurityRead: ((SecurityOptions) -> Unit)?
+  ): Boolean {
     val secResp = safeApiCall("applySecuritySettings") {
       apiService.getSecurity(key, profileId)
     } ?: return false
@@ -853,7 +862,13 @@ class NextDnsRepository(
     val d = body.data ?: return false
     return commitCurrentSession {
       val previous = _securitySettings.value
-      _unverifiedSecurityFields.value = d.discoverUnverifiedFields()
+      val serverOptions = SecurityOptions(
+        algorithmicallyGeneratedDomains = d.algorithmicallyGeneratedDomains,
+        dnsDataExfiltration = d.dnsDataExfiltration,
+        fastFluxNetworks = d.fastFluxNetworks
+      )
+      _securityOptions.value = serverOptions
+      onSecurityRead?.invoke(serverOptions)
 
       val tldList = d.tlds?.map { it.id } ?: previous.blockedTlds
       val updated = SecuritySettings(
@@ -880,7 +895,8 @@ class NextDnsRepository(
         residentialHosting = d.residentialHosting ?: previous.residentialHosting,
         tunnelingEndpoints = d.tunnelingEndpoints ?: previous.tunnelingEndpoints,
         untrustedCertificates = d.untrustedCertificates ?: previous.untrustedCertificates,
-        blockedTlds = tldList
+        blockedTlds = tldList,
+        algorithmicallyGeneratedDomains = d.algorithmicallyGeneratedDomains ?: previous.algorithmicallyGeneratedDomains
       )
       _securitySettings.value = updated
       preferences.saveSecuritySettings(profileId, updated)
@@ -1505,9 +1521,8 @@ class NextDnsRepository(
       SecurityFlag.GOOGLE_SAFE_BROWSING -> SecurityUpdateRequest(googleSafeBrowsing = enabled)
       SecurityFlag.CRYPTOJACKING -> SecurityUpdateRequest(cryptojacking = enabled)
       SecurityFlag.DNS_REBINDING -> SecurityUpdateRequest(dnsRebinding = enabled)
-      SecurityFlag.IDN_HOMOGRAPHS -> SecurityUpdateRequest(idnHomographs = enabled)
-      SecurityFlag.TYPOSQUATTING -> SecurityUpdateRequest(typosquatting = enabled)
-      SecurityFlag.DGA -> SecurityUpdateRequest(dga = enabled)
+      SecurityFlag.ALGORITHMICALLY_GENERATED_DOMAINS ->
+        SecurityUpdateRequest(algorithmicallyGeneratedDomains = enabled)
       SecurityFlag.NRD -> SecurityUpdateRequest(nrd = enabled)
       SecurityFlag.DDNS -> SecurityUpdateRequest(ddns = enabled)
       SecurityFlag.PARKING -> SecurityUpdateRequest(parking = enabled)
@@ -1525,9 +1540,11 @@ class NextDnsRepository(
       SecurityFlag.UNTRUSTED_CERTIFICATES -> SecurityUpdateRequest(untrustedCertificates = enabled)
     }
 
+    var serverOptions: SecurityOptions? = null
     return mutateSection(
       section = SyncSection.SECURITY,
       operationName = "setSecurityFlag",
+      onSecurityRead = { serverOptions = it },
       verify = {
         when (flag) {
           SecurityFlag.THREAT_INTELLIGENCE_FEEDS -> _securitySettings.value.threatIntelligenceFeeds
@@ -1535,18 +1552,16 @@ class NextDnsRepository(
           SecurityFlag.GOOGLE_SAFE_BROWSING -> _securitySettings.value.googleSafeBrowsing
           SecurityFlag.CRYPTOJACKING -> _securitySettings.value.cryptojacking
           SecurityFlag.DNS_REBINDING -> _securitySettings.value.dnsRebinding
-          SecurityFlag.IDN_HOMOGRAPHS -> _securitySettings.value.idnHomographs
-          SecurityFlag.TYPOSQUATTING -> _securitySettings.value.typosquatting
-          SecurityFlag.DGA -> _securitySettings.value.dga
+          SecurityFlag.ALGORITHMICALLY_GENERATED_DOMAINS -> serverOptions?.algorithmicallyGeneratedDomains
           SecurityFlag.NRD -> _securitySettings.value.nrd
           SecurityFlag.DDNS -> _securitySettings.value.ddns
           SecurityFlag.PARKING -> _securitySettings.value.parkedDomains
           SecurityFlag.CSAM -> _securitySettings.value.csam
           SecurityFlag.DATA_DROP_SERVICES -> _securitySettings.value.dataDropServices
           SecurityFlag.DECENTRALIZED_WEB_GATEWAYS -> _securitySettings.value.decentralizedWebGateways
-          SecurityFlag.DNS_DATA_EXFILTRATION -> _securitySettings.value.dnsDataExfiltration
+          SecurityFlag.DNS_DATA_EXFILTRATION -> serverOptions?.dnsDataExfiltration
           SecurityFlag.DNS_PAYLOAD_DELIVERY -> _securitySettings.value.dnsPayloadDelivery
-          SecurityFlag.FAST_FLUX_NETWORKS -> _securitySettings.value.fastFluxNetworks
+          SecurityFlag.FAST_FLUX_NETWORKS -> serverOptions?.fastFluxNetworks
           SecurityFlag.FREE_HOSTING_DOMAINS -> _securitySettings.value.freeHostingDomains
           SecurityFlag.HIGH_RISK_TLDS -> _securitySettings.value.highRiskTlds
           SecurityFlag.NEWLY_ACTIVE_DOMAINS -> _securitySettings.value.newlyActiveDomains

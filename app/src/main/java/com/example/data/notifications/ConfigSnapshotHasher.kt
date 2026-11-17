@@ -46,7 +46,11 @@ object ConfigSnapshotHasher {
       appendBool(snapshot.security.untrustedCertificates)
       appendList(snapshot.security.tlds.orEmpty().map { it.id })
       append("unknown-security:")
-      appendCanonicalValue(snapshot.security.unknownFields)
+      val additionalSecurity = snapshot.security.algorithmicallyGeneratedDomains?.let { generated ->
+        // Keep snapshots stable when this previously untyped setting first becomes recognized.
+        snapshot.security.unknownFields + ("algorithmicallyGeneratedDomains" to generated)
+      } ?: snapshot.security.unknownFields
+      appendCanonicalValue(additionalSecurity)
       append("overflow:").append(snapshot.security.unknownFieldOverflowCount).append(';')
       append(snapshot.security.unknownFieldOverflowDigest).append(';')
 

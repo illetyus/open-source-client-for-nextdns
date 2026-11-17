@@ -39,7 +39,15 @@ data class SecuritySettings(
   val residentialHosting: Boolean = false,
   val tunnelingEndpoints: Boolean = false,
   val untrustedCertificates: Boolean = false,
-  val blockedTlds: List<String> = emptyList()
+  val blockedTlds: List<String> = emptyList(),
+  val algorithmicallyGeneratedDomains: Boolean? = null
+)
+
+/** Only values explicitly returned by Security GET for the current profile. */
+data class SecurityOptions(
+  val algorithmicallyGeneratedDomains: Boolean? = null,
+  val dnsDataExfiltration: Boolean? = null,
+  val fastFluxNetworks: Boolean? = null
 )
 
 data class BlocklistEntry(

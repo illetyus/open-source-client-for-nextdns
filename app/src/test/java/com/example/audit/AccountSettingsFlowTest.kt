@@ -8,6 +8,7 @@ import com.example.R
 import com.example.data.model.AllowDenyItem
 import com.example.data.model.NativeTrackingEntry
 import com.example.data.model.PrivacySettings
+import com.example.data.repository.SyncSection
 import com.example.data.repository.TldCatalogLoadState
 import com.example.i18n.AppStrings
 import com.example.i18n.LocalePreferences
@@ -29,6 +30,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import androidx.compose.ui.unit.dp
 import org.junit.runner.RunWith
@@ -233,9 +235,6 @@ class AccountSettingsFlowTest : AuditFixture() {
       R.string.ui_b6b6e376c7,
       R.string.ui_309e669643,
       R.string.ui_7a41105eb3,
-      R.string.ui_9904d77eb3,
-      R.string.ui_6194b3ff35,
-      R.string.ui_fa2b128b73,
       R.string.ui_c3cd82c4f0,
       R.string.ui_3399d9a672,
       R.string.ui_b8b2a448eb,
@@ -250,10 +249,13 @@ class AccountSettingsFlowTest : AuditFixture() {
 
   @Test fun observedNextDnsSecurityFieldsRenderAsSwitches() {
     english()
+    response = { json("""{"data":{"algorithmicallyGeneratedDomains":false,"dnsDataExfiltration":true,"fastFluxNetworks":false}}""") }
+    assertTrue(runBlocking { repository.refreshSection(SyncSection.SECURITY) })
     val model = NextDnsViewModel(repository)
     rule.setContent { AppTheme { SecurityScreen(model) } }
 
     val observedFields = listOf(
+      "algorithmicallyGeneratedDomains" to R.string.security_algorithmically_generated_domains_title,
       "dataDropServices" to R.string.security_data_drop_services_title,
       "decentralizedWebGateways" to R.string.security_decentralized_web_gateways_title,
       "dnsDataExfiltration" to R.string.security_dns_data_exfiltration_title,
@@ -280,6 +282,59 @@ class AccountSettingsFlowTest : AuditFixture() {
           )
         )
     }
+  }
+
+  @Test fun securityOptionsAppearOnlyForTheCurrentProfileAndSaveTheCurrentField() {
+    english()
+    val savedBody = java.util.concurrent.atomic.AtomicReference<String?>()
+    response = { request ->
+      when {
+        request.method == "PATCH" && request.path == "/profiles/aaaaaa/security" -> {
+          savedBody.set(request.body.readUtf8())
+          json("{}")
+        }
+        request.path == "/profiles/aaaaaa/security" -> json(
+          """{"data":{"algorithmicallyGeneratedDomains":${savedBody.get() != null},"dnsDataExfiltration":true,"fastFluxNetworks":false}}"""
+        )
+        else -> json("""{"data":{"dnsRebinding":true}}""")
+      }
+    }
+    assertTrue(runBlocking { repository.refreshSection(SyncSection.SECURITY) })
+
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SecurityScreen(model) } }
+
+    val securityList = rule.onNodeWithTag("security_settings_list")
+    val switchRole = SemanticsMatcher.expectValue(
+      androidx.compose.ui.semantics.SemanticsProperties.Role,
+      androidx.compose.ui.semantics.Role.Switch
+    )
+    val featureTag = "security_flag_algorithmicallyGeneratedDomains"
+    securityList.performScrollToNode(hasTestTag(featureTag))
+    rule.onNodeWithText(AppStrings.get(R.string.security_algorithmically_generated_domains_description)).assertExists()
+    val domainSwitch = rule.onNode(switchRole and hasAnyAncestor(hasTestTag(featureTag)), useUnmergedTree = true)
+    domainSwitch.assertIsOff().performClick()
+    rule.waitUntil(10_000) { repository.securityOptions.value.algorithmicallyGeneratedDomains == true }
+    domainSwitch.assertIsOn()
+    assertEquals("""{"algorithmicallyGeneratedDomains":true}""", savedBody.get())
+
+    listOf(
+      "dnsDataExfiltration" to R.string.security_dns_data_exfiltration_description,
+      "fastFluxNetworks" to R.string.security_fast_flux_networks_description
+    ).forEach { (feature, description) ->
+      securityList.performScrollToNode(hasTestTag("security_flag_$feature"))
+      rule.onNodeWithText(AppStrings.get(description)).assertExists()
+    }
+
+    rule.runOnIdle { repository.setActiveProfile("bbbbbb") }
+    assertTrue(runBlocking { repository.refreshSection(SyncSection.SECURITY) })
+    listOf(featureTag, "security_flag_dnsDataExfiltration", "security_flag_fastFluxNetworks").forEach { tag ->
+      assertThrows(AssertionError::class.java) {
+        securityList.performScrollToNode(hasTestTag(tag))
+      }
+    }
+    securityList.performScrollToNode(hasText(AppStrings.get(R.string.ui_7a41105eb3)))
+    rule.onNodeWithText(AppStrings.get(R.string.ui_7a41105eb3)).assertExists()
   }
 
   @Test fun successfulEmptyTldCatalogIsNotReportedAsANetworkFailure() = runBlocking {

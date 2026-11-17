@@ -63,6 +63,7 @@ internal class SecurityDtoJsonAdapterFactory : JsonAdapter.Factory {
       "idnHomographs",
       "typosquatting",
       "dga",
+      "algorithmicallyGeneratedDomains",
       "nrd",
       "ddns",
       "parking",
