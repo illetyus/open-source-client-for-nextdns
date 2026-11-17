@@ -84,8 +84,10 @@ internal fun nextDnsFaviconUrls(domain: String): List<String> {
 
   val hexHostname = hostname.toByteArray(StandardCharsets.US_ASCII)
     .joinToString(separator = "") { byte -> "%02x".format(Locale.ROOT, byte.toInt() and 0xff) }
-  return listOf("3x", "2x", "1x").map { scale ->
-    "https://$FAVICON_HOST/hex:$hexHostname@$scale.png"
+  // The web dashboard's @Nx paths redirect here. Request the PNG directly
+  // so the icon client can continue refusing all redirects.
+  return listOf(48, 32, 16).map { size ->
+    "https://$FAVICON_HOST/hex:$hexHostname.png?size=$size&theme=light"
   }
 }
 
