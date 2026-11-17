@@ -35,6 +35,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.LooperMode
+import org.robolectric.shadows.ShadowPausedLooper
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.io.ByteArrayOutputStream
@@ -816,7 +818,9 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
     assertFalse(repository.isLiveStreaming.value)
   }
 
-  @Test fun liveLogStreamRetainsOnlyTheMostRecentThousandEntries() = runBlocking {
+  @Test
+  @LooperMode(LooperMode.Mode.PAUSED)
+  fun liveLogStreamRetainsOnlyTheMostRecentThousandEntries() = runBlocking {
     val streamBodyEnded = CountDownLatch(1)
     val client = OkHttpClient.Builder()
       .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().url(server.url("/stream")).build()) }
@@ -841,13 +845,13 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
 
     repository.startLogsStream()
     try {
+      val mainLooper = shadowOf(Looper.getMainLooper()) as ShadowPausedLooper
       val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
       while ((streamBodyEnded.count > 0 || repository.logs.value.firstOrNull()?.domain != "host-1099.example") &&
         System.nanoTime() < deadline) {
-        // Each SSE event switches to Dispatchers.Main before it can be consumed.
-        // Pump Robolectric's main looper instead of blocking it on CountDownLatch.await.
-        shadowOf(Looper.getMainLooper()).idle()
-        Thread.sleep(1)
+        // The queue wakes as soon as an SSE event posts work to Dispatchers.Main.
+        mainLooper.poll(10)
+        mainLooper.idle()
       }
       assertTrue("SSE response should finish", streamBodyEnded.count == 0L)
       assertEquals(1_000, repository.logs.value.size)
