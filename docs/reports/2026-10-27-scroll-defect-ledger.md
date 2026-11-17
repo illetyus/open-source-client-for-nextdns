@@ -3,6 +3,11 @@
 This ledger belongs to PR #37 and the approved local scroll plan. None of these
 entries grants physical-device performance acceptance or public-release approval.
 
+GitHub Actions run [479](https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/43616098330)
+passed the signed release-payload emulator check and the high-severity Snyk
+check for commit `7891ca3`. This closes the earlier emulator failures at that
+revision. The subsequent Logs locale change requires its own run.
+
 ## SCROLL-01: minified instrumentation desugaring collision
 
 **Reproduced; fix under verification.** CI run `40362123060`, head `977f336`,
@@ -114,6 +119,39 @@ Rebuilding and repeating the real native handshake are still required.
 
 [AndroidX Tracing release notes](https://developer.android.com/jetpack/androidx/releases/tracing)
 document the coordinated 1.0.1 client/binary release, including 16 KB support.
+
+## SCROLL-06: repeated locale lookups while preparing log rows
+
+Each newly composed log row now shares one localized resource lookup across
+its copy label, unidentified-device label and relative time. The targeted
+test saw three Android language reads for a timestamp before the change and
+one after it. The retained-row test verifies that switching languages updates
+the visible timestamp.
+
+Two paired Galaxy S20 FE runs met the display and thermal checks. Both used
+the same measurement APK and 100 synthetic log entries with distinct icons.
+
+| Pair | Locale reads per row | Row preparation P95 | Frame deadline overrun P99 |
+|---|---|---|---|
+| 2 | 5 → 1 | 9.71 → 7.20 ms | 8.33 → 5.19 ms |
+| 3 | 5 → 1 | 9.41 → 6.80 ms | 6.08 → 2.54 ms |
+
+Pair 1 finished at 60 Hz on the candidate, so the comparison excludes it.
+The valid captures reported a 120 Hz display before and after, while the
+most common intervals between presented application frames were around
+16.93 ms on both revisions during the measured block. This block includes
+gesture delivery and pauses. Its intervals cannot distinguish an
+automation limit from application work during continuous motion. The
+traces also report packet loss, so drawing a complete frame count from
+them would be uncertain. The measured improvement applies to this Logs
+workload. Full 60/120 Hz acceptance remains open.
+
+Local verification on 17 November passed all 294 unit tests and Android Lint
+reported zero errors and 135 warnings. The live-log retention test still
+checks the 1,000-entry cap and newest entry. It now waits for work on the
+simulated Android main queue instead of sleeping after each event. The
+Robolectric TLS-provider override applies only to the Android 34 test that
+counts language lookups.
 
 ## Physical setup evidence
 

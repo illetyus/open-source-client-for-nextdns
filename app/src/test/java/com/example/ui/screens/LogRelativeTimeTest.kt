@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import android.app.LocaleManager
+import android.os.LocaleList
 import androidx.test.core.app.ApplicationProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +25,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.ConscryptMode
+import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
+import org.robolectric.shadows.ShadowLocaleManager
 
 /** Characterize output before moving timestamp parsing out of row recomposition. */
 @RunWith(RobolectricTestRunner::class)
@@ -51,6 +57,18 @@ class LogRelativeTimeTest {
     assertNotEquals(english, turkish)
   }
 
+  @Test
+  @Config(sdk = [34], shadows = [CountingLocaleManager::class])
+  @ConscryptMode(ConscryptMode.Mode.OFF)
+  fun formattingAnAgeReadsThePlatformLanguageOnlyOnce() {
+    val timestamp = Instant.now().minusSeconds(330).toString()
+    val expected = AppStrings.plural(R.plurals.minutes_ago, 5)
+    CountingLocaleManager.reads = 0
+
+    assertEquals(expected, formatRelativeTime(timestamp))
+    assertEquals(1, CountingLocaleManager.reads)
+  }
+
   @Test fun unrecognizedDisplayTextIsPreserved() {
     assertEquals("unknown timestamp", formatRelativeTime("unknown timestamp"))
   }
@@ -76,5 +94,18 @@ class LogRelativeTimeTest {
       expanded = true
     }
     compose.onNodeWithText(AppStrings.plural(R.plurals.hours_ago, 2)).assertIsDisplayed()
+  }
+}
+
+@Implements(LocaleManager::class)
+class CountingLocaleManager : ShadowLocaleManager() {
+  @Implementation
+  override fun getApplicationLocales(packageName: String): LocaleList {
+    reads++
+    return super.getApplicationLocales(packageName)
+  }
+
+  companion object {
+    var reads = 0
   }
 }
