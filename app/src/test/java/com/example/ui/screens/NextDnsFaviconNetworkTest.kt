@@ -4,10 +4,12 @@ import android.graphics.Bitmap
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import okhttp3.Call
 import okhttp3.EventListener
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -66,24 +68,37 @@ class NextDnsFaviconNetworkTest {
     assertEquals("Decoded height should be capped at 192px", 192, bitmap.height)
   }
 
-  @Test fun malformedHighResolutionImageFallsBackToTheNextSupportedSize() = runBlocking {
-    server.enqueue(imageResponse("not a bitmap".toByteArray()))
-    server.enqueue(imageResponse(PNG_BYTES))
+  @Test fun newlyEncounteredHostnameLoadsWithoutFollowingALegacyRedirect() = runBlocking {
+    val domain = "${UUID.randomUUID()}.example.org"
+    val encoded = domain.toByteArray(Charsets.US_ASCII).joinToString("") { "%02x".format(it) }
+    val largePath = "/hex:$encoded.png?size=48&theme=light"
+    val mediumPath = "/hex:$encoded.png?size=32&theme=light"
+    server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+      override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): MockResponse =
+        when (request.path) {
+          largePath -> imageResponse("not a bitmap".toByteArray())
+          mediumPath -> imageResponse(PNG_BYTES)
+          else -> MockResponse().setResponseCode(301).addHeader("Location", server.url(largePath))
+        }
+    }
     val loader = NextDnsFaviconLoader(
       client = NextDnsFaviconHttp.client,
-      urlsForDomain = { domain ->
-        listOf("3x", "2x", "1x").map { scale -> server.url("/$domain@$scale.png").toString() }
+      urlsForDomain = { hostname ->
+        nextDnsFaviconUrls(hostname).map { url ->
+          val target = url.toHttpUrl()
+          server.url("${target.encodedPath}?${target.encodedQuery}").toString()
+        }
       },
       allowedHost = server.hostName,
       allowHttpForTests = true
     )
 
-    val bitmap = loader.load("example.com")
+    val bitmap = loader.load(domain)
 
-    assertNotNull("A malformed @3x image should fall back to a valid @2x image", bitmap)
+    assertNotNull("A malformed 48px image should fall back to the valid 32px image", bitmap)
     assertEquals(2, server.requestCount)
-    assertEquals("/example.com@3x.png", server.takeRequest().path)
-    assertEquals("/example.com@2x.png", server.takeRequest().path)
+    assertEquals(largePath, server.takeRequest().path)
+    assertEquals(mediumPath, server.takeRequest().path)
   }
 
   @Test fun redirectIsRejectedWithoutRequestingItsTarget() = runBlocking {
