@@ -11,6 +11,7 @@ import com.example.data.local.NextDnsPreferences
 import com.example.data.model.*
 import com.example.data.notifications.NotificationWorkScheduler
 import com.example.data.notifications.NotificationPreferences
+import com.example.data.notifications.NotificationCenter
 import com.example.data.legal.LegalAcceptanceStore
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.*
@@ -84,18 +85,22 @@ class NextDnsRepository(
   @Volatile private var logsStreamSeedId: String? = null
   @Volatile private var nextLogsCursor: String? = null
 
-  private val _apiKey = MutableStateFlow(preferences.apiKey)
+  fun wasGuestModeSelected(): Boolean = preferences.isGuestMode
+
+  private val _apiKey = MutableStateFlow(if (wasGuestModeSelected()) "" else preferences.apiKey)
   val apiKey = _apiKey.asStateFlow()
 
   private val _apiStatus = MutableStateFlow<ApiConnectionStatus>(
-    if (legalAcceptanceStore.isAccepted() && preferences.apiKey.isNotBlank()) ApiConnectionStatus.Connecting else ApiConnectionStatus.Disconnected
+    if (legalAcceptanceStore.isAccepted() && _apiKey.value.isNotBlank()) ApiConnectionStatus.Connecting else ApiConnectionStatus.Disconnected
   )
   val apiStatus = _apiStatus.asStateFlow()
 
-  private val _profiles = MutableStateFlow<List<NextDnsProfile>>(preferences.getProfiles() ?: emptyList())
+  private val _profiles = MutableStateFlow<List<NextDnsProfile>>(
+    if (wasGuestModeSelected()) emptyList() else preferences.getProfiles().orEmpty()
+  )
   val profiles = _profiles.asStateFlow()
 
-  private val _activeProfileId = MutableStateFlow(preferences.activeProfileId)
+  private val _activeProfileId = MutableStateFlow(if (wasGuestModeSelected()) "" else preferences.activeProfileId)
   val activeProfileId = _activeProfileId.asStateFlow()
 
   private val _securitySettings = MutableStateFlow(SecuritySettings())
@@ -250,6 +255,12 @@ class NextDnsRepository(
   private fun advanceSession(owner: Job? = null) {
     sessionGeneration++
     sessionJobs.filter { it !== owner }.forEach { it.cancel() }
+  }
+
+  private fun activateAccountNotificationsForCurrentSelection() {
+    if (_apiKey.value.isNotBlank() && _activeProfileId.value.isNotBlank()) {
+      NotificationCenter.activateAccountNotifications()
+    }
   }
 
   private suspend fun ensureOperationActive() {
@@ -467,6 +478,7 @@ class NextDnsRepository(
     repoScope.launch {
       loadAllLiveCatalogs()
       runDiagnosticTest()
+      if (wasGuestModeSelected()) return@launch
       val savedKey = preferences.apiKey
       val savedPid = preferences.activeProfileId
       if (savedKey.isNotBlank()) {
@@ -704,22 +716,32 @@ class NextDnsRepository(
     if (!legalAcceptanceStore.isAccepted()) {
       return Result.failure(IllegalStateException(AppStrings.get(R.string.ui_cf61b6f813)))
     }
-    val attempt = synchronized(sessionLock) {
+    val caller = currentCoroutineContext()
+    val (attempt, previousConnection) = synchronized(sessionLock) {
+      caller.ensureActive()
+      val connected = _apiStatus.value as? ApiConnectionStatus.Connected
       advanceSession()
       resetProfileScopedRuntimeState()
-      _apiStatus.value = ApiConnectionStatus.Connecting
-      captureSession()
+      if (connected == null) _apiStatus.value = ApiConnectionStatus.Connecting
+      captureSession() to connected
     }
     return withSessionContext(snapshot = attempt) {
       val result = fetchAllProfilesFromApi(key)
       if (result.isFailure) {
         val cause = result.exceptionOrNull()
-        val message = when ((cause as? ProfilesFetchException)?.httpCode) {
+        val httpCode = (cause as? ProfilesFetchException)?.httpCode
+        val message = when (httpCode) {
           401 -> AppStrings.get(R.string.invalid_api_key)
           403 -> AppStrings.get(R.string.ui_57380f7ad7)
           else -> cause?.message ?: AppStrings.get(R.string.ui_62b3e50501)
         }
-        commitCurrentSession { _apiStatus.value = ApiConnectionStatus.Error(message) }
+        commitCurrentSession {
+          if (attempt.apiKey == key && (httpCode == 401 || httpCode == 403)) {
+            NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
+          }
+          _apiStatus.value = previousConnection?.takeIf { attempt.apiKey != key }
+            ?: ApiConnectionStatus.Error(message)
+        }
         return@withSessionContext Result.failure(Exception(message))
       }
       val mapped = result.getOrThrow().map {
@@ -727,13 +749,20 @@ class NextDnsRepository(
       }
       if (mapped.isEmpty()) {
         val message = AppStrings.get(R.string.ui_564ed4ba2d)
-        commitCurrentSession { _apiStatus.value = ApiConnectionStatus.Error(message) }
+        commitCurrentSession {
+          if (attempt.apiKey == key) NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
+          _apiStatus.value = previousConnection?.takeIf { attempt.apiKey != key }
+            ?: ApiConnectionStatus.Error(message)
+        }
         return@withSessionContext Result.failure(Exception(message))
       }
       val target = restoreProfileId?.takeIf { restored -> mapped.any { it.id == restored } } ?: mapped.first().id
       val owner = currentCoroutineContext()[SessionContext]?.owner
       val storage = commitCurrentSession {
         runCatching {
+          if (_apiKey.value != key || _activeProfileId.value != target) {
+            NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
+          }
           if (_apiKey.value != key) check(preferences.clear()) { "Account cache could not be cleared" }
           preferences.apiKey = key
           advanceSession(owner)
@@ -743,6 +772,8 @@ class NextDnsRepository(
           preferences.saveProfiles(mapped)
           _activeProfileId.value = target
           preferences.activeProfileId = target
+          if (wasGuestModeSelected()) preferences.isGuestMode = false
+          activateAccountNotificationsForCurrentSelection()
           loadLocalProfileData(target)
           _apiStatus.value = ApiConnectionStatus.Connected(mapped.size)
         }
@@ -751,6 +782,7 @@ class NextDnsRepository(
         synchronized(sessionLock) {
           // The storage failure precedes a successful transition.
           if (isCurrentSession(attempt)) {
+            NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
             _apiKey.value = ""
             _apiStatus.value = ApiConnectionStatus.Error(AppStrings.get(R.string.ui_f8222e6ff1))
           }
@@ -788,11 +820,13 @@ class NextDnsRepository(
       preferences.saveProfiles(remote)
       _apiStatus.value = ApiConnectionStatus.Connected(remote.size)
       if (remote.none { it.id == _activeProfileId.value }) {
+        NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
         advanceSession(owner)
         resetProfileScopedRuntimeState()
         val next = remote.firstOrNull()?.id.orEmpty()
         _activeProfileId.value = next
         preferences.activeProfileId = next
+        activateAccountNotificationsForCurrentSelection()
         loadLocalProfileData(next)
         next
       } else null
@@ -1325,6 +1359,8 @@ class NextDnsRepository(
     NotificationWorkScheduler.cancel(NextDnsApp.instance)
     repoScope.coroutineContext.cancelChildren()
     synchronized(sessionLock) {
+      NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
+      preferences.isGuestMode = true
       advanceSession()
       resetProfileScopedRuntimeState()
       _apiKey.value = ""
@@ -1348,6 +1384,7 @@ class NextDnsRepository(
     NotificationWorkScheduler.cancel(NextDnsApp.instance)
     repoScope.coroutineContext.cancelChildren()
     val localDataCleared = synchronized(sessionLock) {
+      NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
       advanceSession()
       resetProfileScopedRuntimeState()
       val cleared = preferences.clear()
@@ -1378,10 +1415,14 @@ class NextDnsRepository(
 
   fun setActiveProfile(profileId: String) {
     val snapshot = synchronized(sessionLock) {
+      if (_activeProfileId.value != profileId) {
+        NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
+      }
       advanceSession()
       resetProfileScopedRuntimeState()
       _activeProfileId.value = profileId
       preferences.activeProfileId = profileId
+      activateAccountNotificationsForCurrentSelection()
       loadLocalProfileData(profileId)
       captureSession()
     }
@@ -1437,10 +1478,14 @@ class NextDnsRepository(
       val updatedList = _profiles.value.filterNot { it.id == newId } + created
       _profiles.value = updatedList
       preferences.saveProfiles(updatedList)
+      if (_activeProfileId.value != newId) {
+        NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
+      }
       advanceSession(owner)
       resetProfileScopedRuntimeState()
       _activeProfileId.value = newId
       preferences.activeProfileId = newId
+      activateAccountNotificationsForCurrentSelection()
       loadLocalProfileData(newId)
     }
     Result.success(created)
