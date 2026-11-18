@@ -28,7 +28,26 @@ data class SecuritySettings(
   val ddns: Boolean = false,
   val parkedDomains: Boolean = true,
   val csam: Boolean = true,
-  val blockedTlds: List<String> = emptyList()
+  val dataDropServices: Boolean = false,
+  val decentralizedWebGateways: Boolean = false,
+  val dnsDataExfiltration: Boolean = false,
+  val dnsPayloadDelivery: Boolean = false,
+  val fastFluxNetworks: Boolean = false,
+  val freeHostingDomains: Boolean = false,
+  val highRiskTlds: Boolean = false,
+  val newlyActiveDomains: Boolean = false,
+  val residentialHosting: Boolean = false,
+  val tunnelingEndpoints: Boolean = false,
+  val untrustedCertificates: Boolean = false,
+  val blockedTlds: List<String> = emptyList(),
+  val algorithmicallyGeneratedDomains: Boolean? = null
+)
+
+/** Only values explicitly returned by Security GET for the current profile. */
+data class SecurityOptions(
+  val algorithmicallyGeneratedDomains: Boolean? = null,
+  val dnsDataExfiltration: Boolean? = null,
+  val fastFluxNetworks: Boolean? = null
 )
 
 data class BlocklistEntry(
@@ -250,6 +269,7 @@ data class ConfigSettings(
   val cacheBoost: Boolean = false,
   val cnameFlattening: Boolean = true,
   val web3: Boolean = false,
+  val bypassAgeVerification: Boolean = false,
   val rewrites: List<RewriteItem> = emptyList()
 )
 

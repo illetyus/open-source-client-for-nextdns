@@ -4,10 +4,12 @@ import android.graphics.Bitmap
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import okhttp3.Call
 import okhttp3.EventListener
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -54,6 +56,51 @@ class NextDnsFaviconNetworkTest {
     assertEquals(1, server.requestCount)
   }
 
+  @Test fun highResolutionSourceIsRetainedForSharperDomainIcons() = runBlocking {
+    val source = png(384)
+    assertTrue("High-resolution fixture must fit within the download limit", source.size <= 128 * 1024)
+    server.enqueue(imageResponse(source))
+
+    val bitmap = loader().load("example.com")
+
+    assertNotNull("A valid 384px PNG within the byte limit should decode", bitmap)
+    assertEquals("Decoded width should be capped at 192px", 192, bitmap!!.width)
+    assertEquals("Decoded height should be capped at 192px", 192, bitmap.height)
+  }
+
+  @Test fun newlyEncounteredHostnameLoadsWithoutFollowingALegacyRedirect() = runBlocking {
+    val domain = "${UUID.randomUUID()}.example.org"
+    val encoded = domain.toByteArray(Charsets.US_ASCII).joinToString("") { "%02x".format(it) }
+    val largePath = "/hex:$encoded.png?size=48&theme=light"
+    val mediumPath = "/hex:$encoded.png?size=32&theme=light"
+    server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+      override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): MockResponse =
+        when (request.path) {
+          largePath -> imageResponse("not a bitmap".toByteArray())
+          mediumPath -> imageResponse(PNG_BYTES)
+          else -> MockResponse().setResponseCode(301).addHeader("Location", server.url(largePath))
+        }
+    }
+    val loader = NextDnsFaviconLoader(
+      client = NextDnsFaviconHttp.client,
+      urlsForDomain = { hostname ->
+        nextDnsFaviconUrls(hostname).map { url ->
+          val target = url.toHttpUrl()
+          server.url("${target.encodedPath}?${target.encodedQuery}").toString()
+        }
+      },
+      allowedHost = server.hostName,
+      allowHttpForTests = true
+    )
+
+    val bitmap = loader.load(domain)
+
+    assertNotNull("A malformed 48px image should fall back to the valid 32px image", bitmap)
+    assertEquals(2, server.requestCount)
+    assertEquals(largePath, server.takeRequest().path)
+    assertEquals(mediumPath, server.takeRequest().path)
+  }
+
   @Test fun redirectIsRejectedWithoutRequestingItsTarget() = runBlocking {
     server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", server.url("/redirect-target")))
 
@@ -86,7 +133,7 @@ class NextDnsFaviconNetworkTest {
   @Test fun unexpectedHostIsRejectedBeforeAnyRequest() = runBlocking {
     val client = NextDnsFaviconLoader(
       client = NextDnsFaviconHttp.client,
-      urlForDomain = { "https://unexpected.invalid/favicon" },
+      urlsForDomain = { listOf("https://unexpected.invalid/favicon") },
       allowedHost = server.hostName
     )
 
@@ -144,7 +191,7 @@ class NextDnsFaviconNetworkTest {
   ): NextDnsFaviconLoader =
     NextDnsFaviconLoader(
       client = client,
-      urlForDomain = { server.url("/favicon").toString() },
+      urlsForDomain = { listOf(server.url("/favicon").toString()) },
       allowedHost = server.hostName,
       allowHttpForTests = allowHttpForTests
     )
@@ -163,6 +210,62 @@ class NextDnsFaviconNetworkTest {
       bitmap.recycle()
       output.toByteArray()
     }
+  }
+
+  private fun png(side: Int): ByteArray {
+    val scanline = ByteArray(1 + side * 4)
+    for (pixel in 0 until side) {
+      val offset = 1 + pixel * 4
+      scanline[offset] = 0x33
+      scanline[offset + 1] = 0x66
+      scanline[offset + 2] = 0x99.toByte()
+      scanline[offset + 3] = 0xff.toByte()
+    }
+    val rawImage = ByteArrayOutputStream().use { output ->
+      repeat(side) { output.write(scanline) }
+      output.toByteArray()
+    }
+    val compressedImage = ByteArrayOutputStream().use { output ->
+      java.util.zip.DeflaterOutputStream(output).use { it.write(rawImage) }
+      output.toByteArray()
+    }
+    val png = ByteArrayOutputStream()
+    png.write(byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a))
+
+    fun writeChunk(type: String, data: ByteArray) {
+      val typeBytes = type.toByteArray(Charsets.US_ASCII)
+      val crc = java.util.zip.CRC32().apply { update(typeBytes); update(data) }
+      png.write(byteArrayOf(
+        (data.size ushr 24).toByte(),
+        (data.size ushr 16).toByte(),
+        (data.size ushr 8).toByte(),
+        data.size.toByte()
+      ))
+      png.write(typeBytes)
+      png.write(data)
+      png.write(byteArrayOf(
+        (crc.value ushr 24).toByte(),
+        (crc.value ushr 16).toByte(),
+        (crc.value ushr 8).toByte(),
+        crc.value.toByte()
+      ))
+    }
+
+    val header = ByteArrayOutputStream().also { output ->
+      java.io.DataOutputStream(output).use { data ->
+        data.writeInt(side)
+        data.writeInt(side)
+        data.writeByte(8)
+        data.writeByte(6)
+        data.writeByte(0)
+        data.writeByte(0)
+        data.writeByte(0)
+      }
+    }.toByteArray()
+    writeChunk("IHDR", header)
+    writeChunk("IDAT", compressedImage)
+    writeChunk("IEND", byteArrayOf())
+    return png.toByteArray()
   }
 
   private fun imageResponse(bytes: ByteArray): MockResponse =

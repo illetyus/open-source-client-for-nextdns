@@ -71,6 +71,60 @@ class ConfigSnapshotHasherTest {
   }
 
   @Test
+  fun digestTracksEachObservedSecurityApiFlag() {
+    val original = sampleSnapshot()
+    val changedSecurities = listOf(
+      original.security.copy(dataDropServices = true),
+      original.security.copy(decentralizedWebGateways = true),
+      original.security.copy(dnsDataExfiltration = true),
+      original.security.copy(algorithmicallyGeneratedDomains = false),
+      original.security.copy(algorithmicallyGeneratedDomains = true),
+      original.security.copy(dnsPayloadDelivery = true),
+      original.security.copy(fastFluxNetworks = true),
+      original.security.copy(freeHostingDomains = true),
+      original.security.copy(highRiskTlds = true),
+      original.security.copy(newlyActiveDomains = true),
+      original.security.copy(residentialHosting = true),
+      original.security.copy(tunnelingEndpoints = true),
+      original.security.copy(untrustedCertificates = true)
+    )
+
+    changedSecurities.forEach { changedSecurity ->
+      assertNotEquals(
+        ConfigSnapshotHasher.digest(original),
+        ConfigSnapshotHasher.digest(original.copy(security = changedSecurity))
+      )
+    }
+  }
+
+  @Test
+  fun digestPreservesExistingAlgorithmicDomainSnapshotAfterTypingTheField() {
+    val original = sampleSnapshot()
+    val observed = original.copy(security = original.security.copy(
+      unknownFields = mapOf("algorithmicallyGeneratedDomains" to false, "newServerFlag" to true)
+    ))
+    val typed = original.copy(security = original.security.copy(
+      algorithmicallyGeneratedDomains = false,
+      unknownFields = mapOf("newServerFlag" to true)
+    ))
+
+    assertEquals(ConfigSnapshotHasher.digest(observed), ConfigSnapshotHasher.digest(typed))
+  }
+
+  @Test
+  fun digestChangesWhenBypassAgeVerificationChanges() {
+    val first = sampleSnapshot()
+    val changed = first.copy(
+      settings = first.settings.copy(bav = true)
+    )
+
+    assertNotEquals(
+      ConfigSnapshotHasher.digest(first),
+      ConfigSnapshotHasher.digest(changed)
+    )
+  }
+
+  @Test
   fun digestChangesWhenAnUnverifiedServerSecurityFieldChanges() {
     val originalSecurity = sampleSnapshot().security
     val first = sampleSnapshot().copy(

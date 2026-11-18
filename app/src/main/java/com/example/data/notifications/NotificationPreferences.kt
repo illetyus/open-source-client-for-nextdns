@@ -3,6 +3,7 @@ package com.example.data.notifications
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -31,9 +32,19 @@ data class ConfigNotificationState(
   val localMutationSuppressUntil: Long = 0L
 )
 
-class NotificationPreferences(context: Context) {
+class NotificationPreferences private constructor(context: Context, private val accountGeneration: Long?) {
+  constructor(context: Context) : this(context, null)
+
   private val appContext = context.applicationContext
   private val dataStore = appContext.notificationDataStore
+
+  private suspend fun editNotificationState(update: (MutablePreferences) -> Unit) {
+    dataStore.edit { prefs ->
+      val generation = accountGeneration
+      if (generation == null) update(prefs)
+      else NotificationCenter.updateCurrentAccountState(generation) { update(prefs) }
+    }
+  }
 
   val settings: Flow<NotificationSettings> = dataStore.data.map { prefs ->
     NotificationSettings(
@@ -85,7 +96,7 @@ class NotificationPreferences(context: Context) {
 
   suspend fun establishConfigBaseline(profileId: String, digest: String) {
     val suffix = NotificationPolicy.profileStorageSuffix(profileId)
-    dataStore.edit { prefs ->
+    editNotificationState { prefs ->
       prefs[stringPreferencesKey("config_observed_$suffix")] = digest
       prefs[stringPreferencesKey("config_notified_$suffix")] = digest
       prefs[longPreferencesKey("config_notified_at_$suffix")] = 0L
@@ -105,14 +116,14 @@ class NotificationPreferences(context: Context) {
 
   suspend fun clearLocalMutationSuppression(profileId: String) {
     val suffix = NotificationPolicy.profileStorageSuffix(profileId)
-    dataStore.edit { prefs ->
+    editNotificationState { prefs ->
       prefs.remove(longPreferencesKey("config_local_mutation_until_$suffix"))
     }
   }
 
   suspend fun markConfigObserved(profileId: String, digest: String) {
     val suffix = NotificationPolicy.profileStorageSuffix(profileId)
-    dataStore.edit { prefs ->
+    editNotificationState { prefs ->
       prefs[stringPreferencesKey("config_observed_$suffix")] = digest
     }
   }
@@ -123,7 +134,7 @@ class NotificationPreferences(context: Context) {
     now: Long
   ) {
     val suffix = NotificationPolicy.profileStorageSuffix(profileId)
-    dataStore.edit { prefs ->
+    editNotificationState { prefs ->
       prefs[stringPreferencesKey("config_notified_$suffix")] = digest
       prefs[longPreferencesKey("config_notified_at_$suffix")] = now
     }
@@ -131,7 +142,7 @@ class NotificationPreferences(context: Context) {
 
   suspend fun suppressConfigBacklog(profileId: String, digest: String) {
     val suffix = NotificationPolicy.profileStorageSuffix(profileId)
-    dataStore.edit { prefs ->
+    editNotificationState { prefs ->
       prefs[stringPreferencesKey("config_observed_$suffix")] = digest
       prefs[stringPreferencesKey("config_notified_$suffix")] = digest
     }
@@ -141,12 +152,15 @@ class NotificationPreferences(context: Context) {
     dataStore.data.first()[LAST_SUMMARY_DAY]
 
   suspend fun markSummaryDay(dayKey: String) {
-    dataStore.edit { prefs ->
+    editNotificationState { prefs ->
       prefs[LAST_SUMMARY_DAY] = dayKey
     }
   }
 
   companion object {
+    internal fun forAccount(context: Context, generation: Long): NotificationPreferences =
+      NotificationPreferences(context, generation)
+
     private val CONFIG_ALERTS = booleanPreferencesKey("config_change_alerts")
     private val DAILY_SUMMARY = booleanPreferencesKey("daily_summary")
     private val LAST_SUMMARY_DAY = stringPreferencesKey("last_summary_day")

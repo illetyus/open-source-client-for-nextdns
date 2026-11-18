@@ -4,8 +4,6 @@ import com.example.R
 import com.example.i18n.AppStrings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,18 +15,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.*
-import com.example.ui.theme.*
 import com.example.ui.viewmodel.NextDnsViewModel
 import com.example.data.repository.TldCatalogLoadState
-import com.example.data.api.SecurityFieldDiscovery
-import com.example.data.api.SecurityJsonValueType
 
 @Composable
 fun SecurityScreen(
@@ -36,14 +30,15 @@ fun SecurityScreen(
   modifier: Modifier = Modifier
 ) {
   val settings by viewModel.securitySettings.collectAsStateWithLifecycle()
-  val unverifiedFields by viewModel.unverifiedSecurityFields.collectAsStateWithLifecycle()
+  val securityOptions by viewModel.securityOptions.collectAsStateWithLifecycle()
   var showAddTldDialog by remember { mutableStateOf(false) }
   var newTldInput by remember { mutableStateOf("") }
 
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
-      .padding(horizontal = 16.dp),
+      .padding(horizontal = 16.dp)
+      .testTag("security_settings_list"),
     contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
@@ -74,7 +69,8 @@ fun SecurityScreen(
         title = AppStrings.get(R.string.ui_b6b6e376c7),
         subtitle = AppStrings.get(R.string.ui_e8957127ba),
         checked = settings.googleSafeBrowsing,
-        onCheckedChange = { viewModel.toggleSecurityFeature("googleSafeBrowsing", it) }
+        onCheckedChange = { viewModel.toggleSecurityFeature("googleSafeBrowsing", it) },
+        modifier = Modifier.testTag("security_google_safe_browsing")
       )
     }
 
@@ -98,37 +94,7 @@ fun SecurityScreen(
       )
     }
 
-    // 6. IDN Eşyazımı Saldırı Koruması
-    item {
-      NextDnsSettingToggle(
-        title = AppStrings.get(R.string.ui_9904d77eb3),
-        subtitle = AppStrings.get(R.string.idn_description),
-        checked = settings.idnHomographs,
-        onCheckedChange = { viewModel.toggleSecurityFeature("idnHomographs", it) }
-      )
-    }
-
-    // 7. Yanlış Siteye Yönlendirme Koruması
-    item {
-      NextDnsSettingToggle(
-        title = AppStrings.get(R.string.ui_6194b3ff35),
-        subtitle = AppStrings.get(R.string.ui_cf6cbd0dc8),
-        checked = settings.typosquatting,
-        onCheckedChange = { viewModel.toggleSecurityFeature("typosquatting", it) }
-      )
-    }
-
-    // 8. Alan Adı Oluşturma Algoritmaları (DGA) Koruması
-    item {
-      NextDnsSettingToggle(
-        title = AppStrings.get(R.string.ui_fa2b128b73),
-        subtitle = AppStrings.get(R.string.ui_31c1f6c610),
-        checked = settings.dga,
-        onCheckedChange = { viewModel.toggleSecurityFeature("dga", it) }
-      )
-    }
-
-    // 9. Yeni Kaydedilmiş Alan Adlarını (NRD'ler) Engelle
+    // Yeni Kaydedilmiş Alan Adlarını (NRD'ler) Engelle
     item {
       NextDnsSettingToggle(
         title = AppStrings.get(R.string.ui_c3cd82c4f0),
@@ -138,7 +104,19 @@ fun SecurityScreen(
       )
     }
 
-    // 10. Dinamik DNS Ana Bilgisayar Adlarını Engelle [BETA]
+    securityOptions.algorithmicallyGeneratedDomains?.let { checked ->
+      item(key = "algorithmicallyGeneratedDomains") {
+        ObservedSecurityToggle(
+          title = AppStrings.get(R.string.security_algorithmically_generated_domains_title),
+          description = AppStrings.get(R.string.security_algorithmically_generated_domains_description),
+          checked = checked,
+          feature = "algorithmicallyGeneratedDomains",
+          viewModel = viewModel
+        )
+      }
+    }
+
+    // Dinamik DNS Ana Bilgisayar Adlarını Engelle [BETA]
     item {
       NextDnsSettingToggle(
         title = AppStrings.get(R.string.ui_3399d9a672),
@@ -149,7 +127,7 @@ fun SecurityScreen(
       )
     }
 
-    // 11. Park Edilmiş Alan Adlarını Engelle
+    // Park Edilmiş Alan Adlarını Engelle
     item {
       NextDnsSettingToggle(
         title = AppStrings.get(R.string.ui_b8b2a448eb),
@@ -159,7 +137,111 @@ fun SecurityScreen(
       )
     }
 
-    // 12. Üst Seviye Alan Adlarını (TLD'ler) Engelle
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_data_drop_services_title),
+        description = AppStrings.get(R.string.security_data_drop_services_description),
+        checked = settings.dataDropServices,
+        feature = "dataDropServices",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_decentralized_web_gateways_title),
+        description = AppStrings.get(R.string.security_decentralized_web_gateways_description),
+        checked = settings.decentralizedWebGateways,
+        feature = "decentralizedWebGateways",
+        viewModel = viewModel
+      )
+    }
+    securityOptions.dnsDataExfiltration?.let { checked ->
+      item(key = "dnsDataExfiltration") {
+        ObservedSecurityToggle(
+          title = AppStrings.get(R.string.security_dns_data_exfiltration_title),
+          description = AppStrings.get(R.string.security_dns_data_exfiltration_description),
+          checked = checked,
+          feature = "dnsDataExfiltration",
+          viewModel = viewModel
+        )
+      }
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_dns_payload_delivery_title),
+        description = AppStrings.get(R.string.security_dns_payload_delivery_description),
+        checked = settings.dnsPayloadDelivery,
+        feature = "dnsPayloadDelivery",
+        viewModel = viewModel
+      )
+    }
+    securityOptions.fastFluxNetworks?.let { checked ->
+      item(key = "fastFluxNetworks") {
+        ObservedSecurityToggle(
+          title = AppStrings.get(R.string.security_fast_flux_networks_title),
+          description = AppStrings.get(R.string.security_fast_flux_networks_description),
+          checked = checked,
+          feature = "fastFluxNetworks",
+          viewModel = viewModel
+        )
+      }
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_free_hosting_domains_title),
+        description = AppStrings.get(R.string.security_free_hosting_domains_description),
+        checked = settings.freeHostingDomains,
+        feature = "freeHostingDomains",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_high_risk_tlds_title),
+        description = AppStrings.get(R.string.security_high_risk_tlds_description),
+        checked = settings.highRiskTlds,
+        feature = "highRiskTlds",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_newly_active_domains_title),
+        description = AppStrings.get(R.string.security_newly_active_domains_description),
+        checked = settings.newlyActiveDomains,
+        feature = "newlyActiveDomains",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_residential_hosting_title),
+        description = AppStrings.get(R.string.security_residential_hosting_description),
+        checked = settings.residentialHosting,
+        feature = "residentialHosting",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_tunneling_endpoints_title),
+        description = AppStrings.get(R.string.security_tunneling_endpoints_description),
+        checked = settings.tunnelingEndpoints,
+        feature = "tunnelingEndpoints",
+        viewModel = viewModel
+      )
+    }
+    item {
+      ObservedSecurityToggle(
+        title = AppStrings.get(R.string.security_untrusted_certificates_title),
+        description = AppStrings.get(R.string.security_untrusted_certificates_description),
+        checked = settings.untrustedCertificates,
+        feature = "untrustedCertificates",
+        viewModel = viewModel
+      )
+    }
+
+    // Üst Seviye Alan Adlarını (TLD'ler) Engelle
     item {
       NextDnsCard(
         title = AppStrings.get(R.string.ui_bfa7376292),
@@ -217,7 +299,7 @@ fun SecurityScreen(
       }
     }
 
-    // 13. Çocukların Cinsel İstismarına İlişkin Materyalleri Engelle
+    // Çocukların Cinsel İstismarına İlişkin Materyalleri Engelle
     item {
       NextDnsSettingToggle(
         title = AppStrings.get(R.string.ui_122c713cab),
@@ -225,9 +307,6 @@ fun SecurityScreen(
         checked = settings.csam,
         onCheckedChange = { viewModel.toggleSecurityFeature("csam", it) }
       )
-    }
-    if (unverifiedFields.fields.isNotEmpty() || unverifiedFields.omittedCount > 0) {
-      item { UnverifiedSecurityFieldsSection(unverifiedFields) }
     }
   }
 
@@ -289,56 +368,20 @@ fun SecurityScreen(
 }
 
 @Composable
-internal fun UnverifiedSecurityFieldsSection(discovery: SecurityFieldDiscovery) {
-  if (discovery.fields.isEmpty() && discovery.omittedCount == 0) return
-
-  NextDnsCard(
-    title = AppStrings.get(R.string.security_unverified_title),
-    subtitle = AppStrings.get(R.string.security_unverified_explanation)
-  ) {
-    Column(
-      modifier = Modifier.fillMaxWidth(),
-      verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-      discovery.fields.forEach { field ->
-        Column(
-          modifier = Modifier
-            .fillMaxWidth()
-            .testTag("security_unverified_field_${field.name}"),
-          verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-          Text(
-            text = field.name,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium,
-            fontSize = 13.sp
-          )
-          Text(
-            text = when (field.valueType) {
-              SecurityJsonValueType.BOOLEAN -> AppStrings.get(
-                R.string.security_unverified_boolean,
-                field.booleanValue.toString()
-              )
-              SecurityJsonValueType.STRING -> AppStrings.get(R.string.security_unverified_text)
-              SecurityJsonValueType.NUMBER -> AppStrings.get(R.string.security_unverified_number)
-              SecurityJsonValueType.OBJECT -> AppStrings.get(R.string.security_unverified_object)
-              SecurityJsonValueType.ARRAY -> AppStrings.get(R.string.security_unverified_array)
-              SecurityJsonValueType.NULL -> AppStrings.get(R.string.security_unverified_null)
-            },
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp
-          )
-        }
-      }
-      if (discovery.omittedCount > 0) {
-        Text(
-          text = AppStrings.get(R.string.security_unverified_omitted, discovery.omittedCount),
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          fontSize = 12.sp
-        )
-      }
-    }
-  }
+private fun ObservedSecurityToggle(
+  title: String,
+  description: String,
+  checked: Boolean,
+  feature: String,
+  viewModel: NextDnsViewModel
+) {
+  NextDnsSettingToggle(
+    title = title,
+    subtitle = description,
+    checked = checked,
+    onCheckedChange = { viewModel.toggleSecurityFeature(feature, it) },
+    modifier = Modifier.testTag("security_flag_$feature")
+  )
 }
 
 @Composable

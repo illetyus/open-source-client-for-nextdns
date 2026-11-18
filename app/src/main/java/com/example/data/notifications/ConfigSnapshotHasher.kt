@@ -33,9 +33,24 @@ object ConfigSnapshotHasher {
       appendBool(snapshot.security.ddns)
       appendBool(snapshot.security.parking)
       appendBool(snapshot.security.csam)
+      appendBool(snapshot.security.dataDropServices)
+      appendBool(snapshot.security.decentralizedWebGateways)
+      appendBool(snapshot.security.dnsDataExfiltration)
+      appendBool(snapshot.security.dnsPayloadDelivery)
+      appendBool(snapshot.security.fastFluxNetworks)
+      appendBool(snapshot.security.freeHostingDomains)
+      appendBool(snapshot.security.highRiskTlds)
+      appendBool(snapshot.security.newlyActiveDomains)
+      appendBool(snapshot.security.residentialHosting)
+      appendBool(snapshot.security.tunnelingEndpoints)
+      appendBool(snapshot.security.untrustedCertificates)
       appendList(snapshot.security.tlds.orEmpty().map { it.id })
       append("unknown-security:")
-      appendCanonicalValue(snapshot.security.unknownFields)
+      val additionalSecurity = snapshot.security.algorithmicallyGeneratedDomains?.let { generated ->
+        // Keep snapshots stable when this previously untyped setting first becomes recognized.
+        snapshot.security.unknownFields + ("algorithmicallyGeneratedDomains" to generated)
+      } ?: snapshot.security.unknownFields
+      appendCanonicalValue(additionalSecurity)
       append("overflow:").append(snapshot.security.unknownFieldOverflowCount).append(';')
       append(snapshot.security.unknownFieldOverflowDigest).append(';')
 
@@ -74,6 +89,7 @@ object ConfigSnapshotHasher {
       appendBool(performance?.cacheBoost)
       appendBool(performance?.cnameFlattening)
       appendBool(snapshot.settings.web3)
+      appendBool(snapshot.settings.bav)
 
       append("|deny:")
       appendList(snapshot.denylist.map { "${it.id}:${it.active.token()}" })

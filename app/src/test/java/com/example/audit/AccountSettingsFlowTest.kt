@@ -8,10 +8,10 @@ import com.example.R
 import com.example.data.model.AllowDenyItem
 import com.example.data.model.NativeTrackingEntry
 import com.example.data.model.PrivacySettings
+import com.example.data.repository.SyncSection
 import com.example.data.repository.TldCatalogLoadState
 import com.example.i18n.AppStrings
 import com.example.i18n.LocalePreferences
-import com.example.ui.screens.AccountScreen
 import com.example.ui.screens.connectedProfileStatusText
 import com.example.ui.screens.AnalyticsScreen
 import com.example.ui.screens.AllowlistScreen
@@ -21,6 +21,7 @@ import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.PrivacyScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SecurityScreen
+import com.example.ui.screens.SetupScreen
 import com.example.ui.screens.TldCatalogContent
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NavTab
@@ -29,6 +30,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import androidx.compose.ui.unit.dp
 import org.junit.runner.RunWith
@@ -61,6 +63,7 @@ class AccountSettingsFlowTest : AuditFixture() {
       settingsList.performScrollToNode(hasTestTag(tag))
       rule.onNodeWithTag(tag).assertIsDisplayed()
     }
+    rule.onNodeWithTag("settings_connection_entry").assertDoesNotExist()
     settingsList.performScrollToNode(hasTestTag("settings_section_app_preferences"))
     val preferencesTop = rule.onNodeWithTag("settings_section_app_preferences")
       .fetchSemanticsNode().boundsInRoot.top
@@ -74,6 +77,50 @@ class AccountSettingsFlowTest : AuditFixture() {
     assertEquals(1, rule.onAllNodesWithTag("legal_privacy_link").fetchSemanticsNodes().size)
   }
 
+  @Test fun accountShortcutAndSeparateConnectionPageAreRemoved() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { HomeScreen(model) } }
+
+    rule.onNodeWithTag("home_account_menu_button").assertDoesNotExist()
+    rule.onNodeWithTag("home_account_menu_connection").assertDoesNotExist()
+    rule.onNodeWithTag("settings_connection_page").assertDoesNotExist()
+    rule.onNodeWithTag("tab_setup").assertIsSelected()
+  }
+
+  @Test fun apiConnectionControlsStayInlineInSettings() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SettingsScreen(model) } }
+
+    rule.onNodeWithTag("settings_api_connection").assertIsDisplayed()
+    rule.onNodeWithTag("settings_connection_page").assertDoesNotExist()
+  }
+
+  @Test fun networkDiagnosticsAreShownBelowTheSetupStatusCard() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SetupScreen(model) } }
+
+    val statusTop = rule.onNodeWithTag("setup_connection_status_banner")
+      .fetchSemanticsNode().boundsInRoot.top
+    val diagnosticsTop = rule.onNodeWithTag("setup_network_diagnostics")
+      .fetchSemanticsNode().boundsInRoot.top
+
+    assertTrue("Network diagnostics should follow the setup connection status", statusTop < diagnosticsTop)
+  }
+
+  @Test fun bypassAgeVerificationIsShownWithNextDnsServiceSettings() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SettingsScreen(model) } }
+
+    val settingsList = rule.onNodeWithTag("settings_scroll_list")
+    settingsList.performScrollToNode(hasTestTag("settings_bypass_age_verification"))
+    rule.onNodeWithTag("settings_bypass_age_verification").assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.bypass_age_verification_title)).assertIsDisplayed()
+  }
+
   @Test fun loginDoesNotScatterLegalLinksOutsideTheGroupedWelcomeFlow() {
     english()
     val model = NextDnsViewModel(repository)
@@ -83,32 +130,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("legal_privacy_link").assertDoesNotExist()
   }
 
-  @Test fun accountSectionsPutConnectionAndProfilesBeforeMetricsAndSync() {
-    english()
-    val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { AccountScreen(model) } }
-
-    val keyTop = rule.onNodeWithText(AppStrings.get(R.string.ui_f9b1cde612))
-      .fetchSemanticsNode().boundsInRoot.top
-    val profilesTop = rule.onNodeWithText("Profiles")
-      .fetchSemanticsNode().boundsInRoot.top
-    rule.onNodeWithText("Profiles (1)").assertDoesNotExist()
-    assertEquals("API connected • 1 profile", AppStrings.get(R.string.account_status_connected, 1))
-    rule.onNodeWithText(AppStrings.get(R.string.ui_f5e0e67ae0)).assertIsDisplayed()
-    val metricsTop = rule.onNodeWithText(AppStrings.get(R.string.ui_c636e5398b))
-      .fetchSemanticsNode().boundsInRoot.top
-    val diagnosticTop = rule.onNodeWithText(AppStrings.get(R.string.ui_33cbc60e2e))
-      .fetchSemanticsNode().boundsInRoot.top
-    val syncTop = rule.onNodeWithText(AppStrings.get(R.string.ui_8b96719687))
-      .fetchSemanticsNode().boundsInRoot.top
-
-    assertTrue("Account status and key should appear before profiles", keyTop < profilesTop)
-    assertTrue("Connection diagnostics should follow profile selection", profilesTop < diagnosticTop)
-    assertTrue("Diagnostics should appear before usage metrics", diagnosticTop < metricsTop)
-    assertTrue("Usage metrics should appear before the full-sync action", metricsTop < syncTop)
-  }
-
-  @Test fun accountDiagnosticButtonRunsANewDiagnosticRequest() {
+  @Test fun setupDiagnosticButtonRunsANewDiagnosticRequest() {
     english()
     response = { request ->
       if (request.path == "/") {
@@ -116,15 +138,21 @@ class AccountSettingsFlowTest : AuditFixture() {
       } else json("{}", 500)
     }
     val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { AccountScreen(model) } }
+    rule.setContent { AppTheme { SetupScreen(model) } }
 
-    rule.onNodeWithTag("account_run_diagnostic")
+    rule.onNodeWithTag("setup_run_diagnostic")
       .assertHasClickAction()
       .performClick()
     rule.waitUntil(10_000) { model.testResult.value.lastTestedTime > 0L }
 
     assertTrue(requests.any { it == "GET /" || it.endsWith(" GET /") })
-    rule.onNodeWithText("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true).assertIsDisplayed()
+    rule.onNodeWithTag("setup_network_diagnostics").performScrollTo()
+    rule.waitUntil(5_000) {
+      rule.onAllNodesWithTag("setup_diagnostic_server")
+        .fetchSemanticsNodes().isNotEmpty()
+    }
+    rule.onNodeWithTag("setup_diagnostic_server")
+      .assertTextContains("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true)
   }
 
   @Test fun connectedProfileStatusUsesLocalizedSingularAndPluralCounts() {
@@ -143,43 +171,6 @@ class AccountSettingsFlowTest : AuditFixture() {
       assertEquals("$locale plural", plural, connectedProfileStatusText(2))
     }
     english()
-  }
-
-  @Test fun speedTestEntryIsAbsentFromAccountScreen() {
-    english()
-    val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { AccountScreen(model) } }
-
-    rule.onNodeWithTag("open_speed_test").assertDoesNotExist()
-  }
-
-  @Test fun connectionAreaOpensFromNavigationWithoutExtraTopBarButton() {
-    english()
-    response = { request ->
-      if (request.path == "/") {
-        json("""{"status":"ok","protocol":"SYNTHETIC_DIAGNOSTIC_PROTOCOL","profile":"fp0123456789abcdef","server":"lhr"}""")
-      } else json("{}", 500)
-    }
-    val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { HomeScreen(model) } }
-
-    rule.onNodeWithTag("home_nextdns_connection_button").assertDoesNotExist()
-    rule.onNodeWithTag("tab_account")
-      .performScrollTo()
-      .assertIsDisplayed()
-      .assertHasClickAction()
-      .performClick()
-      .assertIsSelected()
-
-    rule.onNodeWithTag("account_connection_status").assertIsDisplayed()
-    rule.onNodeWithText("Profiles").assertIsDisplayed()
-    rule.onNodeWithText("Profiles (1)").assertDoesNotExist()
-    rule.waitUntil(10_000) {
-      rule.onAllNodes(hasText("SYNTHETIC_DIAGNOSTIC_PROTOCOL", substring = true))
-        .fetchSemanticsNodes().isNotEmpty()
-    }
-
-    rule.onNodeWithTag("tab_setup").performScrollTo().performClick().assertIsSelected()
   }
 
   @Test fun localTrackingProtectionIconUsesTheSmallerSize() {
@@ -230,6 +221,120 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("security_tld_catalog_loading").assertIsDisplayed()
     rule.onNodeWithText(".work").assertDoesNotExist()
     rule.onNodeWithText(".zip").assertDoesNotExist()
+  }
+
+  @Test fun publishedNextDnsSecurityFieldsAppearInTheSecurityScreen() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SecurityScreen(model) } }
+
+    val securityList = rule.onNodeWithTag("security_settings_list")
+    listOf(
+      R.string.ui_9c19e93b43,
+      R.string.ui_b8c859e123,
+      R.string.ui_b6b6e376c7,
+      R.string.ui_309e669643,
+      R.string.ui_7a41105eb3,
+      R.string.ui_c3cd82c4f0,
+      R.string.ui_3399d9a672,
+      R.string.ui_b8b2a448eb,
+      R.string.ui_bfa7376292,
+      R.string.ui_122c713cab
+    ).forEach { title ->
+      val titleText = AppStrings.get(title)
+      securityList.performScrollToNode(hasText(titleText))
+      rule.onNodeWithText(titleText).assertExists()
+    }
+  }
+
+  @Test fun observedNextDnsSecurityFieldsRenderAsSwitches() {
+    english()
+    response = { json("""{"data":{"algorithmicallyGeneratedDomains":false,"dnsDataExfiltration":true,"fastFluxNetworks":false}}""") }
+    assertTrue(runBlocking { repository.refreshSection(SyncSection.SECURITY) })
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SecurityScreen(model) } }
+
+    val observedFields = listOf(
+      "algorithmicallyGeneratedDomains" to R.string.security_algorithmically_generated_domains_title,
+      "dataDropServices" to R.string.security_data_drop_services_title,
+      "decentralizedWebGateways" to R.string.security_decentralized_web_gateways_title,
+      "dnsDataExfiltration" to R.string.security_dns_data_exfiltration_title,
+      "dnsPayloadDelivery" to R.string.security_dns_payload_delivery_title,
+      "fastFluxNetworks" to R.string.security_fast_flux_networks_title,
+      "freeHostingDomains" to R.string.security_free_hosting_domains_title,
+      "highRiskTlds" to R.string.security_high_risk_tlds_title,
+      "newlyActiveDomains" to R.string.security_newly_active_domains_title,
+      "residentialHosting" to R.string.security_residential_hosting_title,
+      "tunnelingEndpoints" to R.string.security_tunneling_endpoints_title,
+      "untrustedCertificates" to R.string.security_untrusted_certificates_title
+    )
+
+    observedFields.forEach { (feature, titleId) ->
+      val title = AppStrings.get(titleId)
+      rule.onNodeWithTag("security_settings_list").performScrollToNode(hasText(title))
+      rule.onNodeWithTag("security_flag_$feature", useUnmergedTree = true)
+        .assert(
+          hasAnyDescendant(
+            SemanticsMatcher.expectValue(
+              androidx.compose.ui.semantics.SemanticsProperties.Role,
+              androidx.compose.ui.semantics.Role.Switch
+            )
+          )
+        )
+    }
+  }
+
+  @Test fun securityOptionsAppearOnlyForTheCurrentProfileAndSaveTheCurrentField() {
+    english()
+    val savedBody = java.util.concurrent.atomic.AtomicReference<String?>()
+    response = { request ->
+      when {
+        request.method == "PATCH" && request.path == "/profiles/aaaaaa/security" -> {
+          savedBody.set(request.body.readUtf8())
+          json("{}")
+        }
+        request.path == "/profiles/aaaaaa/security" -> json(
+          """{"data":{"algorithmicallyGeneratedDomains":${savedBody.get() != null},"dnsDataExfiltration":true,"fastFluxNetworks":false}}"""
+        )
+        else -> json("""{"data":{"dnsRebinding":true}}""")
+      }
+    }
+    assertTrue(runBlocking { repository.refreshSection(SyncSection.SECURITY) })
+
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SecurityScreen(model) } }
+
+    val securityList = rule.onNodeWithTag("security_settings_list")
+    val switchRole = SemanticsMatcher.expectValue(
+      androidx.compose.ui.semantics.SemanticsProperties.Role,
+      androidx.compose.ui.semantics.Role.Switch
+    )
+    val featureTag = "security_flag_algorithmicallyGeneratedDomains"
+    securityList.performScrollToNode(hasTestTag(featureTag))
+    rule.onNodeWithText(AppStrings.get(R.string.security_algorithmically_generated_domains_description)).assertExists()
+    val domainSwitch = rule.onNode(switchRole and hasAnyAncestor(hasTestTag(featureTag)), useUnmergedTree = true)
+    domainSwitch.assertIsOff().performClick()
+    rule.waitUntil(10_000) { repository.securityOptions.value.algorithmicallyGeneratedDomains == true }
+    domainSwitch.assertIsOn()
+    assertEquals("""{"algorithmicallyGeneratedDomains":true}""", savedBody.get())
+
+    listOf(
+      "dnsDataExfiltration" to R.string.security_dns_data_exfiltration_description,
+      "fastFluxNetworks" to R.string.security_fast_flux_networks_description
+    ).forEach { (feature, description) ->
+      securityList.performScrollToNode(hasTestTag("security_flag_$feature"))
+      rule.onNodeWithText(AppStrings.get(description)).assertExists()
+    }
+
+    rule.runOnIdle { repository.setActiveProfile("bbbbbb") }
+    assertTrue(runBlocking { repository.refreshSection(SyncSection.SECURITY) })
+    listOf(featureTag, "security_flag_dnsDataExfiltration", "security_flag_fastFluxNetworks").forEach { tag ->
+      assertThrows(AssertionError::class.java) {
+        securityList.performScrollToNode(hasTestTag(tag))
+      }
+    }
+    securityList.performScrollToNode(hasText(AppStrings.get(R.string.ui_7a41105eb3)))
+    rule.onNodeWithText(AppStrings.get(R.string.ui_7a41105eb3)).assertExists()
   }
 
   @Test fun successfulEmptyTldCatalogIsNotReportedAsANetworkFailure() = runBlocking {
@@ -289,7 +394,39 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithText(AppStrings.get(R.string.analytics_partial_failure_notice)).assertIsDisplayed()
   }
 
-  @Test fun partialAnalyticsWarningIsVisibleInAccountOverview() {
+  @Test fun analyticsScreenDisplaysIpsReturnedByTheExistingAnalyticsEndpoint() {
+    english()
+    response = { request ->
+      when {
+        request.requestUrl?.encodedPath.orEmpty().endsWith("/analytics/ips") ->
+          json("""{"data":[{"ip":"203.0.113.45","queries":17,"network":{"isp":"Example ISP","asn":64500},"geo":{"countryCode":"TR","country":"Türkiye","city":"Ankara"}}]}""")
+        request.requestUrl?.encodedPath.orEmpty().endsWith("/analytics/domains") &&
+          request.requestUrl?.queryParameter("status") == "default" ->
+          json("""{"data":[{"domain":"allowed-icons.example","queries":8}]}""")
+        request.requestUrl?.encodedPath.orEmpty().contains("/analytics/") -> json("""{"data":[]}""")
+        else -> json("{}", 404)
+      }
+    }
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { AnalyticsScreen(model) } }
+
+    rule.waitUntil(30_000) {
+      model.analyticsLastSuccessAt.value != null && !model.isAnalyticsLoading.value
+    }
+
+    assertEquals(listOf("203.0.113.45"), model.analytics.value.topIps.map { it.ip })
+    assertTrue("The existing IP analytics endpoint should be requested", requests.any {
+      it.contains("/analytics/ips?")
+    })
+    rule.onNodeWithTag("analytics_resolved_domains_card").performScrollTo()
+    rule.onNodeWithTag("analytics_domain_favicon", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("analytics_ips_card").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText("203.0.113.45").assertIsDisplayed()
+    rule.onNodeWithText("Ankara, Türkiye").assertIsDisplayed()
+    rule.onNodeWithText("Example ISP · AS64500").assertIsDisplayed()
+  }
+
+  @Test fun partialAnalyticsWarningIsVisibleInAnalytics() {
     english()
     response = { request ->
       when {
@@ -301,15 +438,16 @@ class AccountSettingsFlowTest : AuditFixture() {
       }
     }
     val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { AccountScreen(model) } }
+    rule.setContent { AppTheme { AnalyticsScreen(model) } }
     rule.runOnIdle { model.refreshAnalytics(null, null) }
 
     rule.waitUntil(30_000) {
       model.analyticsLastSuccessAt.value != null && !model.isAnalyticsLoading.value
     }
-    rule.onNodeWithTag("account_analytics_warning")
+    rule.onNodeWithTag("analytics_partial_warning")
       .performScrollTo()
-      .assertTextEquals(AppStrings.get(R.string.analytics_partial_failure_notice))
+      .assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.analytics_partial_failure_notice)).assertIsDisplayed()
     rule.onNodeWithText("100").assertExists()
   }
 
@@ -381,7 +519,7 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithText("undefined", substring = true).assertDoesNotExist()
   }
 
-  @Test fun accountDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected() {
+  @Test fun setupDiagnosticDoesNotTreatAnUnmatchedProfileAsConnected() {
     english()
     response = { request ->
       if (request.path == "/") {
@@ -390,9 +528,16 @@ class AccountSettingsFlowTest : AuditFixture() {
     }
     runBlocking { repository.runDiagnosticTest("aaaaaa") }
     val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { AccountScreen(model) } }
+    rule.setContent { AppTheme { SetupScreen(model) } }
 
-    rule.onNodeWithText(AppStrings.get(R.string.diagnostic_unverified_title)).assertIsDisplayed()
+    rule.onNodeWithTag("setup_network_diagnostics").performScrollTo()
+    val expectedStatus = AppStrings.get(R.string.diagnostic_unverified_title)
+    rule.waitUntil(5_000) {
+      runCatching {
+        rule.onNodeWithTag("setup_diagnostic_status_label").assertTextEquals(expectedStatus)
+      }.isSuccess
+    }
+    rule.onNodeWithTag("setup_diagnostic_status_label").assertTextEquals(expectedStatus)
     rule.onNodeWithText(AppStrings.get(R.string.ui_8c25d923c8)).assertDoesNotExist()
   }
 
@@ -405,8 +550,9 @@ class AccountSettingsFlowTest : AuditFixture() {
     }
     runBlocking { repository.runDiagnosticTest("aaaaaa") }
     val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { AccountScreen(model) } }
+    rule.setContent { AppTheme { SetupScreen(model) } }
 
+    rule.onNodeWithTag("setup_network_diagnostics").performScrollTo()
     rule.onNodeWithText("Server: iad", substring = true).assertIsDisplayed()
     rule.onNodeWithText("Resolver: 45.90.28.0").assertIsDisplayed()
     rule.onNodeWithText("Anycast: enabled").assertIsDisplayed()
@@ -421,8 +567,6 @@ class AccountSettingsFlowTest : AuditFixture() {
     english()
     response = { json("{}", 500) }
     val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { AccountScreen(model) } }
-
     model.syncAllData()
     rule.waitUntil(30_000) { model.uiMessage.value?.isError == true }
 
@@ -440,8 +584,6 @@ class AccountSettingsFlowTest : AuditFixture() {
       else json("""{"data":[]}""")
     }
     val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { AccountScreen(model) } }
-
     model.syncAllData()
     rule.waitUntil(30_000) {
       model.fullSyncStatus.value is com.example.data.repository.FullSyncStatus.Completed &&
@@ -449,16 +591,9 @@ class AccountSettingsFlowTest : AuditFixture() {
         model.uiMessage.value?.text?.contains(NavTab.ANALYTICS.title) == true
     }
 
-    rule.onNodeWithTag("full_sync_logs_label")
-      .performScrollTo()
-      .assertTextEquals(NavTab.LOGS.title)
-    rule.onNodeWithTag("full_sync_analytics_label")
-      .performScrollTo()
-      .assertTextEquals(NavTab.ANALYTICS.title)
-    rule.onNodeWithTag("full_sync_logs_status")
-      .assertTextEquals(AppStrings.get(R.string.sync_section_failed))
-    rule.onNodeWithTag("full_sync_analytics_status")
-      .assertTextEquals(AppStrings.get(R.string.sync_section_failed))
+    val completed = model.fullSyncStatus.value as com.example.data.repository.FullSyncStatus.Completed
+    assertFalse("The logs area should be reported as failed", completed.result.logsRefreshed)
+    assertEquals(com.example.data.repository.SyncAreaOutcome.FAILED, completed.result.analyticsOutcome)
     val failureMessage = model.uiMessage.value?.text.orEmpty()
     assertTrue(failureMessage.contains(NavTab.LOGS.title))
     assertTrue(failureMessage.contains(NavTab.ANALYTICS.title))
@@ -478,8 +613,6 @@ class AccountSettingsFlowTest : AuditFixture() {
       }
     }
     val model = NextDnsViewModel(repository)
-    rule.setContent { AppTheme { AccountScreen(model) } }
-
     model.syncAllData()
     rule.waitUntil(30_000) {
       model.fullSyncStatus.value is com.example.data.repository.FullSyncStatus.Completed &&
@@ -491,8 +624,6 @@ class AccountSettingsFlowTest : AuditFixture() {
     assertEquals(com.example.data.repository.SyncAreaOutcome.PARTIAL, result.analyticsOutcome)
     assertFalse("Partial analytics must prevent an all-areas success", result.allAreasSucceeded)
     assertEquals("Successful analytics panels should still be committed", 123L, repository.analytics.value.totalQueries)
-    rule.onNodeWithTag("full_sync_analytics_status")
-      .assertTextEquals(AppStrings.get(R.string.sync_section_partial))
     assertTrue(model.uiMessage.value?.text?.contains(NavTab.ANALYTICS.title) == true)
   }
 }

@@ -89,7 +89,7 @@ REQUIRED = {
             "invalidLabelsUrlsIpsAndOversizedRulesAreRejected")],
 "NDNS-047": [(ACCOUNT, "fullSyncReportsPartialAnalyticsWhileKeepingSuccessfulPanels")],
 "NDNS-060": [(REPOSITORY, "oldSearchStreamCannotLeakRowsIntoNewSearchResults")],
-"NDNS-061": [(ACCOUNT, "speedTestEntryIsAbsentFromAccountScreen"),
+"NDNS-061": [(ACCOUNT, "accountShortcutAndSeparateConnectionPageAreRemoved"),
     (RETIRED_SPEED, "retiredSpeedSettingsAreClearedWithoutTouchingCredentialsThemeLocaleOrLegalAcceptance")],
 "NDNS-062": [(RETIRED_SPEED, "retiredSpeedSettingsCleanupIsIdempotent")],
 "NDNS-063": [(API_CONTRACT, name) for name in (
@@ -100,7 +100,7 @@ REQUIRED = {
     [(SNAPSHOT, name) for name in (
         "digestChangesWhenAnUnverifiedServerSecurityFieldChanges",
         "digestRemainsOrderIndependentForNestedUnknownServerFields")]+
-    [(AUDIT_UI, "unverifiedSecurityFieldsAreDisclosedReadOnlyWithoutShowingRawValues")],
+    [(AUDIT_UI, "securityScreenDoesNotExposeRetiredControlsOrUnknownServerFields")],
 "NDNS-054": [(FAVICON, name) for name in (
     "validImageLoadsAndIsCachedInMemory",
     "redirectIsRejectedWithoutRequestingItsTarget",

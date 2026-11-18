@@ -2,6 +2,7 @@ package com.example.data.notifications
 
 import android.content.Context
 import com.example.data.legal.LegalAcceptanceStore
+import com.example.data.local.NextDnsPreferences
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -27,7 +28,7 @@ object NotificationWorkScheduler {
     val settings = preferences.currentSettings()
     val workManager = WorkManager.getInstance(appContext)
 
-    if (!LegalAcceptanceStore(appContext).isAccepted()) {
+    if (!LegalAcceptanceStore(appContext).isAccepted() || NextDnsPreferences.getInstance(appContext).isGuestMode) {
       workManager.cancelUniqueWork(PERIODIC_WORK_NAME)
       workManager.cancelUniqueWork(IMMEDIATE_WORK_NAME)
       return

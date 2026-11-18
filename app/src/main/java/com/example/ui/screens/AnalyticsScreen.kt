@@ -171,7 +171,8 @@ fun AnalyticsScreen(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.errorContainer)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .testTag("analytics_partial_warning"),
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -278,6 +279,14 @@ fun AnalyticsScreen(
       }
     }
 
+    if (analytics.topIps.isNotEmpty()) {
+      item {
+        Box(modifier = Modifier.alpha(contentAlpha)) {
+          AnalyticsIpsCard(analytics = analytics, numFormat = numFormat)
+        }
+      }
+    }
+
     item {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         RootDomainsCard(
@@ -331,6 +340,18 @@ fun AnalyticsScreen(
 // =========================================================================
 // Modular Composable Sections
 // =========================================================================
+
+@Composable
+private fun AnalyticsDomainIcon(domain: String) {
+  Box(
+    modifier = Modifier
+      .size(18.dp)
+      .clip(RoundedCornerShape(4.dp))
+      .testTag("analytics_domain_favicon")
+  ) {
+    FaviconImage(domain = domain, modifier = Modifier.fillMaxSize())
+  }
+}
 
 @Composable
 private fun AnalyticsFilterBar(
@@ -428,6 +449,7 @@ private fun AnalyticsFilterBar(
         modifier = Modifier
           .clip(RoundedCornerShape(10.dp))
           .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+          .testTag("analytics_time_filter")
           .bounceClick { onToggleTimeFilterMenu(true) },
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(10.dp)
@@ -450,6 +472,7 @@ private fun AnalyticsFilterBar(
       ) {
         timesList.forEach { tm ->
           DropdownMenuItem(
+            modifier = Modifier.testTag("analytics_time_option_$tm"),
             text = { Text(analyticsTimeFilterLabel(tm), color = if (tm == selectedTimeFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontSize = 12.sp) },
             onClick = {
               onSelectTime(tm)
@@ -561,7 +584,10 @@ private fun ResolvedDomainsCard(
   numFormat: NumberFormat,
   modifier: Modifier = Modifier
 ) {
-  NextDnsCard(title = AppStrings.get(R.string.ui_b13fa1ff43), modifier = modifier) {
+  NextDnsCard(
+    title = AppStrings.get(R.string.ui_b13fa1ff43),
+    modifier = modifier.testTag("analytics_resolved_domains_card")
+  ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
       analytics.topAllowedDomains.take(6).forEach { dom ->
         Row(
@@ -582,6 +608,7 @@ private fun ResolvedDomainsCard(
               tint = MaterialTheme.colorScheme.tertiary,
               modifier = Modifier.size(16.dp)
             )
+            AnalyticsDomainIcon(dom.domain)
             Text(
               text = dom.domain,
               color = MaterialTheme.colorScheme.onSurface,
@@ -628,6 +655,7 @@ private fun BlockedDomainsCard(
               tint = MaterialTheme.colorScheme.error,
               modifier = Modifier.size(16.dp)
             )
+            AnalyticsDomainIcon(dom.domain)
             Text(
               text = dom.domain,
               color = MaterialTheme.colorScheme.onSurface,
@@ -756,12 +784,7 @@ private fun RootDomainsCard(
               horizontalArrangement = Arrangement.spacedBy(8.dp),
               modifier = Modifier.weight(1f)
             ) {
-              Icon(
-                imageVector = Icons.Default.Language,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
-              )
+              AnalyticsDomainIcon(dom.domain)
               Text(
                 text = dom.domain,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -777,6 +800,63 @@ private fun RootDomainsCard(
               fontSize = 12.sp
             )
           }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun AnalyticsIpsCard(
+  analytics: AnalyticsSummary,
+  numFormat: NumberFormat,
+  modifier: Modifier = Modifier
+) {
+  NextDnsCard(
+    title = AppStrings.get(R.string.analytics_ips_title),
+    modifier = modifier.testTag("analytics_ips_card")
+  ) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      analytics.topIps.take(6).forEachIndexed { index, ip ->
+        val location = listOfNotNull(ip.city?.takeIf(String::isNotBlank), ip.country?.takeIf(String::isNotBlank))
+          .joinToString(", ")
+        val network = listOfNotNull(
+          ip.isp?.takeIf(String::isNotBlank),
+          ip.asn?.let { "AS$it" }
+        ).joinToString(" · ")
+        Row(
+          modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("analytics_ip_row_$index"),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          Icon(
+            imageVector = Icons.Default.Public,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp).testTag("analytics_ip_icon_$index")
+          )
+          Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+              text = ip.ip,
+              color = MaterialTheme.colorScheme.onSurface,
+              fontSize = 12.sp,
+              fontWeight = FontWeight.SemiBold,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+            if (location.isNotBlank()) {
+              Text(location, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, maxLines = 1)
+            }
+            if (network.isNotBlank()) {
+              Text(network, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, maxLines = 1)
+            }
+          }
+          Text(
+            text = numFormat.format(ip.queries),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+          )
         }
       }
     }

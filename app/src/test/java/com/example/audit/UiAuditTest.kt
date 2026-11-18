@@ -5,9 +5,6 @@ import androidx.compose.ui.test.*
 import androidx.test.core.app.ApplicationProvider
 import com.example.NextDnsApp
 import com.example.R
-import com.example.data.api.SecurityFieldDiscovery
-import com.example.data.api.SecurityJsonValueType
-import com.example.data.api.UnverifiedSecurityField
 import com.example.data.model.DiagnosticTestResult
 import com.example.data.model.DnsLogEntry
 import com.example.data.model.DeviceMetric
@@ -17,6 +14,7 @@ import com.example.data.model.LogsSort
 import com.example.data.model.LogsTimeWindow
 import com.example.data.model.NextDnsProfile
 import com.example.data.repository.LogsPaginationState
+import com.example.data.repository.SyncSection
 import com.example.i18n.AppStrings
 import com.example.i18n.LocalePreferences
 import com.example.ui.screens.AllowlistScreen
@@ -28,9 +26,12 @@ import com.example.ui.screens.LogsHeaderControls
 import com.example.ui.screens.LogsHistoryControls
 import com.example.ui.screens.LogItemRow
 import com.example.ui.screens.LogsPaginationFooter
-import com.example.ui.screens.UnverifiedSecurityFieldsSection
+import com.example.ui.screens.SecurityScreen
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NextDnsViewModel
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -62,14 +63,14 @@ class UiAuditTest : AuditFixture() {
     english()
     val profile = NextDnsProfile("aaaaaa", "Synthetic A", "fp0123456789abcdef")
     val measurement = DiagnosticTestResult(status = "ok", profileId = profile.fingerprint, lastTestedTime = 1_000)
-    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}, {}) } }
+    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}) } }
     rule.onNodeWithText(AppStrings.get(R.string.ui_934b24bdc9)).assertIsDisplayed()
   }
 
   @Test fun detectedNextDnsWithoutSelectedProfileMustNotSayNotConfigured() {
     english()
     val measurement = DiagnosticTestResult(status = "ok", profileId = "fp0123456789abcdef", lastTestedTime = 1_000)
-    rule.setContent { AppTheme { ConnectionStatusBanner(null, measurement, false, {}, {}) } }
+    rule.setContent { AppTheme { ConnectionStatusBanner(null, measurement, false, {}) } }
     rule.onNodeWithText(AppStrings.get(R.string.diagnostic_detected_title)).assertIsDisplayed()
     rule.onNodeWithText(AppStrings.get(R.string.ui_1866bc156e)).assertDoesNotExist()
   }
@@ -78,7 +79,7 @@ class UiAuditTest : AuditFixture() {
     english()
     val profile = NextDnsProfile("aaaaaa", "Synthetic A", "fp0123456789abcdef")
     val measurement = DiagnosticTestResult(status = "ok", profileId = "fpfedcba9876543210", lastTestedTime = 1_000)
-    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}, {}) } }
+    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}) } }
     rule.onNodeWithText(AppStrings.get(R.string.ui_934b24bdc9)).assertDoesNotExist()
   }
 
@@ -146,7 +147,7 @@ class UiAuditTest : AuditFixture() {
     english()
     val profile = NextDnsProfile("aaaaaa", "Synthetic A")
     val measurement = DiagnosticTestResult(status = "ok", profileId = "aaaaaa", lastTestedTime = 1_000)
-    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}, {}) } }
+    rule.setContent { AppTheme { ConnectionStatusBanner(profile, measurement, false, {}) } }
     rule.onNodeWithText(AppStrings.get(R.string.ui_934b24bdc9)).assertDoesNotExist()
     rule.onNodeWithText(AppStrings.get(R.string.diagnostic_unverified_title)).assertIsDisplayed()
   }
@@ -271,7 +272,7 @@ class UiAuditTest : AuditFixture() {
     rule.runOnIdle { org.junit.Assert.assertTrue(requested) }
   }
 
-  @Test fun logRowsShowLocalDomainIconsForBrowsingHistory() {
+  @Test fun logRowsShowNextDnsFaviconsForBrowsingHistory() {
     english()
     rule.setContent {
       AppTheme {
@@ -285,25 +286,34 @@ class UiAuditTest : AuditFixture() {
       }
     }
 
-    rule.onNodeWithTag("logs_local_domain_icon", useUnmergedTree = true).assertExists()
-    rule.onAllNodesWithTag("remote_favicon_image", useUnmergedTree = true).assertCountEquals(0)
+    rule.onNodeWithTag("remote_favicon_image", useUnmergedTree = true).assertExists()
+    rule.onAllNodesWithTag("logs_local_domain_icon", useUnmergedTree = true).assertCountEquals(0)
   }
 
-  @Test fun unverifiedSecurityFieldsAreDisclosedReadOnlyWithoutShowingRawValues() {
+  @Test fun securityScreenDoesNotExposeRetiredControlsOrUnknownServerFields() {
     english()
-    val discovery = SecurityFieldDiscovery(
-      fields = listOf(
-        UnverifiedSecurityField("previewToggle", SecurityJsonValueType.BOOLEAN, true),
-        UnverifiedSecurityField("previewText", SecurityJsonValueType.STRING)
-      )
-    )
-    rule.setContent { AppTheme { UnverifiedSecurityFieldsSection(discovery) } }
+    response = {
+      json("""{"data":{"idnHomographs":true,"typosquatting":true,"dga":true,
+        "previewToggle":true,"previewText":"unlogged-sensitive-value"}}""")
+    }
+    assertTrue(runBlocking { repository.refreshSection(SyncSection.SECURITY) })
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { SecurityScreen(model) } }
 
-    rule.onNodeWithText("previewToggle").assertIsDisplayed()
-    rule.onNodeWithText("previewText").assertIsDisplayed()
-    rule.onNodeWithText(AppStrings.get(R.string.security_unverified_boolean, "true")).assertIsDisplayed()
-    rule.onNodeWithText(AppStrings.get(R.string.security_unverified_text)).assertIsDisplayed()
-    rule.onNodeWithText("unlogged-sensitive-value").assertDoesNotExist()
+    val securityList = rule.onNodeWithTag("security_settings_list")
+    listOf(
+      AppStrings.get(R.string.ui_9904d77eb3),
+      AppStrings.get(R.string.ui_6194b3ff35),
+      AppStrings.get(R.string.ui_fa2b128b73),
+      "Additional server fields (read-only)",
+      "previewToggle",
+      "previewText",
+      "unlogged-sensitive-value"
+    ).forEach { text ->
+      assertThrows(AssertionError::class.java) {
+        securityList.performScrollToNode(hasText(text))
+      }
+    }
   }
 
   @Test fun successfulAllowlistSubmissionClearsOnlyTheConfirmedText() { checkSuccessfulInput(true, false) }
