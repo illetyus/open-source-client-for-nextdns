@@ -131,7 +131,7 @@ class NextDnsViewModel(
   private val _isAnalyticsLoading = MutableStateFlow(false)
   val isAnalyticsLoading = _isAnalyticsLoading.asStateFlow()
 
-  private val _isGuestMode = MutableStateFlow(false)
+  private val _isGuestMode = MutableStateFlow(repository.wasGuestModeSelected())
   val isGuestMode = _isGuestMode.asStateFlow()
 
   private val _isInitializing = MutableStateFlow(true)
