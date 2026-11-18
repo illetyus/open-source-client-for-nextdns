@@ -97,7 +97,7 @@ class NextDnsViewModel(
   val profiles = repository.profiles
   val activeProfileId = repository.activeProfileId
   val securitySettings = repository.securitySettings
-  val unverifiedSecurityFields = repository.unverifiedSecurityFields
+  val securityOptions = repository.securityOptions
   val privacySettings = repository.privacySettings
   val parentalControlSettings = repository.parentalControlSettings
   val denylist = repository.denylist
@@ -131,7 +131,7 @@ class NextDnsViewModel(
   private val _isAnalyticsLoading = MutableStateFlow(false)
   val isAnalyticsLoading = _isAnalyticsLoading.asStateFlow()
 
-  private val _isGuestMode = MutableStateFlow(false)
+  private val _isGuestMode = MutableStateFlow(repository.wasGuestModeSelected())
   val isGuestMode = _isGuestMode.asStateFlow()
 
   private val _isInitializing = MutableStateFlow(true)
@@ -432,9 +432,7 @@ class NextDnsViewModel(
       "googleSafeBrowsing" -> SecurityFlag.GOOGLE_SAFE_BROWSING
       "cryptojacking" -> SecurityFlag.CRYPTOJACKING
       "dnsRebinding" -> SecurityFlag.DNS_REBINDING
-      "idnHomographs" -> SecurityFlag.IDN_HOMOGRAPHS
-      "typosquatting" -> SecurityFlag.TYPOSQUATTING
-      "dga" -> SecurityFlag.DGA
+      "algorithmicallyGeneratedDomains" -> SecurityFlag.ALGORITHMICALLY_GENERATED_DOMAINS
       "nrd" -> SecurityFlag.NRD
       "ddns" -> SecurityFlag.DDNS
       "parkedDomains" -> SecurityFlag.PARKING

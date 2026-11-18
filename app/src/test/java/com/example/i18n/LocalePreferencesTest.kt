@@ -43,6 +43,25 @@ class LocalePreferencesTest {
     assertTrue(store.isAccepted())
   }
 
+  @Test fun unchangedApplicationConfigurationReusesLocalizedResources() {
+    LocalePreferences.setSelection(context, "tr")
+    val first = LocalePreferences.localizedContext(context)
+    assertSame(first, LocalePreferences.localizedContext(context))
+    LocalePreferences.setSelection(context, "fr")
+    val second = LocalePreferences.localizedContext(context)
+    assertNotSame(first, second)
+    assertEquals("fr", second.resources.configuration.locales[0].language)
+  }
+
+  @Test fun overriddenFontScaleIsNotLostOrReusedFromApplication() {
+    LocalePreferences.setSelection(context, "de")
+    val configuration = android.content.res.Configuration(context.resources.configuration)
+    configuration.fontScale = 1.7f
+    val windowContext = context.createConfigurationContext(configuration)
+    assertEquals(1.7f, LocalePreferences.localizedContext(windowContext).resources.configuration.fontScale)
+    assertEquals("de", LocalePreferences.localizedContext(windowContext).resources.configuration.locales[0].language)
+  }
+
   @Test fun invalidSavedChoiceFallsBackToSystem() {
     context.getSharedPreferences("app_language", Context.MODE_PRIVATE).edit()
       .putString("language", "invalid").commit()

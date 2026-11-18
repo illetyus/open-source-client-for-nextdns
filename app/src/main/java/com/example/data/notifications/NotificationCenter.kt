@@ -23,6 +23,55 @@ object NotificationCenter {
   internal const val NOTIFICATION_CONFIG_CHANGED = 2101
   internal const val NOTIFICATION_DAILY_SUMMARY = 2102
 
+  // A delivered notification outlives its WorkManager job. Serialize posting
+  // with account transitions so an old worker cannot repost after cleanup.
+  private val accountNotificationLock = Any()
+  private var accountGeneration = 0L
+  private var accountActive = true
+
+  internal fun invalidateAccountNotifications(context: Context) = synchronized(accountNotificationLock) {
+    accountGeneration++
+    accountActive = false
+    val manager = NotificationManagerCompat.from(context)
+    manager.cancel(NOTIFICATION_CONFIG_CHANGED)
+    manager.cancel(NOTIFICATION_DAILY_SUMMARY)
+  }
+
+  internal fun activateAccountNotifications() = synchronized(accountNotificationLock) {
+    accountActive = true
+  }
+
+  internal fun captureAccountGeneration(): Long? = synchronized(accountNotificationLock) {
+    accountGeneration.takeIf { accountActive }
+  }
+
+  internal fun isAccountGenerationCurrent(generation: Long): Boolean = synchronized(accountNotificationLock) {
+    accountActive && accountGeneration == generation
+  }
+
+  internal fun updateCurrentAccountState(generation: Long, update: () -> Unit) = synchronized(accountNotificationLock) {
+    if (accountActive && accountGeneration == generation) update()
+  }
+
+  internal fun postConfigChangedForAccount(
+    context: Context,
+    generation: Long,
+    isCurrentAccount: () -> Boolean
+  ): Boolean = synchronized(accountNotificationLock) {
+    accountActive && accountGeneration == generation && isCurrentAccount() && postConfigChanged(context)
+  }
+
+  internal fun postDailySummaryForAccount(
+    context: Context,
+    totalQueries: Long,
+    blockedQueries: Long,
+    generation: Long,
+    isCurrentAccount: () -> Boolean
+  ): Boolean = synchronized(accountNotificationLock) {
+    accountActive && accountGeneration == generation && isCurrentAccount() &&
+      postDailySummary(context, totalQueries, blockedQueries)
+  }
+
   fun createChannels(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 

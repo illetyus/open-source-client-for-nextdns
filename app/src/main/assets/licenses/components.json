@@ -632,7 +632,7 @@
     "artifacts": []
   },
   {
-    "coordinate": "androidx.concurrent:concurrent-futures-ktx:1.1.0",
+    "coordinate": "androidx.concurrent:concurrent-futures-ktx:1.2.0",
     "licenses": [
       {
         "name": "The Apache Software License, Version 2.0",
@@ -642,13 +642,13 @@
     "artifacts": [
       {
         "configuration": "releaseRuntimeClasspath",
-        "file": "concurrent-futures-ktx-1.1.0.jar",
-        "sha256": "1968bf52039e38636aa6f114cd17d7256919d1e8997417716fef9d1da1f24d85"
+        "file": "concurrent-futures-ktx-1.2.0.jar",
+        "sha256": "e1f3e17bb4358ccd6c77ca45f70635c9aba237261f19eaa4f64a0218c00e2a3e"
       }
     ]
   },
   {
-    "coordinate": "androidx.concurrent:concurrent-futures:1.1.0",
+    "coordinate": "androidx.concurrent:concurrent-futures:1.2.0",
     "licenses": [
       {
         "name": "The Apache Software License, Version 2.0",
@@ -658,8 +658,8 @@
     "artifacts": [
       {
         "configuration": "releaseRuntimeClasspath",
-        "file": "concurrent-futures-1.1.0.jar",
-        "sha256": "0ce067c514a0d1049d1bebdf709e344ed3266fe9744275682937cdcb13334e9e"
+        "file": "concurrent-futures-1.2.0.jar",
+        "sha256": "4810315a798690b5d3bb40c92bcd41c045fd2c36bbfc50b27cbac3d6a0eda190"
       }
     ]
   },

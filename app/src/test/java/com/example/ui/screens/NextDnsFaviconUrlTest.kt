@@ -8,14 +8,14 @@ import org.junit.Test
 class NextDnsFaviconUrlTest {
   @Test fun encodesNormalizedAsciiHostUnderTheFixedNextDnsOrigin() {
     assertEquals(
-      "https://favicons.nextdns.io/hex:6578616d706c652e636f6d@3x.png",
+      "https://favicons.nextdns.io/hex:6578616d706c652e636f6d.png?size=48&theme=light",
       nextDnsFaviconUrl("EXAMPLE.COM.")
     )
   }
 
   @Test fun convertsInternationalHostnamesToAsciiBeforeHexEncoding() {
     assertEquals(
-      "https://favicons.nextdns.io/hex:786e2d2d62636865722d6b76612e6465@3x.png",
+      "https://favicons.nextdns.io/hex:786e2d2d62636865722d6b76612e6465.png?size=48&theme=light",
       nextDnsFaviconUrl("bücher.de")
     )
   }
@@ -24,9 +24,9 @@ class NextDnsFaviconUrlTest {
     val encoded = "6578616d706c652e636f6d"
     assertEquals(
       listOf(
-        "https://favicons.nextdns.io/hex:$encoded@3x.png",
-        "https://favicons.nextdns.io/hex:$encoded@2x.png",
-        "https://favicons.nextdns.io/hex:$encoded@1x.png"
+        "https://favicons.nextdns.io/hex:$encoded.png?size=48&theme=light",
+        "https://favicons.nextdns.io/hex:$encoded.png?size=32&theme=light",
+        "https://favicons.nextdns.io/hex:$encoded.png?size=16&theme=light"
       ),
       nextDnsFaviconUrls("example.com")
     )

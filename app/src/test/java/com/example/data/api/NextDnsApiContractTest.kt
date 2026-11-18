@@ -276,6 +276,7 @@ class NextDnsApiContractTest {
   @Test
   fun observedSecurityApiFlagsAreTypedInsteadOfClassifiedAsUnknown() = runTest {
     val fields = linkedMapOf(
+      "algorithmicallyGeneratedDomains" to false,
       "dataDropServices" to true,
       "decentralizedWebGateways" to false,
       "dnsDataExfiltration" to true,

@@ -58,9 +58,10 @@ DOCUMENTED_PROFILE_FIELDS = {
     "settings.web3",
 }
 
-# These Security booleans were observed in the user's real profile response UI;
-# they are intentionally separate from the currently published profile example.
+# These Security booleans were observed in profile responses or the NextDNS
+# dashboard. The published profile example does not yet list them.
 OBSERVED_SECURITY_FIELDS = {
+    "security.algorithmicallyGeneratedDomains",
     "security.dataDropServices",
     "security.decentralizedWebGateways",
     "security.dnsDataExfiltration",

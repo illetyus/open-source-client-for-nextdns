@@ -100,7 +100,7 @@ REQUIRED = {
     [(SNAPSHOT, name) for name in (
         "digestChangesWhenAnUnverifiedServerSecurityFieldChanges",
         "digestRemainsOrderIndependentForNestedUnknownServerFields")]+
-    [(AUDIT_UI, "unverifiedSecurityFieldsAreDisclosedReadOnlyWithoutShowingRawValues")],
+    [(AUDIT_UI, "securityScreenDoesNotExposeRetiredControlsOrUnknownServerFields")],
 "NDNS-054": [(FAVICON, name) for name in (
     "validImageLoadsAndIsCachedInMemory",
     "redirectIsRejectedWithoutRequestingItsTarget",

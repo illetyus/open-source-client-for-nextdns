@@ -8,6 +8,43 @@ import release_dex_audit as audit
 
 
 class RetiredFeatureDexAuditTest(unittest.TestCase):
+    @patch.object(audit, "type_descriptors", return_value={b"Lcom/example/performance/BenchmarkFrameRecorder;"})
+    def test_new_benchmark_diagnostics_are_rejected_from_release(self, _):
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex")
+
+    @patch.object(audit, "type_descriptors", return_value={b"La/b;"})
+    def test_obfuscated_benchmark_icon_fixture_is_rejected(self, _):
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex", mapping="com.example.performance.BenchmarkIconMode -> a.b:\n")
+
+    @patch.object(audit, "type_descriptors", return_value={b"Landroidx/metrics/performance/JankStats;"})
+    def test_benchmark_only_jankstats_dependency_is_rejected_from_release(self, _):
+        with self.assertRaises(audit.TestCodeFound):
+            audit.audit_dex(b"synthetic dex")
+
+    @patch.object(audit, "type_descriptors", return_value={b"[La/b;"})
+    def test_obfuscated_fixture_reference_is_still_rejected(self, _):
+        mapping = "com.example.BenchmarkFixtureActivity -> a.b:\n    1:1:void onCreate():1:1 -> c\n"
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex", mapping=mapping)
+
+    @patch.object(audit, "type_descriptors", return_value={b"La/b;"})
+    def test_normal_obfuscated_production_class_is_allowed(self, _):
+        self.assertEqual(1, audit.audit_dex(b"synthetic dex", mapping="com.example.MainActivity -> a.b:\n"))
+
+    @patch.object(audit, "type_descriptors", return_value={b"La/b;"})
+    def test_merged_class_mapping_does_not_hide_a_fixture(self, _):
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex", mapping="one.Name -> a.b:\ncom.example.BenchmarkFixtureActivity -> a.b:\n")
+
+    @patch.object(audit, "type_descriptors", return_value={b"La/b;"})
+    def test_inlined_fixture_origin_without_class_header_is_rejected(self, _):
+        mapping = ("com.example.MainActivity -> a.b:\n"
+            "    1:2:void com.example.BenchmarkFixtureActivity.onCreate(android.os.Bundle):3:4 -> c\n")
+        with self.assertRaisesRegex(audit.TestCodeFound, "Benchmark fixture type"):
+            audit.audit_dex(b"synthetic dex", mapping=mapping)
+
     @patch.object(audit, "type_descriptors", return_value={
         b"Lcom/example/data/diagnostics/LibreSpeedClient;"
     })

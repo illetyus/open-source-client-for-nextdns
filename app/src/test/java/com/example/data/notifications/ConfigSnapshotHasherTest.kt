@@ -77,6 +77,8 @@ class ConfigSnapshotHasherTest {
       original.security.copy(dataDropServices = true),
       original.security.copy(decentralizedWebGateways = true),
       original.security.copy(dnsDataExfiltration = true),
+      original.security.copy(algorithmicallyGeneratedDomains = false),
+      original.security.copy(algorithmicallyGeneratedDomains = true),
       original.security.copy(dnsPayloadDelivery = true),
       original.security.copy(fastFluxNetworks = true),
       original.security.copy(freeHostingDomains = true),
@@ -93,6 +95,20 @@ class ConfigSnapshotHasherTest {
         ConfigSnapshotHasher.digest(original.copy(security = changedSecurity))
       )
     }
+  }
+
+  @Test
+  fun digestPreservesExistingAlgorithmicDomainSnapshotAfterTypingTheField() {
+    val original = sampleSnapshot()
+    val observed = original.copy(security = original.security.copy(
+      unknownFields = mapOf("algorithmicallyGeneratedDomains" to false, "newServerFlag" to true)
+    ))
+    val typed = original.copy(security = original.security.copy(
+      algorithmicallyGeneratedDomains = false,
+      unknownFields = mapOf("newServerFlag" to true)
+    ))
+
+    assertEquals(ConfigSnapshotHasher.digest(observed), ConfigSnapshotHasher.digest(typed))
   }
 
   @Test

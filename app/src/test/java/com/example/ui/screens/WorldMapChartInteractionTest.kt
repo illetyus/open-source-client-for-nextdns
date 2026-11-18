@@ -13,6 +13,12 @@ import com.example.data.model.CountryTrafficMetric
 import com.example.i18n.LocalePreferences
 import com.example.ui.theme.AppTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.PathFillType
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,6 +66,36 @@ class WorldMapChartInteractionTest {
 
     assertEquals(175, geometry.countries.size)
     assertEquals("US", geometry.countryAt(0.23f, 0.29f))
+  }
+
+  @Test fun geometryIsReusedAcrossScreenVisits() = runBlocking {
+    val context = ApplicationProvider.getApplicationContext<NextDnsApp>()
+    assertSame(loadWorldMapGeometry(context), loadWorldMapGeometry(context))
+  }
+
+  @Test fun renderPathsReuseViewportAndRetainSeamCopiesAndHoleFill() {
+    val outer = listOf(WorldMapPoint(.99f, .2f), WorldMapPoint(1.02f, .2f),
+      WorldMapPoint(1.02f, .4f), WorldMapPoint(.99f, .2f))
+    val hole = listOf(WorldMapPoint(.995f, .25f), WorldMapPoint(1.005f, .25f),
+      WorldMapPoint(1f, .30f), WorldMapPoint(.995f, .25f))
+    val geometry = WorldMapGeometry(listOf(WorldCountryOutline("US", listOf(WorldMapPolygon(listOf(outer, hole))))))
+    val cache = WorldMapRenderCache(geometry)
+    val viewport = Rect(0f, 0f, 1_000f, 500f)
+    val first = cache.paths(viewport, 1f)
+    assertSame(first, cache.paths(viewport, 1f))
+    assertEquals("Both visible antimeridian copies must remain", 2, first.single().paths.size)
+    assertTrue(first.single().paths.all { it.fillType == PathFillType.EvenOdd })
+    assertNotSame(first, cache.paths(Rect(0f, 0f, 500f, 250f), 1f))
+  }
+
+  @Test fun cullingIncludesTheOutlineOutsideTheViewport() {
+    val ring = listOf(WorldMapPoint(1.001f, .2f), WorldMapPoint(1.01f, .2f),
+      WorldMapPoint(1.01f, .4f), WorldMapPoint(1.001f, .2f))
+    val cache = WorldMapRenderCache(WorldMapGeometry(listOf(
+      WorldCountryOutline("US", listOf(WorldMapPolygon(listOf(ring)))))))
+    val viewport = Rect(0f, 0f, 1_000f, 500f)
+    assertEquals(1, cache.paths(viewport, 0f).single().paths.size)
+    assertEquals(2, cache.paths(viewport, 2f).single().paths.size)
   }
 
   @Test fun accessibleCountrySelectorIncludesCountriesWithoutTrafficData() {

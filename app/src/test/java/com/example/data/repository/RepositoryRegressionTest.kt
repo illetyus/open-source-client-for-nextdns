@@ -35,6 +35,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.LooperMode
+import org.robolectric.shadows.ShadowPausedLooper
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.io.ByteArrayOutputStream
@@ -586,6 +588,71 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
     assertTrue(preferences.getSecuritySettings("aaaaaa")?.dnsDataExfiltration == true)
   }
 
+  @Test fun securityPreviewMutationsRequireExplicitReadBackFromTheServer() = runBlocking {
+    val fields = listOf(
+      SecurityFlag.ALGORITHMICALLY_GENERATED_DOMAINS to "algorithmicallyGeneratedDomains",
+      SecurityFlag.DNS_DATA_EXFILTRATION to "dnsDataExfiltration",
+      SecurityFlag.FAST_FLUX_NETWORKS to "fastFluxNetworks"
+    )
+    for ((flag, field) in fields) {
+      response = { req ->
+        if (req.method == "PATCH") json("{}")
+        else json("""{"data":{"$field":true}}""")
+      }
+      assertTrue(repository.setSecurityFlag(flag, true).isSuccess)
+
+      for (body in listOf("{}", """{"$field":null}""", """{"$field":false}""")) {
+        response = { req ->
+          if (req.method == "PATCH") json("{}")
+          else json("""{"data":$body}""")
+        }
+        assertTrue("$field read-back $body must not verify true", repository.setSecurityFlag(flag, true).isFailure)
+      }
+      response = { req ->
+        if (req.method == "PATCH") json("""{"errors":[{"detail":"Forbidden"}]}""", 403)
+        else json("""{"data":{"$field":true}}""")
+      }
+      assertTrue("$field forbidden PATCH must fail", repository.setSecurityFlag(flag, true).isFailure)
+    }
+  }
+
+  @Test fun algorithmicallyGeneratedDomainsSendsOnlyItsCurrentApiField() = runBlocking {
+    var patchBody: String? = null
+    response = { req ->
+      if (req.method == "PATCH") {
+        patchBody = req.body.readUtf8()
+        json("{}")
+      } else {
+        json("""{"data":{"algorithmicallyGeneratedDomains":false,"dga":true}}""")
+      }
+    }
+
+    assertTrue(repository.setSecurityFlag(SecurityFlag.ALGORITHMICALLY_GENERATED_DOMAINS, false).isSuccess)
+    assertEquals("""{"algorithmicallyGeneratedDomains":false}""", patchBody)
+    assertEquals(false, repository.securityOptions.value.algorithmicallyGeneratedDomains)
+    assertEquals(false, preferences.getSecuritySettings("aaaaaa")?.algorithmicallyGeneratedDomains)
+    assertEquals(listOf("PATCH /profiles/aaaaaa/security", "GET /profiles/aaaaaa/security"), requests)
+  }
+
+  @Test fun securityOptionsDoNotCrossProfilesOrUseMissingValuesFromCache() = runBlocking {
+    response = { req ->
+      if (req.requestUrl!!.encodedPath == "/profiles/aaaaaa/security") {
+        json("""{"data":{"algorithmicallyGeneratedDomains":true,"dnsDataExfiltration":false,"fastFluxNetworks":true}}""")
+      } else {
+        json("""{"data":{"algorithmicallyGeneratedDomains":null}}""")
+      }
+    }
+
+    assertTrue(repository.refreshSection(SyncSection.SECURITY))
+    assertEquals(true, repository.securityOptions.value.algorithmicallyGeneratedDomains)
+    assertEquals(false, repository.securityOptions.value.dnsDataExfiltration)
+    assertEquals(true, repository.securityOptions.value.fastFluxNetworks)
+    repository.setActiveProfile("bbbbbb")
+    assertEquals(com.example.data.model.SecurityOptions(), repository.securityOptions.value)
+    assertTrue(repository.refreshSection(SyncSection.SECURITY))
+    assertEquals(com.example.data.model.SecurityOptions(), repository.securityOptions.value)
+  }
+
   @Test fun web3TrueFalseAndMissingFieldPreserveAuthoritativeState() = runBlocking {
     response = { json("""{"data":{"web3":true}}""") }
     assertTrue(repository.refreshSection(SyncSection.SETTINGS))
@@ -816,7 +883,9 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
     assertFalse(repository.isLiveStreaming.value)
   }
 
-  @Test fun liveLogStreamRetainsOnlyTheMostRecentThousandEntries() = runBlocking {
+  @Test
+  @LooperMode(LooperMode.Mode.PAUSED)
+  fun liveLogStreamRetainsOnlyTheMostRecentThousandEntries() = runBlocking {
     val streamBodyEnded = CountDownLatch(1)
     val client = OkHttpClient.Builder()
       .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().url(server.url("/stream")).build()) }
@@ -841,13 +910,13 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
 
     repository.startLogsStream()
     try {
+      val mainLooper = shadowOf(Looper.getMainLooper()) as ShadowPausedLooper
       val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
       while ((streamBodyEnded.count > 0 || repository.logs.value.firstOrNull()?.domain != "host-1099.example") &&
         System.nanoTime() < deadline) {
-        // Each SSE event switches to Dispatchers.Main before it can be consumed.
-        // Pump Robolectric's main looper instead of blocking it on CountDownLatch.await.
-        shadowOf(Looper.getMainLooper()).idle()
-        Thread.sleep(1)
+        // The queue wakes as soon as an SSE event posts work to Dispatchers.Main.
+        mainLooper.poll(10)
+        mainLooper.idle()
       }
       assertTrue("SSE response should finish", streamBodyEnded.count == 0L)
       assertEquals(1_000, repository.logs.value.size)

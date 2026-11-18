@@ -14,6 +14,10 @@ object LocalePreferences {
   const val SYSTEM = "system"
   private const val STORE = "app_language"
   private const val LANGUAGE = "language"
+  private data class ResourceSnapshot(val base: Context, val configuration: Configuration,
+    val language: String, val localized: Context)
+  private var resourceSnapshot: ResourceSnapshot? = null
+  private val resourceLock = Any()
 
   fun selection(context: Context): String {
     if (Build.VERSION.SDK_INT >= 33) {
@@ -59,8 +63,24 @@ object LocalePreferences {
   }
 
   fun localizedContext(context: Context): Context {
+    // Cache only the application, never an Activity/window with its own override.
+    // Read the current platform language and full configuration before every hit:
+    // external language changes and retained ViewModels/workers stay current.
+    val language = resolvedLanguage(context)
+    if (context === context.applicationContext) synchronized(resourceLock) {
+      val configuration = context.resources.configuration
+      resourceSnapshot?.takeIf { it.base === context && it.language == language &&
+        it.configuration == configuration }?.let { return it.localized }
+      return createLocalizedContext(context, language).also {
+        resourceSnapshot = ResourceSnapshot(context, Configuration(configuration), language, it)
+      }
+    }
+    return createLocalizedContext(context, language)
+  }
+
+  private fun createLocalizedContext(context: Context, language: String): Context {
     val configuration = Configuration(context.resources.configuration)
-    val locale = Locale.forLanguageTag(resolvedLanguage(context))
+    val locale = Locale.forLanguageTag(language)
     configuration.setLocales(LocaleList(locale))
     configuration.setLayoutDirection(locale)
     return context.createConfigurationContext(configuration)

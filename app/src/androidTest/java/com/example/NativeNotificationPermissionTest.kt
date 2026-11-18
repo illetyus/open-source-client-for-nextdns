@@ -121,5 +121,27 @@ class NativeNotificationPermissionTest {
     }
 
     NotificationRuntimeAssertions.assertPrivateNotificationsHaveGenericPublicVersions(context)
+
+    // Exercise the same posting path the worker uses, on Android's real notification manager.
+    val repository = checkNotNull(fixture).repository
+    val original = repository.activeProfileId.value
+    val oldGeneration = requireNotNull(NotificationCenter.captureAccountGeneration())
+    val accountIds = setOf(
+      NotificationCenter.NOTIFICATION_CONFIG_CHANGED,
+      NotificationCenter.NOTIFICATION_DAILY_SUMMARY
+    )
+    repository.setActiveProfile("bbbbbb")
+    repository.setActiveProfile(original)
+    composeRule.waitUntil(5_000) { manager.activeNotifications.none { it.id in accountIds } }
+    assertFalse(NotificationCenter.postDailySummaryForAccount(context, 123L, 45L, oldGeneration) { true })
+
+    val current = requireNotNull(NotificationCenter.captureAccountGeneration())
+    assertTrue(NotificationCenter.postDailySummaryForAccount(context, 456L, 12L, current) { true })
+    composeRule.waitUntil(5_000) {
+      manager.activeNotifications.any { it.id == NotificationCenter.NOTIFICATION_DAILY_SUMMARY }
+    }
+    repository.suspendForGuest()
+    composeRule.waitUntil(5_000) { manager.activeNotifications.none { it.id in accountIds } }
+    assertFalse(NotificationCenter.postConfigChangedForAccount(context, current) { true })
   }
 }

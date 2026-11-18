@@ -18,8 +18,9 @@ class NextDnsNotificationWorker(
 
   override suspend fun doWork(): Result {
     if (!LegalAcceptanceStore(applicationContext).isAccepted()) return Result.success()
+    val accountGeneration = NotificationCenter.captureAccountGeneration() ?: return Result.success()
 
-    val preferences = NotificationPreferences(applicationContext)
+    val preferences = NotificationPreferences.forAccount(applicationContext, accountGeneration)
     val settings = runCatching {
       preferences.currentSettings()
     }.getOrElse {
@@ -29,10 +30,13 @@ class NextDnsNotificationWorker(
     if (!settings.anyEnabled) return Result.success()
 
     val securePreferences = NextDnsPreferences.getInstance(applicationContext)
+    if (securePreferences.isGuestMode) return Result.success()
     val apiKey = securePreferences.apiKey
     val profileId = securePreferences.activeProfileId
 
-    if (apiKey.isBlank() || profileId.isBlank()) {
+    if (apiKey.isBlank() || profileId.isBlank() ||
+      !isCurrentSession(apiKey, profileId, accountGeneration)
+    ) {
       return Result.success()
     }
 
@@ -44,7 +48,7 @@ class NextDnsNotificationWorker(
 
       val snapshot = fetchConfigSnapshot(apiKey, profileId)
         ?: return Result.retry()
-      if (!isCurrentSession(apiKey, profileId)) return Result.success()
+      if (!isCurrentSession(apiKey, profileId, accountGeneration)) return Result.success()
 
       preferences.establishConfigBaseline(
         profileId = profileId,
@@ -78,11 +82,12 @@ class NextDnsNotificationWorker(
       if (snapshot == null) {
         shouldRetry = true
       } else {
-        if (!isCurrentSession(apiKey, profileId)) return Result.success()
+        if (!isCurrentSession(apiKey, profileId, accountGeneration)) return Result.success()
         handleConfigSnapshot(
           preferences = preferences,
           apiKey = apiKey,
           profileId = profileId,
+          accountGeneration = accountGeneration,
           digest = ConfigSnapshotHasher.digest(snapshot),
           now = now
         )
@@ -100,14 +105,16 @@ class NextDnsNotificationWorker(
         if (summary == null) {
           shouldRetry = true
         } else {
-          if (!isCurrentSession(apiKey, profileId)) return Result.success()
-          val posted = NotificationCenter.postDailySummary(
+          if (!isCurrentSession(apiKey, profileId, accountGeneration)) return Result.success()
+          val posted = NotificationCenter.postDailySummaryForAccount(
             context = applicationContext,
             totalQueries = summary.totalQueries,
-            blockedQueries = summary.blockedQueries
+            blockedQueries = summary.blockedQueries,
+            generation = accountGeneration,
+            isCurrentAccount = { isCurrentSession(apiKey, profileId, accountGeneration) }
           )
 
-          if (posted && isCurrentSession(apiKey, profileId)) {
+          if (posted && isCurrentSession(apiKey, profileId, accountGeneration)) {
             preferences.markSummaryDay(today)
           }
         }
@@ -117,22 +124,24 @@ class NextDnsNotificationWorker(
     return if (shouldRetry) Result.retry() else Result.success()
   }
 
-  private fun isCurrentSession(key: String, profileId: String): Boolean {
+  private fun isCurrentSession(key: String, profileId: String, accountGeneration: Long): Boolean {
+    if (!NotificationCenter.isAccountGenerationCurrent(accountGeneration)) return false
     if (!LegalAcceptanceStore(applicationContext).isAccepted()) return false
     val stored = NextDnsPreferences.getInstance(applicationContext)
-    return stored.apiKey == key && stored.activeProfileId == profileId
+    return !stored.isGuestMode && stored.apiKey == key && stored.activeProfileId == profileId
   }
 
   private suspend fun handleConfigSnapshot(
     preferences: NotificationPreferences,
     apiKey: String,
     profileId: String,
+    accountGeneration: Long,
     digest: String,
     now: Long
   ) {
     val state = preferences.configState(profileId)
     // An async request may finish after sign-out or after account switching.
-    if (!isCurrentSession(apiKey, profileId)) return
+    if (!isCurrentSession(apiKey, profileId, accountGeneration)) return
 
     if (
       NotificationPolicy.isLocalMutationSuppressed(
@@ -172,7 +181,7 @@ class NextDnsNotificationWorker(
       return
     }
 
-    if (!isCurrentSession(apiKey, profileId)) return
+    if (!isCurrentSession(apiKey, profileId, accountGeneration)) return
 
     if (
       NotificationPolicy.shouldNotifyConfigChange(
@@ -181,9 +190,13 @@ class NextDnsNotificationWorker(
         lastNotifiedAt = state.lastNotifiedAt,
         now = now
       ) &&
-      NotificationCenter.postConfigChanged(applicationContext)
+      NotificationCenter.postConfigChangedForAccount(
+        applicationContext,
+        accountGeneration,
+        isCurrentAccount = { isCurrentSession(apiKey, profileId, accountGeneration) }
+      )
     ) {
-      if (isCurrentSession(apiKey, profileId)) {
+      if (isCurrentSession(apiKey, profileId, accountGeneration)) {
         preferences.markConfigNotified(profileId, digest, now)
       }
     }

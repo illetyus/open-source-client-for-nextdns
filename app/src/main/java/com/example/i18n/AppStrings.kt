@@ -1,5 +1,6 @@
 package com.example.i18n
 
+import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.annotation.PluralsRes
 import com.example.NextDnsApp
@@ -21,7 +22,12 @@ object AppStrings {
     return if (arguments.isEmpty()) context.getString(id) else context.getString(id, *arguments)
   }
 
-  fun plural(@PluralsRes id: Int, quantity: Long): String =
+  internal fun localizedResources(): Resources =
     LocalePreferences.localizedContext(NextDnsApp.instance).resources
-      .getQuantityString(id, quantity.coerceIn(0, Int.MAX_VALUE.toLong()).toInt(), quantity)
+
+  fun plural(@PluralsRes id: Int, quantity: Long): String =
+    plural(localizedResources(), id, quantity)
+
+  internal fun plural(resources: Resources, @PluralsRes id: Int, quantity: Long): String =
+    resources.getQuantityString(id, quantity.coerceIn(0, Int.MAX_VALUE.toLong()).toInt(), quantity)
 }

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.content.res.Resources
 import com.example.i18n.UiLabels
 import com.example.R
 import com.example.i18n.AppStrings
@@ -56,11 +57,9 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.Locale
 
-fun formatRelativeTime(timestampStr: String): String {
+private fun parseLogEpochMillis(timestampStr: String): Long? =
   try {
-    if (timestampStr.isBlank()) return AppStrings.get(R.string.ui_68af8fa298)
-    if (timestampStr.endsWith(AppStrings.get(R.string.ui_16ef24fc3b)) || timestampStr == AppStrings.get(R.string.ui_68af8fa298)) return timestampStr
-    val time = if (timestampStr.contains("T")) {
+    if (timestampStr.contains("T")) {
       try {
         Instant.parse(timestampStr).toEpochMilli()
       } catch (_: Exception) {
@@ -76,18 +75,37 @@ fun formatRelativeTime(timestampStr: String): String {
       if (d != null) {
         if (d < 100000000000L) (d * 1000).toLong() else d.toLong()
       } else {
-        return timestampStr
+        null
       }
     }
+  } catch (_: Exception) {
+    null
+  }
+
+fun formatRelativeTime(timestampStr: String): String =
+  formatRelativeTime(timestampStr, parseLogEpochMillis(timestampStr))
+
+private fun formatRelativeTime(
+  timestampStr: String,
+  parsedTime: Long?,
+  resources: Resources? = null,
+): String {
+  try {
+    val localized = resources ?: AppStrings.localizedResources()
+    val nowLabel = localized.getString(R.string.ui_68af8fa298)
+    if (timestampStr.isBlank()) return nowLabel
+    if (timestampStr.endsWith(localized.getString(R.string.ui_16ef24fc3b)) || timestampStr == nowLabel) {
+      return timestampStr
+    }
+    val time = parsedTime ?: return timestampStr
     val now = System.currentTimeMillis()
     val diffSeconds = (now - time) / 1000
     return when {
-      diffSeconds < 0 -> AppStrings.get(R.string.ui_68af8fa298)
-      diffSeconds < 5 -> AppStrings.get(R.string.ui_68af8fa298)
-      diffSeconds < 60 -> AppStrings.plural(R.plurals.seconds_ago, diffSeconds)
-      diffSeconds < 3600 -> AppStrings.plural(R.plurals.minutes_ago, diffSeconds / 60)
-      diffSeconds < 86400 -> AppStrings.plural(R.plurals.hours_ago, diffSeconds / 3600)
-      else -> AppStrings.plural(R.plurals.days_ago, diffSeconds / 86400)
+      diffSeconds < 5 -> nowLabel
+      diffSeconds < 60 -> AppStrings.plural(localized, R.plurals.seconds_ago, diffSeconds)
+      diffSeconds < 3600 -> AppStrings.plural(localized, R.plurals.minutes_ago, diffSeconds / 60)
+      diffSeconds < 86400 -> AppStrings.plural(localized, R.plurals.hours_ago, diffSeconds / 3600)
+      else -> AppStrings.plural(localized, R.plurals.days_ago, diffSeconds / 86400)
     }
   } catch (_: Exception) {
     return timestampStr
@@ -145,13 +163,14 @@ fun LogsScreen(
     viewModel.setLogsSearchFilter(searchQuery)
   }
 
-  val detectedDevices = remember(logDevices) {
+  val locale = AppStrings.locale
+  val detectedDevices = remember(logDevices, locale) {
     val devices = logDevices.filter { it.id.isNotBlank() && it.id != NEXTDNS_UNIDENTIFIED_DEVICE_ID }.toMutableList()
     devices += DeviceMetric(
       id = NEXTDNS_UNIDENTIFIED_DEVICE_ID,
       name = AppStrings.get(R.string.logs_unidentified_device)
     )
-    devices.distinctBy { it.id }.sortedBy { it.name.lowercase() }
+    devices.distinctBy { it.id }.sortedBy { it.name.lowercase(locale) }
   }
 
   val filteredLogs = remember(logs, searchQuery, selectedSearchFilter, selectedDeviceFilter, selectedStatusFilter) {
@@ -242,7 +261,7 @@ fun LogsScreen(
       if (filteredLogs.isEmpty()) {
         item(key = "empty_logs") { EmptyLogsPlaceholder(searchQuery = searchQuery) }
       }
-      items(filteredLogs, key = { it.id }) { log ->
+      items(filteredLogs, key = { it.id }, contentType = { "log-entry" }) { log ->
         val isExpanded = expandedLogId == log.id
         LogItemRow(
           log = log,
@@ -760,6 +779,10 @@ internal fun LogItemRow(
   modifier: Modifier = Modifier
 ) {
   val context = LocalContext.current
+  // The instant is immutable for this wire value. Age and translated units are
+  // still resolved on every render, including a language change on the same row.
+  val localized = AppStrings.localizedResources()
+  val timestampEpochMillis = remember(log.timestamp) { parseLogEpochMillis(log.timestamp) }
   val isBlocked = log.blocked
   val statusColor = when (log.status) {
     "blocked", "error" -> MaterialTheme.colorScheme.error
@@ -846,7 +869,7 @@ internal fun LogItemRow(
           ) {
             Icon(
               imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
-              contentDescription = AppStrings.get(R.string.ui_38f9d7ffb8),
+              contentDescription = localized.getString(R.string.ui_38f9d7ffb8),
               tint = if (isCopied) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
               modifier = Modifier.size(14.dp)
             )
@@ -866,7 +889,7 @@ internal fun LogItemRow(
             log.deviceName,
             log.deviceModel,
             log.deviceId,
-            AppStrings.get(R.string.device_unidentified)
+            localized.getString(R.string.device_unidentified)
           ),
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           fontSize = 11.sp,
@@ -874,7 +897,7 @@ internal fun LogItemRow(
         )
 
         Text(
-          text = formatRelativeTime(log.timestamp),
+          text = formatRelativeTime(log.timestamp, timestampEpochMillis, localized),
           color = MaterialTheme.colorScheme.outline,
           fontSize = 10.sp
         )

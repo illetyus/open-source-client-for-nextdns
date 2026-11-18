@@ -123,7 +123,7 @@ fun AnalyticsScreen(
   var showDeviceFilterMenu by remember { mutableStateOf(false) }
   var showTimeFilterMenu by remember { mutableStateOf(false) }
 
-  val numFormat = remember { NumberFormat.getInstance(AppStrings.locale) }
+  val numFormat = remember(AppStrings.locale) { NumberFormat.getInstance(AppStrings.locale) }
   val timesList = listOf("24h", "7d", "30d", "90d")
 
   val devicesList = remember(analytics.topDevices) {
@@ -138,11 +138,13 @@ fun AnalyticsScreen(
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
+      .testTag(if (!isAnalyticsLoading && analyticsLastSuccessAt != null &&
+        !analyticsSeries.loading && analyticsSeries.rows.isNotEmpty()) "analytics_ready" else "analytics_loading")
       .padding(horizontal = 16.dp),
     contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp),
     verticalArrangement = Arrangement.spacedBy(14.dp)
   ) {
-    item {
+    item(key = "filters", contentType = "filters") {
       AnalyticsFilterBar(
         selectedDeviceFilter = selectedDeviceFilter,
         devicesList = devicesList,
@@ -165,7 +167,7 @@ fun AnalyticsScreen(
     }
 
     if (analyticsLastSuccessAt != null && !analyticsErrorMessage.isNullOrBlank()) {
-      item {
+      item(key = "partial-warning", contentType = "partial-warning") {
         Row(
           modifier = Modifier
             .fillMaxWidth()
@@ -192,7 +194,7 @@ fun AnalyticsScreen(
     }
 
     if (analyticsLastSuccessAt == null) {
-      item {
+      item(key = "initial-state", contentType = "initial-state") {
         NextDnsCard(
           title = AppStrings.get(R.string.ui_dfe06b6d3d),
           subtitle = AppStrings.get(R.string.ui_940a3407df)
@@ -234,7 +236,7 @@ fun AnalyticsScreen(
         }
       }
     } else {
-    item {
+    item(key = "overview", contentType = "overview") {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         AnalyticsOverviewCards(
           analytics = analytics,
@@ -243,7 +245,7 @@ fun AnalyticsScreen(
       }
     }
 
-    item {
+    item(key = "resolved-domains", contentType = "resolved-domains") {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         ResolvedDomainsCard(
           analytics = analytics,
@@ -252,7 +254,7 @@ fun AnalyticsScreen(
       }
     }
 
-    item {
+    item(key = "blocked-domains", contentType = "blocked-domains") {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         BlockedDomainsCard(
           analytics = analytics,
@@ -261,7 +263,7 @@ fun AnalyticsScreen(
       }
     }
 
-    item {
+    item(key = "blocked-reasons", contentType = "blocked-reasons") {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         BlockedReasonsCard(
           analytics = analytics,
@@ -270,7 +272,7 @@ fun AnalyticsScreen(
       }
     }
 
-    item {
+    item(key = "devices", contentType = "devices") {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         DevicesAnalyticsCard(
           analytics = analytics,
@@ -280,14 +282,14 @@ fun AnalyticsScreen(
     }
 
     if (analytics.topIps.isNotEmpty()) {
-      item {
+      item(key = "ips", contentType = "ips") {
         Box(modifier = Modifier.alpha(contentAlpha)) {
           AnalyticsIpsCard(analytics = analytics, numFormat = numFormat)
         }
       }
     }
 
-    item {
+    item(key = "root-domains", contentType = "root-domains") {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         RootDomainsCard(
           analytics = analytics,
@@ -296,7 +298,7 @@ fun AnalyticsScreen(
       }
     }
 
-    item {
+    item(key = "gafam", contentType = "gafam") {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         GafamDominanceCard(
           analytics = analytics,
@@ -305,7 +307,7 @@ fun AnalyticsScreen(
       }
     }
 
-    item {
+    item(key = "encryption", contentType = "encryption") {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         EncryptedDnsAndDnssecCard(
           analytics = analytics
@@ -313,7 +315,7 @@ fun AnalyticsScreen(
       }
     }
 
-    item {
+    item(key = "destinations", contentType = "destinations") {
       Box(modifier = Modifier.alpha(contentAlpha)) {
         TrafficDestinationsCard(
           analytics = analytics
@@ -321,7 +323,7 @@ fun AnalyticsScreen(
       }
     }
 
-    item {
+    item(key = "series", contentType = "series") {
       AnalyticsSeriesChart(
         state = analyticsSeries,
         selectedMetric = selectedSeriesMetric,
@@ -715,7 +717,7 @@ private fun DevicesAnalyticsCard(
   numFormat: NumberFormat,
   modifier: Modifier = Modifier
 ) {
-  NextDnsCard(title = AppStrings.get(R.string.ui_238a17ed89), modifier = modifier) {
+  NextDnsCard(title = AppStrings.get(R.string.ui_238a17ed89), modifier = modifier.testTag("analytics_devices_card")) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
       analytics.topDevices.forEach { dev ->
         Row(

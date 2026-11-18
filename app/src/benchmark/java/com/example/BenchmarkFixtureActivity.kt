@@ -6,9 +6,11 @@ import android.util.Base64
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.ReportDrawn
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
@@ -28,6 +30,8 @@ import com.example.data.model.LogsTimeWindow
 import com.example.data.repository.NextDnsRepository
 import com.example.data.security.ApiKeyProtector
 import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.LocalNextDnsFaviconLoader
+import com.example.ui.screens.NextDnsFaviconLoader
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NextDnsViewModel
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +53,30 @@ import java.time.Instant
 
 /** Real Compose screens backed only by deterministic, local synthetic HTTPS data. */
 class BenchmarkFixtureActivity : ComponentActivity() {
+  private var frameRecorder: com.example.performance.BenchmarkFrameRecorder? = null
+  private lateinit var fixtureFaviconLoader: NextDnsFaviconLoader
+  private var fixtureIconMode = com.example.performance.BenchmarkIconMode.UNIQUE
+
+  override fun onResume() {
+    super.onResume()
+    if (!intent.getBooleanExtra("benchmark_diagnostics", false)) return
+    val capture = intent.getStringExtra("benchmark_capture") ?: return
+    val scenario = intent.getStringExtra("benchmark_scenario") ?: return
+    val safeLabel = Regex("[A-Za-z0-9_-]{1,96}")
+    require(safeLabel.matches(capture) && safeLabel.matches(scenario))
+    window.decorView.post {
+      if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) && frameRecorder == null) {
+        frameRecorder = com.example.performance.BenchmarkFrameRecorder(this, capture, scenario)
+      }
+    }
+  }
+
+  override fun onStop() {
+    frameRecorder?.stopAndWrite()
+    frameRecorder = null
+    super.onStop()
+  }
+
   @OptIn(ExperimentalComposeUiApi::class)
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -83,9 +111,12 @@ class BenchmarkFixtureActivity : ComponentActivity() {
               Box(
                 modifier = Modifier
                   .fillMaxSize()
+                  .testTag("fixture_icon_mode_${fixtureIconMode.argument}")
                   .semantics { testTagsAsResourceId = true }
               ) {
-                HomeScreen(viewModel = viewModel)
+                CompositionLocalProvider(LocalNextDnsFaviconLoader provides fixtureFaviconLoader) {
+                  HomeScreen(viewModel = viewModel)
+                }
               }
             }
           }
@@ -128,6 +159,23 @@ class BenchmarkFixtureActivity : ComponentActivity() {
       .addConverterFactory(MoshiConverterFactory.create(NextDnsNetworkClient.moshi))
       .build()
       .create(NextDnsApiService::class.java)
+    val iconMode = com.example.performance.BenchmarkIconMode.fromArgument(
+      intent.getStringExtra("benchmark_icon_mode")
+    )
+    fixtureIconMode = iconMode
+    fixtureFaviconLoader = NextDnsFaviconLoader(
+      client = fixtureClient,
+      urlsForDomain = { domain ->
+        // Deliberately local to this source set: production still rejects .invalid.
+        iconMode.pathsFor(domain).map { path -> checkNotNull(baseUrl.resolve(path)).toString() }
+      },
+      allowedHost = baseUrl.host
+    )
+    if (iconMode.preload) {
+      checkNotNull(fixtureFaviconLoader.load("benchmark-prime.invalid")) {
+        "Warm repeated-icon workload requires a decoded icon before UI preparation"
+      }
+    }
     val diagnosticService = object : NextDnsTestService {
       override suspend fun testConnection(): Response<NextDnsTestResponse> = Response.success(
         NextDnsTestResponse(
