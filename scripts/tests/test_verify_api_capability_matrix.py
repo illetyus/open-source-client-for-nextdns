@@ -3,7 +3,12 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from verify_api_capability_matrix import verify_route_evidence
+from verify_api_capability_matrix import (
+    DOCUMENTED_PROFILE_FIELDS,
+    OBSERVED_SECURITY_FIELDS,
+    verify_profile_fields,
+    verify_route_evidence,
+)
 
 
 class ApiRouteEvidenceTest(unittest.TestCase):
@@ -41,6 +46,27 @@ class ApiRouteEvidenceTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(AssertionError, "source or fixture reference"):
             verify_route_evidence(missing_source, self.routes)
+
+
+class ApiProfileFieldInventoryTest(unittest.TestCase):
+    def setUp(self):
+        self.fields = DOCUMENTED_PROFILE_FIELDS | OBSERVED_SECURITY_FIELDS
+        self.inventory = "\n".join(
+            f"| `{field}` | `DTO` | `UI` | observed or documented |" for field in sorted(self.fields)
+        )
+
+    def test_accepts_published_fields_and_observed_security_fields(self):
+        self.assertEqual(self.fields, verify_profile_fields(self.inventory))
+
+    def test_rejects_a_missing_observed_security_field(self):
+        inventory = self.inventory.replace("`security.dnsDataExfiltration`", "`security.notPresent`")
+        with self.assertRaisesRegex(AssertionError, "security.dnsDataExfiltration"):
+            verify_profile_fields(inventory)
+
+    def test_rejects_an_unobserved_field(self):
+        inventory = self.inventory + "\n| `security.futureGuess` | `DTO` | `UI` | guessed |"
+        with self.assertRaisesRegex(AssertionError, "security.futureGuess"):
+            verify_profile_fields(inventory)
 
 
 if __name__ == "__main__":

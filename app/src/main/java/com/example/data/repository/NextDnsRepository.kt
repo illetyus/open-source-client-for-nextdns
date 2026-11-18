@@ -869,6 +869,17 @@ class NextDnsRepository(
         ddns = d.ddns ?: previous.ddns,
         parkedDomains = d.parking ?: previous.parkedDomains,
         csam = d.csam ?: previous.csam,
+        dataDropServices = d.dataDropServices ?: previous.dataDropServices,
+        decentralizedWebGateways = d.decentralizedWebGateways ?: previous.decentralizedWebGateways,
+        dnsDataExfiltration = d.dnsDataExfiltration ?: previous.dnsDataExfiltration,
+        dnsPayloadDelivery = d.dnsPayloadDelivery ?: previous.dnsPayloadDelivery,
+        fastFluxNetworks = d.fastFluxNetworks ?: previous.fastFluxNetworks,
+        freeHostingDomains = d.freeHostingDomains ?: previous.freeHostingDomains,
+        highRiskTlds = d.highRiskTlds ?: previous.highRiskTlds,
+        newlyActiveDomains = d.newlyActiveDomains ?: previous.newlyActiveDomains,
+        residentialHosting = d.residentialHosting ?: previous.residentialHosting,
+        tunnelingEndpoints = d.tunnelingEndpoints ?: previous.tunnelingEndpoints,
+        untrustedCertificates = d.untrustedCertificates ?: previous.untrustedCertificates,
         blockedTlds = tldList
       )
       _securitySettings.value = updated
@@ -1169,7 +1180,8 @@ class NextDnsRepository(
         ednsClientSubnet = s.performance?.ecs ?: _configSettings.value.ednsClientSubnet,
         cacheBoost = s.performance?.cacheBoost ?: _configSettings.value.cacheBoost,
         cnameFlattening = s.performance?.cnameFlattening ?: _configSettings.value.cnameFlattening,
-        web3 = s.web3 ?: _configSettings.value.web3
+        web3 = s.web3 ?: _configSettings.value.web3,
+        bypassAgeVerification = s.bav ?: _configSettings.value.bypassAgeVerification
       )
       _configSettings.value = updated
       preferences.saveConfigSettings(profileId, updated)
@@ -1500,6 +1512,17 @@ class NextDnsRepository(
       SecurityFlag.DDNS -> SecurityUpdateRequest(ddns = enabled)
       SecurityFlag.PARKING -> SecurityUpdateRequest(parking = enabled)
       SecurityFlag.CSAM -> SecurityUpdateRequest(csam = enabled)
+      SecurityFlag.DATA_DROP_SERVICES -> SecurityUpdateRequest(dataDropServices = enabled)
+      SecurityFlag.DECENTRALIZED_WEB_GATEWAYS -> SecurityUpdateRequest(decentralizedWebGateways = enabled)
+      SecurityFlag.DNS_DATA_EXFILTRATION -> SecurityUpdateRequest(dnsDataExfiltration = enabled)
+      SecurityFlag.DNS_PAYLOAD_DELIVERY -> SecurityUpdateRequest(dnsPayloadDelivery = enabled)
+      SecurityFlag.FAST_FLUX_NETWORKS -> SecurityUpdateRequest(fastFluxNetworks = enabled)
+      SecurityFlag.FREE_HOSTING_DOMAINS -> SecurityUpdateRequest(freeHostingDomains = enabled)
+      SecurityFlag.HIGH_RISK_TLDS -> SecurityUpdateRequest(highRiskTlds = enabled)
+      SecurityFlag.NEWLY_ACTIVE_DOMAINS -> SecurityUpdateRequest(newlyActiveDomains = enabled)
+      SecurityFlag.RESIDENTIAL_HOSTING -> SecurityUpdateRequest(residentialHosting = enabled)
+      SecurityFlag.TUNNELING_ENDPOINTS -> SecurityUpdateRequest(tunnelingEndpoints = enabled)
+      SecurityFlag.UNTRUSTED_CERTIFICATES -> SecurityUpdateRequest(untrustedCertificates = enabled)
     }
 
     return mutateSection(
@@ -1519,6 +1542,17 @@ class NextDnsRepository(
           SecurityFlag.DDNS -> _securitySettings.value.ddns
           SecurityFlag.PARKING -> _securitySettings.value.parkedDomains
           SecurityFlag.CSAM -> _securitySettings.value.csam
+          SecurityFlag.DATA_DROP_SERVICES -> _securitySettings.value.dataDropServices
+          SecurityFlag.DECENTRALIZED_WEB_GATEWAYS -> _securitySettings.value.decentralizedWebGateways
+          SecurityFlag.DNS_DATA_EXFILTRATION -> _securitySettings.value.dnsDataExfiltration
+          SecurityFlag.DNS_PAYLOAD_DELIVERY -> _securitySettings.value.dnsPayloadDelivery
+          SecurityFlag.FAST_FLUX_NETWORKS -> _securitySettings.value.fastFluxNetworks
+          SecurityFlag.FREE_HOSTING_DOMAINS -> _securitySettings.value.freeHostingDomains
+          SecurityFlag.HIGH_RISK_TLDS -> _securitySettings.value.highRiskTlds
+          SecurityFlag.NEWLY_ACTIVE_DOMAINS -> _securitySettings.value.newlyActiveDomains
+          SecurityFlag.RESIDENTIAL_HOSTING -> _securitySettings.value.residentialHosting
+          SecurityFlag.TUNNELING_ENDPOINTS -> _securitySettings.value.tunnelingEndpoints
+          SecurityFlag.UNTRUSTED_CERTIFICATES -> _securitySettings.value.untrustedCertificates
         } == enabled
       }
     ) { key, pid ->
@@ -1873,6 +1907,17 @@ class NextDnsRepository(
     ) { key, pid ->
       apiService.updateSettings(
         key, pid, SettingsUpdateRequest(web3 = enabled)
+      )
+    }
+
+  suspend fun setBypassAgeVerification(enabled: Boolean): Result<Unit> =
+    mutateSection(
+      section = SyncSection.SETTINGS,
+      operationName = "setBypassAgeVerification",
+      verify = { _configSettings.value.bypassAgeVerification == enabled }
+    ) { key, pid ->
+      apiService.updateSettings(
+        key, pid, SettingsUpdateRequest(bav = enabled)
       )
     }
 

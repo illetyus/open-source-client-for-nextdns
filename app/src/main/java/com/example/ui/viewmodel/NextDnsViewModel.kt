@@ -39,8 +39,7 @@ enum class NavTab(val titleResource: Int, val iconName: String) {
   ALLOWLIST(R.string.ui_6419e29c88, "check_circle"),
   ANALYTICS(R.string.ui_34db704cad, "insights"),
   LOGS(R.string.ui_a007acc25e, "format_list_bulleted"),
-  SETTINGS(R.string.ui_80ad54ad05, "settings"),
-  ACCOUNT(R.string.nav_connection, "account_circle");
+  SETTINGS(R.string.ui_80ad54ad05, "settings");
 
   val title: String get() = AppStrings.get(titleResource)
 }
@@ -53,7 +52,7 @@ private fun NavTab.toSyncSection(): SyncSection? = when (this) {
   NavTab.DENYLIST -> SyncSection.DENYLIST
   NavTab.ALLOWLIST -> SyncSection.ALLOWLIST
   NavTab.SETTINGS -> SyncSection.SETTINGS
-  NavTab.ACCOUNT, NavTab.ANALYTICS, NavTab.LOGS -> null
+  NavTab.ANALYTICS, NavTab.LOGS -> null
 }
 
 data class UiMessage(
@@ -249,7 +248,7 @@ class NextDnsViewModel(
       repository.refreshSection(section)
 
       val intervalMs: Long = when (tab) {
-        NavTab.SETUP, NavTab.ACCOUNT -> return@launch
+        NavTab.SETUP -> return@launch
         else -> SyncPolicy.SECTION_POLL_MS
       }
 
@@ -440,6 +439,17 @@ class NextDnsViewModel(
       "ddns" -> SecurityFlag.DDNS
       "parkedDomains" -> SecurityFlag.PARKING
       "csam" -> SecurityFlag.CSAM
+      "dataDropServices" -> SecurityFlag.DATA_DROP_SERVICES
+      "decentralizedWebGateways" -> SecurityFlag.DECENTRALIZED_WEB_GATEWAYS
+      "dnsDataExfiltration" -> SecurityFlag.DNS_DATA_EXFILTRATION
+      "dnsPayloadDelivery" -> SecurityFlag.DNS_PAYLOAD_DELIVERY
+      "fastFluxNetworks" -> SecurityFlag.FAST_FLUX_NETWORKS
+      "freeHostingDomains" -> SecurityFlag.FREE_HOSTING_DOMAINS
+      "highRiskTlds" -> SecurityFlag.HIGH_RISK_TLDS
+      "newlyActiveDomains" -> SecurityFlag.NEWLY_ACTIVE_DOMAINS
+      "residentialHosting" -> SecurityFlag.RESIDENTIAL_HOSTING
+      "tunnelingEndpoints" -> SecurityFlag.TUNNELING_ENDPOINTS
+      "untrustedCertificates" -> SecurityFlag.UNTRUSTED_CERTIFICATES
       else -> {
         showMessage(AppStrings.get(R.string.unknown_security_setting, feature), isError = true)
         return
@@ -802,6 +812,12 @@ class NextDnsViewModel(
   fun toggleWeb3(enabled: Boolean) {
     viewModelScope.launch {
       reportMutationResult(repository.setWeb3(enabled))
+    }
+  }
+
+  fun toggleBypassAgeVerification(enabled: Boolean) {
+    viewModelScope.launch {
+      reportMutationResult(repository.setBypassAgeVerification(enabled))
     }
   }
 

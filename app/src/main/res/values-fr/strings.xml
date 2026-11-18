@@ -517,6 +517,9 @@
     <string name="month_short_11">"nov."</string>
     <string name="month_short_12">"déc."</string>
     <string name="web3_description">"Web3 inclut les domaines blockchain et réseaux distribués comme IPFS. Ce réglage active leur résolution par NextDNS. Certains navigateurs nécessitent un / final, par exemple vitalik.eth/."</string>
+    <string name="bypass_age_verification_title">Contourner la vérification de l’âge</string>
+    <string name="bypass_age_verification_description">Active le paramètre de profil NextDNS pour contourner les pages de vérification de l’âge prises en charge.</string>
+    <string name="bypass_age_verification_enable">Activer</string>
     <plurals name="seconds_ago">
         <item quantity="one">il y a %1$d seconde</item>
         <item quantity="other">il y a %1$d secondes</item>
@@ -594,8 +597,6 @@
     <string name="sync_all_success">"Toutes les sections sont synchronisées avec NextDNS."</string>
     <string name="account_status_connected">"API connectée • %1$d profil"</string>
     <string name="account_status_connected_many">"API connectée • %1$d profils"</string>
-    <string name="account_profile_action">Ouvrir la connexion et les profils NextDNS</string>
-    <string name="account_profile_return">Retour à l’application</string>
     <string name="account_status_connecting">"Vérification de la connexion API…"</string>
     <string name="account_status_disconnected">"API non connectée"</string>
     <string name="account_status_error">"Connexion à l’API impossible"</string>
@@ -607,7 +608,6 @@
     <string name="legal_and_about">"Mentions légales et à propos"</string>
     <string name="app_preferences">"Préférences de l’application"</string>
     <string name="nextdns_service_settings">"Paramètres du service NextDNS"</string>
-    <string name="nav_connection">"Connexion NextDNS"</string>
     <string name="settings_delete_profile">"Supprimer le profil NextDNS"</string>
     <string name="traffic_country_tap_hint">"Touchez un pays ou utilisez le sélecteur pour consulter son trafic."</string>
     <string name="traffic_map_unavailable">"Les informations de la carte du trafic sont indisponibles."</string>
@@ -620,8 +620,8 @@
     <string name="traffic_country_share_value">"%1$s %2$s"</string>
     <string name="traffic_country_domains">"Domaines les plus consultés dans ce pays"</string>
     <string name="traffic_country_map_accessibility">"Carte interactive des destinations du trafic. Choisissez un pays sur la carte ou dans le sélecteur pour consulter le trafic DNS."</string>
-    <string name="security_unverified_title">Champs de sécurité API non vérifiés</string>
-    <string name="security_unverified_explanation">Ces clés proviennent de la réponse du serveur. Leur sens et la prise en charge de leur modification ne sont pas vérifiés. Seules les valeurs booléennes sont affichées ; ces champs ne peuvent pas être modifiés ici.</string>
+    <string name="security_unverified_title">Champs serveur supplémentaires (lecture seule)</string>
+    <string name="security_unverified_explanation">Ces clés ne figurent pas dans le schéma publié de l’API Security. Les options NextDNS reconnues apparaissent dans leurs sections de réglages ; les champs Security inconnus restent en lecture seule.</string>
     <string name="security_unverified_boolean">Valeur booléenne : %1$s · lecture seule</string>
     <string name="security_unverified_text">Texte · valeur masquée · lecture seule</string>
     <string name="security_unverified_number">Nombre · valeur masquée · lecture seule</string>
@@ -662,6 +662,7 @@
     <string name="analytics_series_metric_encryption">Chiffrement DNS</string>
     <string name="analytics_series_metric_protocols">Protocoles</string>
     <string name="analytics_series_metric_ips">Adresses IP</string>
+    <string name="analytics_ips_title">Adresses IP</string>
     <string name="analytics_series_metric_query_types">Types de requêtes</string>
     <string name="analytics_series_metric_ip_versions">Versions IP</string>
     <string name="analytics_series_domain_all">Tous les états</string>
@@ -675,4 +676,16 @@
     <string name="analytics_series_table_heading">Dernières plages temporelles</string>
     <string name="analytics_series_chart_accessibility">Graphique interactif de série temporelle pour %1$s. Sélectionnez un point pour consulter l’heure et le nombre de requêtes.</string>
     <string name="setup_profile_identity_unavailable">Les instructions de configuration sont indisponibles, car cet identifiant de profil ne peut pas être validé.</string>
+    <string name="security_api_toggle_description">S’applique au profil NextDNS sélectionné.</string>
+    <string name="security_data_drop_services_title">Services de dépôt de données</string>
+    <string name="security_decentralized_web_gateways_title">Passerelles Web décentralisées</string>
+    <string name="security_dns_data_exfiltration_title">Exfiltration de données DNS</string>
+    <string name="security_dns_payload_delivery_title">Distribution de charge utile DNS</string>
+    <string name="security_fast_flux_networks_title">Réseaux Fast-Flux</string>
+    <string name="security_free_hosting_domains_title">Domaines d’hébergement gratuit</string>
+    <string name="security_high_risk_tlds_title">TLD à haut risque</string>
+    <string name="security_newly_active_domains_title">Domaines récemment actifs</string>
+    <string name="security_residential_hosting_title">Hébergement résidentiel</string>
+    <string name="security_tunneling_endpoints_title">Points de terminaison de tunneling</string>
+    <string name="security_untrusted_certificates_title">Certificats non fiables</string>
 </resources>
