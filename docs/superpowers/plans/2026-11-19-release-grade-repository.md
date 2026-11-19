@@ -35,11 +35,10 @@
 - Modify: `README.md`
 - Modify: `metadata.json`
 - Create: `docs/README.md`
-- Create: `docs/assets/readme/home-en.webp`
-- Create: `docs/assets/readme/accessibility-large-text.webp`
+- Create: `docs/assets/readme/hero.svg`
 
 - [ ] Replace the development-ledger README with a concise product-oriented English README.
-- [ ] Add CI-generated English screenshots as durable repository assets.
+- [ ] Add durable project-authored hero artwork and keep CI-generated screenshots referenced as test evidence.
 - [ ] Keep release/legal status accurate and link deep records through a documentation index.
 - [ ] Verify every linked repository path exists.
 
