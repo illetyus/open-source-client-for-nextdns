@@ -1,0 +1,183 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build, attest, and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: '17'
+          distribution: temurin
+          verify-signature: true
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          validate-wrappers: true
+          cache-disabled: true
+
+      - name: Validate tag and Android version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          tag = os.environ['GITHUB_REF_NAME']
+          if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?', tag):
+              raise SystemExit(f'Invalid release tag: {tag}')
+
+          source = Path('app/build.gradle.kts').read_text(encoding='utf-8')
+          match = re.search(r'versionName\s*=\s*"([^"]+)"', source)
+          if not match:
+              raise SystemExit('versionName not found in app/build.gradle.kts')
+
+          app_version = match.group(1)
+          parts = app_version.split('.')
+          if len(parts) == 2 and all(p.isdigit() for p in parts):
+              app_semver = app_version + '.0'
+          elif len(parts) == 3 and all(p.isdigit() for p in parts):
+              app_semver = app_version
+          else:
+              raise SystemExit(f'Unsupported Android versionName for release: {app_version}')
+
+          tag_version = tag[1:].split('-', 1)[0]
+          if tag_version != app_semver:
+              raise SystemExit(f'Tag {tag_version} does not match Android version {app_semver}')
+
+          prerelease = '-' in tag[1:]
+          output = Path(os.environ['GITHUB_OUTPUT'])
+          with output.open('a', encoding='utf-8') as fh:
+              fh.write(f'prerelease={str(prerelease).lower()}\n')
+              fh.write(f'app_version={app_semver}\n')
+          PY
+
+      - name: Release-candidate publication gate
+        if: steps.version.outputs.prerelease == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_publication_ready.py --draft
+          python3 scripts/verify_legal_assets.py
+
+      - name: Stable publication gate
+        if: steps.version.outputs.prerelease == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_publication_ready.py
+          bash scripts/verify_legal_release_ready.sh
+
+      - name: Lint and unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:lintDebug :app:testDebugUnitTest --no-daemon
+
+      - name: Prepare release signing material
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Required release secret $name is not configured."
+              exit 1
+            fi
+          done
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          test -s "$RUNNER_TEMP/release.keystore"
+
+      - name: Build signed APK and AAB
+        shell: bash
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon
+
+      - name: Verify signatures and prepare assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/release/app-release.apk"
+          aab="app/build/outputs/bundle/release/app-release.aab"
+          test -s "$apk"
+          test -s "$aab"
+
+          apksigner=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)
+          test -n "$apksigner"
+          "$apksigner" verify --verbose --print-certs "$apk"
+          jarsigner -verify "$aab"
+
+          mkdir -p dist
+          cp "$apk" "dist/open-source-client-for-nextdns-${GITHUB_REF_NAME}.apk"
+          cp "$aab" "dist/open-source-client-for-nextdns-${GITHUB_REF_NAME}.aab"
+          (cd dist && sha256sum *.apk *.aab > SHA256SUMS.txt)
+
+      - name: Generate build provenance attestations
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: |
+            dist/*.apk
+            dist/*.aab
+            dist/SHA256SUMS.txt
+
+      - name: Upload release workflow artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-${{ github.ref_name }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          args=(release create "$GITHUB_REF_NAME" dist/* --verify-tag --generate-notes --title "Open Source Client for NextDNS $GITHUB_REF_NAME")
+          if [ "$PRERELEASE" = "true" ]; then
+            args+=(--prerelease)
+          fi
+          gh "${args[@]}"

@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a reproducible application defect
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include API keys, DNS logs, profile identifiers, or other sensitive account data. Security vulnerabilities belong in the private reporting process described in SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: App version / commit
+      placeholder: v1.0.0-rc.1 or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+      placeholder: Pixel 9 — Android 16
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use sanitized example data only.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Optional screenshots or logs with all sensitive values removed.
