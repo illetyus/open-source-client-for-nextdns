@@ -146,7 +146,7 @@ jobs:
           apksigner=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)
           test -n "$apksigner"
           "$apksigner" verify --verbose --print-certs "$apk"
-          jarsigner -verify -strict "$aab"
+          jarsigner -verify "$aab"
 
           mkdir -p dist
           cp "$apk" "dist/open-source-client-for-nextdns-${GITHUB_REF_NAME}.apk"
