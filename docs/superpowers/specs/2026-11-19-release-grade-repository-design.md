@@ -7,7 +7,7 @@ Prepare the repository for its first GitHub release so that the public surface r
 ## Goals
 
 - Make the root README concise, visual, product-oriented, and entirely English.
-- Use real CI-generated UI screenshots rather than mock marketing images.
+- Use project-authored repository artwork for the durable showcase and keep real CI-generated UI screenshots as test evidence rather than hand-edited marketing mockups.
 - Add conventional open-source community health files and issue/PR intake.
 - Add a tag-driven signed release workflow with checksums and provenance attestations.
 - Make release candidates possible while keeping stable publication fail-closed until final legal/publication metadata is complete.
@@ -37,7 +37,7 @@ Fastest, but leaves release mechanics, security reporting, contributor workflow,
 
 ### B. Release-grade repository package — selected
 
-Rework the public README, add CI-derived screenshots, community health files, release documentation, curated release notes, and a dedicated signed tag workflow. This is the best balance between professional presentation and existing release controls.
+Rework the public README, add a versioned project-authored hero, keep CI-derived screenshots as test evidence, add community health files, release documentation, curated release notes, and a dedicated signed tag workflow. This is the best balance between professional presentation and existing release controls.
 
 ### C. Immediate stable/Play publication automation
 
