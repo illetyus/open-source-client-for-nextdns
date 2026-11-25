@@ -35,6 +35,7 @@ assert re.fullmatch(r'[a-f0-9]{64}', beta_sha256)
 assert (out/'beta-upgrade-install.txt').read_text(encoding='utf8').strip() == 'Success'
 for filename, method in (
     ('beta-seed.txt', 'seedSettingsInPublishedBeta'),
+    ('beta-readback.txt', 'publishedBetaReadsBackSeededSettings'),
     ('beta-upgrade.txt', 'installedUpgradePreservesBetaSettings'),
 ):
     upgrade_log = (out/filename).read_text(encoding='utf8')

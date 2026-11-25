@@ -9,6 +9,10 @@ adb -e install "$out/release-runtime-test.apk"
 timeout 120 adb -e shell am instrument -w -r -e class \
   'com.example.NativeBetaUpgradeTest#seedSettingsInPublishedBeta' "$runner" > "$out/beta-seed.txt"
 grep -Fq 'OK (1 test)' "$out/beta-seed.txt"
+adb -e shell am force-stop com.aistudio.nextdns.mgrqvt
+timeout 120 adb -e shell am instrument -w -r -e class \
+  'com.example.NativeBetaUpgradeTest#publishedBetaReadsBackSeededSettings' "$runner" > "$out/beta-readback.txt"
+grep -Fq 'OK (1 test)' "$out/beta-readback.txt"
 
 adb -e install -r "$out/release-runtime.apk" | tee "$out/beta-upgrade-install.txt"
 grep -Fxq 'Success' "$out/beta-upgrade-install.txt"

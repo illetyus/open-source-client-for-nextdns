@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.data.legal.LegalAcceptanceStore
@@ -30,16 +31,29 @@ class NativeBetaUpgradeTest {
     assertTrue(LocalePreferences.setSelection(context, "tr"))
     ThemePreferences(context).setThemeMode(ThemeMode.DARK)
     NextDnsApp.preferences.isGuestMode = true
+    // The production setter uses apply(). Flush pending writes before the runner exits.
+    assertTrue(
+      context.getSharedPreferences("nextdns_secure_prefs", Context.MODE_PRIVATE).edit().commit()
+    )
+  }
+
+  @Test fun publishedBetaReadsBackSeededSettings() = runBlocking {
+    assertEquals(1, installedVersionCode())
+    assertStoredSettings()
   }
 
   @Test fun installedUpgradePreservesBetaSettings() = runBlocking {
     assertTrue(installedVersionCode() > 1)
+    assertStoredSettings()
+  }
+
+  private suspend fun assertStoredSettings() {
     assertEquals("tr", LocalePreferences.selection(context))
     assertEquals(ThemeMode.DARK, ThemePreferences(context).themeMode.first())
-    assertTrue(NextDnsApp.preferences.isGuestMode)
+    assertTrue("Stored guest preference should be enabled", NextDnsApp.preferences.isGuestMode)
     assertTrue(NextDnsApp.preferences.apiKey.isEmpty())
 
-    val storedAcceptance = context.getSharedPreferences("legal_acceptance", 0)
+    val storedAcceptance = context.getSharedPreferences("legal_acceptance", Context.MODE_PRIVATE)
     assertEquals(betaTermsRevision, storedAcceptance.getString("accepted_terms_revision", null))
     assertEquals(seededAt, storedAcceptance.getLong("accepted_at_epoch_millis", 0L))
     val acceptance = LegalAcceptanceStore(context)

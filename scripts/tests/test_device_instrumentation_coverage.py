@@ -16,6 +16,7 @@ class DeviceInstrumentationCoverageTest(unittest.TestCase):
         self.assertIn('bash scripts/run_beta_upgrade_on_emulator.sh "$out"', runner)
         install = 'adb -e install -r "$out/release-runtime.apk"'
         self.assertLess(upgrade.index('seedSettingsInPublishedBeta'), upgrade.index(install))
+        self.assertLess(upgrade.index('publishedBetaReadsBackSeededSettings'), upgrade.index(install))
         self.assertLess(upgrade.index(install), upgrade.index('installedUpgradePreservesBetaSettings'))
         self.assertLess(upgrade.index('installedUpgradePreservesBetaSettings'), upgrade.index('pm clear'))
         self.assertIn("'betaUpgrade':", verifier)
