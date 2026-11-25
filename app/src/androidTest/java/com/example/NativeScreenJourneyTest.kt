@@ -199,6 +199,46 @@ class NativeScreenJourneyTest {
     assertTrue(backend.calls.none { it.method == "DELETE" })
   }
 
+  @Test fun createSelectAndDeleteProfileUsesConfirmedServerState() {
+    val backend = connected()
+    val original = "Synthetic UI profile"
+    val created = "Created profile"
+    val selector = rule.onNodeWithTag("profile_selector")
+    selector.performClick()
+    rule.onNodeWithText(AppStrings.get(R.string.ui_cff3a955d7)).performClick()
+    val confirmCreate = rule.onNodeWithText(AppStrings.get(R.string.ui_89c75b03b9))
+    confirmCreate.assertIsNotEnabled()
+    rule.onNode(hasSetTextAction()).performTextReplacement("  $created  ")
+    confirmCreate.performClick()
+    rule.waitUntil(20_000) { backend.model.activeProfile.value?.id == "cccccc" }
+    selector.assertTextContains(created)
+    val createIndex = backend.calls.indexOfFirst { it.method == "POST" && it.path == "/profiles" }
+    assertTrue(createIndex >= 0)
+    assertEquals(created, JSONObject(backend.calls[createIndex].body).getString("name"))
+    assertTrue(backend.calls.drop(createIndex + 1).any { it.method == "GET" && it.path == "/profiles/cccccc" })
+
+    selector.performClick()
+    rule.onNodeWithText(original).performClick()
+    rule.waitUntil(20_000) { backend.model.activeProfile.value?.id == "aaaaaa" }
+    selector.performClick()
+    rule.onNodeWithText(created).performClick()
+    rule.waitUntil(20_000) { backend.model.activeProfile.value?.id == "cccccc" }
+
+    navigate(NavTab.SETTINGS)
+    val delete = AppStrings.get(R.string.delete_profile_button, created)
+    rule.onNodeWithTag("settings_scroll_list").performScrollToNode(hasText(delete))
+    rule.onNodeWithText(delete).performClick()
+    rule.onNodeWithText(AppStrings.get(R.string.delete_profile_named, created)).assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.ui_0ad23c38d9)).performClick()
+    rule.waitUntil(20_000) { backend.repository.profiles.value.map { it.id } == listOf("aaaaaa") }
+    rule.waitUntil(20_000) { backend.model.activeProfile.value?.id == "aaaaaa" }
+    selector.assertTextContains(original)
+    val deleteIndex = backend.calls.indexOfFirst { it.method == "DELETE" && it.path == "/profiles/cccccc" }
+    assertTrue(deleteIndex > createIndex)
+    assertTrue(backend.calls.drop(deleteIndex + 1).any { it.method == "GET" && it.path == "/profiles" })
+    assertFalse(backend.calls.any { it.method == "DELETE" && it.path == "/profiles/aaaaaa" })
+  }
+
   @Test fun rejectedSecurityMutationKeepsConfirmedValueAndCanBeRetried() {
     val backend = connected()
     navigate(NavTab.SECURITY)

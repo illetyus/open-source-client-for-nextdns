@@ -187,6 +187,7 @@ fun HomeScreen(
                     .clip(RoundedCornerShape(10.dp))
                     .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
                     .heightIn(min = 48.dp)
+                    .testTag("profile_selector")
                     .bounceClick(scaleDown = 0.97f) { showProfileMenu = true },
                   color = MaterialTheme.colorScheme.surfaceVariant,
                   shape = RoundedCornerShape(10.dp)
@@ -529,6 +530,7 @@ fun HomeScreen(
       confirmButton = {
         NextDnsButton(
           text = AppStrings.get(R.string.ui_89c75b03b9),
+          enabled = newProfileNameInput.isNotBlank(),
           onClick = {
             if (newProfileNameInput.isNotBlank()) {
               viewModel.createProfile(newProfileNameInput.trim())

@@ -57,7 +57,7 @@ timeout 240 adb shell am instrument -w -r -e class \
   com.aistudio.nextdns.mgrqvt.test/androidx.test.runner.AndroidJUnitRunner > "$out/instrumentation-denied.txt"
 adb shell pm grant com.aistudio.nextdns.mgrqvt android.permission.POST_NOTIFICATIONS
 timeout 240 adb shell am instrument -w -r -e class \
-  com.example.NativeApiFixtureTest,com.example.NativeLegalViewportTest,com.example.NativeLoginNavigationTest,com.example.NativeNotificationRuntimeAuditTest#grantedPermissionPostsPrivateNotifications,com.example.NativeScreenJourneyTest#profileRenameShowsOnlyTheNameConfirmedByNextDns,com.example.NativeScreenJourneyTest#changingProfilesDismissesThePendingDeleteConfirmation,com.example.ReleaseSecurityRuntimeTest,com.example.WorldMapStrictModeTest \
+  com.example.NativeApiFixtureTest,com.example.NativeLegalViewportTest,com.example.NativeLoginNavigationTest,com.example.NativeNotificationRuntimeAuditTest#grantedPermissionPostsPrivateNotifications,com.example.NativeScreenJourneyTest#profileRenameShowsOnlyTheNameConfirmedByNextDns,com.example.NativeScreenJourneyTest#changingProfilesDismissesThePendingDeleteConfirmation,com.example.NativeScreenJourneyTest#createSelectAndDeleteProfileUsesConfirmedServerState,com.example.ReleaseSecurityRuntimeTest,com.example.WorldMapStrictModeTest \
   com.aistudio.nextdns.mgrqvt.test/androidx.test.runner.AndroidJUnitRunner > "$out/instrumentation-granted.txt"
 cat "$out/instrumentation-denied.txt" "$out/instrumentation-granted.txt" > "$out/instrumentation.txt"
 adb logcat -d -v threadtime > "$out/logcat.txt"

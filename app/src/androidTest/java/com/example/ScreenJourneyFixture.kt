@@ -38,6 +38,7 @@ internal class ScreenJourneyFixture(context: Context) : AutoCloseable {
   @Volatile private var profileName = "Synthetic UI profile"
   @Volatile var confirmProfileRename = true
   @Volatile var includeSecondProfile = false
+  @Volatile private var createdProfileName: String? = null
   private val deny = linkedSetOf("blocked.fixture.example")
   private val allow = linkedSetOf("allowed.fixture.example")
   private val server = MockWebServer()
@@ -101,9 +102,22 @@ internal class ScreenJourneyFixture(context: Context) : AutoCloseable {
     fun profile() = JSONObject().put("id", "aaaaaa").put("name", profileName)
       .put("fingerprint", "fp0123456789abcdef")
     if (path == "/profiles") {
+      if (request.method == "POST") {
+        createdProfileName = JSONObject(body).getString("name")
+        return json("""{"data":{"id":"cccccc"}}""", 201)
+      }
       val profiles = JSONArray().put(profile())
       if (includeSecondProfile) profiles.put(JSONObject().put("id", "bbbbbb").put("name", "Second fixture profile"))
+      createdProfileName?.let { profiles.put(JSONObject().put("id", "cccccc").put("name", it)) }
       return json(JSONObject().put("data", profiles).toString())
+    }
+    if (path == "/profiles/cccccc") {
+      if (request.method == "DELETE") {
+        createdProfileName = null
+        return MockResponse().setResponseCode(204)
+      }
+      val name = createdProfileName ?: return json("""{"errors":[{"code":"not_found"}]}""", 404)
+      return json(JSONObject().put("data", JSONObject().put("id", "cccccc").put("name", name)).toString())
     }
     if (path == "/profiles/aaaaaa") {
       if (request.method == "PATCH") {
