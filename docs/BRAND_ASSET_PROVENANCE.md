@@ -10,7 +10,7 @@ The launcher mark is separate from the in-product network artwork. The original 
 
 ### 9 October 2026 — first network-node launcher
 
-The initial launcher used five circles and four connector lines, with a dark field, turquoise connectors, pale nodes, and an amber center. It was original project geometry with no external image, font, or stock asset. It was superseded by later user-directed launcher designs; it is not the current launcher. The original source was recorded as `docs/brand/network-nodes.svg` and the generation tool as `scripts/generate_launcher_assets.py`.
+The initial launcher used five circles and four connector lines, with a dark field, turquoise connectors, pale nodes, and an amber center. It used original project geometry. The [original SVG](https://github.com/illetyus/open-source-client-for-nextdns/blob/1007e5cb86e513ae15439979ee028f60fea648c1/docs/brand/network-nodes.svg) remains available in Git history.
 
 ### 20 October 2026 — interim shield design, superseded 21 October
 

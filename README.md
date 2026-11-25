@@ -1,42 +1,58 @@
-<div align="center">
-  <img src="docs/brand/store-icon-512.png" width="88" height="88" alt="">
-  <h1>Open Source Client for NextDNS</h1>
-  <p>Manage your NextDNS profiles, review DNS activity, and check your connection from Android.</p>
-  <p><a href="https://github.com/illetyus/open-source-client-for-nextdns/releases/tag/v1.0.0-beta.1"><strong>Download the beta</strong></a> · <a href="#getting-started">Getting started</a> · <a href="README.tr.md">Türkçe</a></p>
-  <p>Android 7.0 or later · Apache 2.0</p>
-</div>
-
-## A look at the app
-
 <p align="center">
-  <img src="docs/assets/readme/setup.png" width="31%" alt="Setup screen with connection status and network diagnostics">
-  <img src="docs/assets/readme/logs.png" width="31%" alt="DNS logs showing sample queries and their filtering status">
-  <img src="docs/assets/readme/analytics.png" width="31%" alt="Analytics screen showing a summary of sample DNS activity">
+  <img src="docs/brand/store-icon-512.png" width="80" height="80" alt="">
 </p>
 
-From left to right, **Setup** checks the device’s NextDNS connection, **Logs** shows individual DNS queries and their filtering status, and **Analytics** summarizes activity over a selected period. The screenshots show the Android interface with synthetic account data.
+# Open Source Client for NextDNS
+
+An independent Android app for managing NextDNS profiles. Change your filtering rules, find out why a domain was blocked, and check whether your phone is using NextDNS.
+
+[**Download the beta APK**][apk] · [Release notes and checksums][release] · [Türkçe](README.tr.md)
+
+Requires Android 7.0 or later. Connecting your own profiles requires a NextDNS account.
 
 ## Getting started
 
-1. Open the [beta release](https://github.com/illetyus/open-source-client-for-nextdns/releases/tag/v1.0.0-beta.1) and install the signed **APK** on your Android device.
-2. To try the interface without connecting an account, select **Explore in demo / guest mode**.
-3. To manage your own profiles, copy the API key from the bottom of your [NextDNS account page](https://my.nextdns.io/account), enter it in the app, and select a profile. The key authorizes the app to access your NextDNS account.
+1. Download and open the [beta APK][apk] on your Android device. If Android asks whether your browser or file manager can install apps, allow it for the installation.
+2. To look around without connecting an account, select **Explore in demo / guest mode**.
+3. To manage your profiles, copy the API key at the bottom of [your NextDNS account page](https://my.nextdns.io/account), enter it in the app, and select a profile. This key gives the app access to your NextDNS account.
 
-## What you can do
+Connecting the account lets you manage profiles. To send your phone’s DNS queries through NextDNS as well, follow the instructions under **Setup**. On Android 9 or later, **Open Android Private DNS settings** takes you to the system setting where you can enter the profile’s address.
 
-- Review and change a profile’s security, privacy and parental-control settings.
-- Maintain lists of domains to allow or block.
-- Filter DNS logs, export them as a CSV file, and review traffic summaries by time range or device.
-- Run connection diagnostics and open Android’s Private DNS settings from the Setup screen.
+## Explore the app
 
-The interface is available in English, Turkish, German, French and Spanish. NextDNS provides the DNS service and the accounts managed by this client. The project is independent of NextDNS.
+The screenshots use sample data. Select an image to view it at full size.
 
-## Data and support
+### Find out why a domain was blocked
 
-The Android device connects directly to NextDNS. The app encrypts the API key on the device using Android Keystore. Loading site icons may send the displayed domain to NextDNS’s icon service. See the [security documentation](SECURITY.md) for the reporting channel and the [threat model](docs/SECURITY_THREAT_MODEL.md) for implementation details.
+<a href="docs/assets/readme/logs.png"><img src="docs/assets/readme/logs.png" width="320" alt="Logs with time and status filters and tracker.example marked as blocked"></a>
 
-Report ordinary bugs in [GitHub Issues](https://github.com/illetyus/open-source-client-for-nextdns/issues). Remove API keys, profile identifiers and DNS histories from anything you share publicly.
+Open **Logs** when a site or app cannot connect. Search for its domain and check the outcome and the reason shown for a blocked query. Filter by device or time range to narrow the search. You can export the logs as a CSV file.
 
-## Development
+### Check the connection
 
-The [documentation index](docs/README.md) covers building from source, testing and release preparation. [Contributing](CONTRIBUTING.md) describes how to submit changes. The source code is distributed under [Apache License 2.0](LICENSE). Third-party attribution is listed in [NOTICE](NOTICE).
+<a href="docs/assets/readme/setup.png"><img src="docs/assets/readme/setup.png" width="320" alt="Setup showing the active NextDNS connection and the Run diagnostics button"></a>
+
+Open **Setup** and select **Run diagnostics**. The result shows whether the device is using NextDNS and, when available, the connection protocol and latency.
+
+### Review query totals
+
+<a href="docs/assets/readme/analytics.png"><img src="docs/assets/readme/analytics.png" width="320" alt="Analytics showing total queries, blocked queries and the most frequently queried domains"></a>
+
+Open **Analytics** to see which domains were queried most and how many queries NextDNS blocked. Choose a device and a time range to focus the summary.
+
+## Profile settings and data
+
+Use **Security**, **Privacy**, and **Parental control** to review and change the selected profile’s filtering rules. Set domain-level exceptions in **Allowlist** and **Denylist**. The interface is available in English, Turkish, German, French, and Spanish.
+
+NextDNS operates the DNS service and provides the accounts. The app connects directly to NextDNS and stores the API key encrypted on the device. When loading a site icon, it may send the displayed domain to NextDNS’s icon service.
+
+## Support and development
+
+- [Report a bug](https://github.com/illetyus/open-source-client-for-nextdns/issues). Include the app version, Android version, and the steps that led to the error. Omit API keys, profile identifiers, and DNS logs from public reports.
+- [Report a security issue](SECURITY.md).
+- [Build and test the app](docs/README.md#build-and-verify) or read the [contribution guide](CONTRIBUTING.md).
+
+The source code is available under the [Apache License, Version 2.0](LICENSE). See [NOTICE](NOTICE) for third-party attributions.
+
+[apk]: https://github.com/illetyus/open-source-client-for-nextdns/releases/download/v1.0.0-beta.1/open-source-client-for-nextdns-v1.0.0-beta.1.apk
+[release]: https://github.com/illetyus/open-source-client-for-nextdns/releases/tag/v1.0.0-beta.1
