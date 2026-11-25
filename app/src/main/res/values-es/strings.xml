@@ -693,4 +693,5 @@
     <string name="security_untrusted_certificates_description">Bloquea dominios con certificados HTTPS identificados por NextDNS como autofirmados o emitidos por una autoridad no confiable. Esto puede interrumpir conexiones cifradas usadas por software malicioso.</string>
     <string name="profile_rename_action">Cambiar el nombre del perfil</string>
     <string name="profile_rename_confirm">Guardar</string>
+    <string name="logs_live_stream_connecting">Flujo en directo: conectando</string>
 </resources>

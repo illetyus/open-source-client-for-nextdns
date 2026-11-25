@@ -134,6 +134,7 @@ fun LogsScreen(
   }
 
   val isLiveStreaming by viewModel.isLiveStreaming.collectAsStateWithLifecycle()
+  val isLiveStreamConnected by viewModel.isLiveStreamConnected.collectAsStateWithLifecycle()
 
   var searchQuery by remember(selectedSearchFilter) { mutableStateOf(selectedSearchFilter.orEmpty()) }
   var showDeviceMenu by remember { mutableStateOf(false) }
@@ -194,6 +195,7 @@ fun LogsScreen(
         onToggleDeviceMenu = { showDeviceMenu = it },
         onSelectDevice = viewModel::setLogsDeviceFilter,
         isLiveStreaming = isLiveStreaming,
+        isLiveStreamConnected = isLiveStreamConnected,
         onToggleLiveStream = { viewModel.toggleLiveStream() },
         showLiveStreamInfo = showLiveStreamInfo,
         onToggleLiveStreamInfo = { showLiveStreamInfo = !showLiveStreamInfo },
@@ -287,6 +289,7 @@ internal fun LogsHeaderControls(
   onToggleDeviceMenu: (Boolean) -> Unit,
   onSelectDevice: (String?) -> Unit,
   isLiveStreaming: Boolean,
+  isLiveStreamConnected: Boolean,
   onToggleLiveStream: () -> Unit,
   showLiveStreamInfo: Boolean,
   onToggleLiveStreamInfo: () -> Unit,
@@ -388,12 +391,12 @@ internal fun LogsHeaderControls(
         .clip(RoundedCornerShape(10.dp))
         .border(
           1.dp,
-          if (isLiveStreaming) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else MaterialTheme.colorScheme.outline,
+          if (isLiveStreamConnected) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else MaterialTheme.colorScheme.outline,
           RoundedCornerShape(10.dp)
         )
         .heightIn(min = 48.dp)
         .bounceClick(scaleDown = 0.98f, onClick = onToggleLiveStream),
-      color = if (isLiveStreaming) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
+      color = if (isLiveStreamConnected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
       shape = RoundedCornerShape(10.dp)
     ) {
       Row(
@@ -405,11 +408,15 @@ internal fun LogsHeaderControls(
           modifier = Modifier
             .size(7.dp)
             .clip(CircleShape)
-            .background(if (isLiveStreaming) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
+            .background(if (isLiveStreamConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
         )
         Text(
-          text = if (isLiveStreaming) AppStrings.get(R.string.ui_d6b0f8fc37) else AppStrings.get(R.string.ui_db747e4342),
-          color = if (isLiveStreaming) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+          text = AppStrings.get(when {
+            isLiveStreamConnected -> R.string.ui_d6b0f8fc37
+            isLiveStreaming -> R.string.logs_live_stream_connecting
+            else -> R.string.ui_db747e4342
+          }),
+          color = if (isLiveStreamConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
           fontSize = 11.5.sp,
           fontWeight = FontWeight.Bold
         )

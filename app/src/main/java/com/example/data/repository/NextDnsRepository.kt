@@ -199,6 +199,9 @@ class NextDnsRepository(
 
   private val _isLiveStreaming = MutableStateFlow(false)
   val isLiveStreaming = _isLiveStreaming.asStateFlow()
+  private val _isLiveStreamConnected = MutableStateFlow(false)
+  val isLiveStreamConnected = _isLiveStreamConnected.asStateFlow()
+  private var streamConnectionGeneration = 0L
 
   private val _isSyncing = MutableStateFlow(false)
   val isSyncing = _isSyncing.asStateFlow()
@@ -2328,17 +2331,24 @@ class NextDnsRepository(
     val snapshot = captureSession()
     val key = snapshot.apiKey
     val pid = snapshot.profileId
-    if (key.isBlank() || pid.isBlank()) return
+    if (key.isBlank() || pid.isBlank()) {
+      stopLogsStream()
+      return
+    }
     val seedDeviceFilter = _logsDeviceFilter.value
     val seedStatusFilter = _logsStatusFilter.value
     val seedSearchFilter = _logsSearchFilter.value
     val seedGeneration = synchronized(sessionLock) { logsSnapshotGeneration }
     val streamFilterGeneration = synchronized(sessionLock) { logsFilterGeneration }
 
-    stopLogsStream()
-    _isLiveStreaming.value = true
+    val connectionGeneration = synchronized(sessionLock) {
+      if (!isCurrentSession(snapshot)) return
+      stopLogsStream()
+      _isLiveStreaming.value = true
+      streamConnectionGeneration
+    }
 
-    streamJob = repoScope.launch(Dispatchers.IO) {
+    val newStreamJob = repoScope.launch(Dispatchers.IO, start = CoroutineStart.LAZY) {
       withSessionContext(snapshot = snapshot) {
         var lastId: String? = logsStreamSeedId
 
@@ -2380,12 +2390,21 @@ class NextDnsRepository(
               val body = response.body
                 ?: throw java.io.IOException("Logs stream body is empty")
 
+              commitCurrentSession {
+                if (streamConnectionGeneration == connectionGeneration) _isLiveStreamConnected.value = true
+              }
               reconnectDelayMs = 2_000L
-              consumeSseStream(body, streamFilterGeneration) { newId ->
-                commitCurrentSession {
-                  if (logsFilterGeneration != streamFilterGeneration) return@commitCurrentSession
-                  lastId = newId
-                  logsStreamSeedId = newId
+              try {
+                consumeSseStream(body, streamFilterGeneration) { newId ->
+                  commitCurrentSession {
+                    if (logsFilterGeneration != streamFilterGeneration) return@commitCurrentSession
+                    lastId = newId
+                    logsStreamSeedId = newId
+                  }
+                }
+              } finally {
+                synchronized(sessionLock) {
+                  if (streamConnectionGeneration == connectionGeneration) _isLiveStreamConnected.value = false
                 }
               }
             }
@@ -2399,6 +2418,14 @@ class NextDnsRepository(
             reconnectDelayMs = (reconnectDelayMs * 2).coerceAtMost(60_000L)
           }
         }
+      }
+    }
+    synchronized(sessionLock) {
+      if (streamConnectionGeneration == connectionGeneration) {
+        streamJob = newStreamJob
+        newStreamJob.start()
+      } else {
+        newStreamJob.cancel()
       }
     }
   }
@@ -2550,9 +2577,13 @@ class NextDnsRepository(
     _logsStatusFilter.value?.let { it == status } ?: true
 
   fun stopLogsStream() {
-    streamJob?.cancel()
-    streamJob = null
-    _isLiveStreaming.value = false
+    synchronized(sessionLock) {
+      streamConnectionGeneration++
+      streamJob?.cancel()
+      streamJob = null
+      _isLiveStreamConnected.value = false
+      _isLiveStreaming.value = false
+    }
   }
 
   // =========================================================================

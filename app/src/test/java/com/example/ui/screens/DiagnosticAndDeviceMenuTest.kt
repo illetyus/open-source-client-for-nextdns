@@ -60,7 +60,7 @@ class DiagnosticAndDeviceMenuTest {
               DeviceMetric(id = "device-a", name = "My Device")
             ),
             menu,
-            { menu = it }, { selected = it }, false, {}, false, {}, {})
+            { menu = it }, { selected = it }, false, false, {}, false, {}, {})
         }
       }
     }
