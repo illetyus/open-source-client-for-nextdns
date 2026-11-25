@@ -7,6 +7,20 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class DeviceInstrumentationCoverageTest(unittest.TestCase):
+    def test_beta_is_upgraded_in_place_between_the_seed_and_verification(self):
+        runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
+        upgrade = (ROOT / 'scripts/run_beta_upgrade_on_emulator.sh').read_text(encoding='utf8')
+        verifier = (ROOT / 'scripts/verify_release_runtime.py').read_text(encoding='utf8')
+        self.assertLess(runner.index('sha256sum --check'), runner.index('--out "$out/beta-re-signed.apk"'))
+        self.assertIn('entries(sys.argv[1]) == entries(sys.argv[2])', runner)
+        self.assertIn('bash scripts/run_beta_upgrade_on_emulator.sh "$out"', runner)
+        install = 'adb -e install -r "$out/release-runtime.apk"'
+        self.assertLess(upgrade.index('seedSettingsInPublishedBeta'), upgrade.index(install))
+        self.assertLess(upgrade.index('publishedBetaReadsBackSeededSettings'), upgrade.index(install))
+        self.assertLess(upgrade.index(install), upgrade.index('installedUpgradePreservesBetaSettings'))
+        self.assertLess(upgrade.index('installedUpgradePreservesBetaSettings'), upgrade.index('pm clear'))
+        self.assertIn("'betaUpgrade':", verifier)
+
     def test_release_emulator_audit_executes_native_device_flows(self):
         runner = (ROOT / 'scripts/run_release_runtime_audit.sh').read_text(encoding='utf8')
         verifier = (ROOT / 'scripts/verify_release_runtime.py').read_text(encoding='utf8')
