@@ -1,6 +1,6 @@
 """Shared contract for release runtime evidence consumers."""
 
-REQUIRED_RUNTIME_TESTS = 18
+REQUIRED_RUNTIME_TESTS = 19
 
 
 def validate_runtime_summary(runtime: dict) -> None:

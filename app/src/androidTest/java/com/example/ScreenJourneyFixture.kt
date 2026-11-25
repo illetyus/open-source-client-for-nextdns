@@ -37,6 +37,7 @@ internal class ScreenJourneyFixture(context: Context) : AutoCloseable {
   @Volatile var googleSafeBrowsing = true
   @Volatile private var profileName = "Synthetic UI profile"
   @Volatile var confirmProfileRename = true
+  @Volatile var includeSecondProfile = false
   private val deny = linkedSetOf("blocked.fixture.example")
   private val allow = linkedSetOf("allowed.fixture.example")
   private val server = MockWebServer()
@@ -99,7 +100,11 @@ internal class ScreenJourneyFixture(context: Context) : AutoCloseable {
     val path = url.encodedPath
     fun profile() = JSONObject().put("id", "aaaaaa").put("name", profileName)
       .put("fingerprint", "fp0123456789abcdef")
-    if (path == "/profiles") return json(JSONObject().put("data", JSONArray(listOf(profile()))).toString())
+    if (path == "/profiles") {
+      val profiles = JSONArray().put(profile())
+      if (includeSecondProfile) profiles.put(JSONObject().put("id", "bbbbbb").put("name", "Second fixture profile"))
+      return json(JSONObject().put("data", profiles).toString())
+    }
     if (path == "/profiles/aaaaaa") {
       if (request.method == "PATCH") {
         if (confirmProfileRename) profileName = JSONObject(body).getString("name")

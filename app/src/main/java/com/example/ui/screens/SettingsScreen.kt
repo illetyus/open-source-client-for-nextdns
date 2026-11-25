@@ -145,7 +145,7 @@ fun SettingsScreen(
   val configSettings by viewModel.configSettings.collectAsStateWithLifecycle()
   val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle()
 
-  var showDeleteProfileDialog by remember { mutableStateOf(false) }
+  var showDeleteProfileDialog by remember(activeProfile?.id, isGuestMode) { mutableStateOf(false) }
   var profileNameDraft by remember(activeProfile?.id, isGuestMode) { mutableStateOf<String?>(null) }
   val profileName = activeProfile?.name ?: AppStrings.get(R.string.ui_0a4d547a3f)
   LazyColumn(
@@ -254,7 +254,7 @@ fun SettingsScreen(
         SettingsSectionHeading(title = AppStrings.get(R.string.settings_delete_profile))
         ProfileActionsSection(
           profileName = profileName,
-          onDeleteProfile = { showDeleteProfileDialog = true }
+          onDeleteProfile = { showDeleteProfileDialog = !isGuestMode && activeProfile != null }
         )
       }
     }
@@ -294,20 +294,21 @@ fun SettingsScreen(
     )
   }
 
-  if (showDeleteProfileDialog) {
+  val profileToDelete = activeProfile
+  if (showDeleteProfileDialog && !isGuestMode && profileToDelete != null) {
     AlertDialog(
       onDismissRequest = { showDeleteProfileDialog = false },
       title = { Text(AppStrings.get(R.string.ui_26c4159180)) },
       text = {
         Text(
-          AppStrings.get(R.string.delete_profile_named, profileName)
+          AppStrings.get(R.string.delete_profile_named, profileToDelete.name)
         )
       },
       confirmButton = {
         TextButton(
           onClick = {
             showDeleteProfileDialog = false
-            activeProfile?.id?.let(viewModel::deleteProfile)
+            viewModel.deleteProfile(profileToDelete.id)
           }
         ) {
           Text(AppStrings.get(R.string.ui_0ad23c38d9), color = MaterialTheme.colorScheme.error)
