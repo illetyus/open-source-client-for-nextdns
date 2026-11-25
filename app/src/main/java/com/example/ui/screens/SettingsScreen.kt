@@ -169,12 +169,11 @@ fun SettingsScreen(
 
     if (!isGuestMode && activeProfile != null) {
       item {
-        NextDnsCard(title = AppStrings.get(R.string.ui_249cb2491d)) {
-          NextDnsButton(
-            text = AppStrings.get(R.string.profile_rename_action),
-            onClick = { profileNameDraft = profileName },
-            modifier = Modifier.testTag("rename_profile")
-          )
+        OutlinedButton(
+          onClick = { profileNameDraft = profileName },
+          modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("rename_profile")
+        ) {
+          Text(AppStrings.get(R.string.profile_rename_action))
         }
       }
     }
