@@ -14,6 +14,17 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+# The release-only tests and the ADB-preconditioned permission checks run in
+# run_release_runtime_audit.sh. The device suite exercises the actual prompt.
+DEVICE_TEST_CLASSES = [
+    'com.example.NativeApiFixtureTest',
+    'com.example.NativeLegalViewportTest',
+    'com.example.NativeLoginNavigationTest',
+    'com.example.NativeNotificationPermissionTest',
+    'com.example.NativeScreenJourneyTest',
+    'com.example.WorldMapStrictModeTest',
+]
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl): return None
 
@@ -65,11 +76,12 @@ def main():
     # Permission changes can kill a running instrumented process. Reset the
     # disposable installation between methods so grant/denial tests are independent.
     payload={'app':app['app_url'],'testSuite':suite['test_suite_url'],'devices':devices,
+             'class':DEVICE_TEST_CLASSES, 'project':'NextDNS Android',
              'allowDeviceMockServer':True,'clearPackageData':True}
     build=request('build',json.dumps(payload).encode(),'application/json')
     root=Path(__file__).resolve().parents[1]
     evidence={'status':'SUBMITTED','commit':commit,'appSha256':app_hash,
-        'testSuiteSha256':suite_hash,'devices':devices,
+        'testSuiteSha256':suite_hash,'devices':devices,'testClasses':DEVICE_TEST_CLASSES,
         'appUrl':app['app_url'],'testSuiteUrl':suite['test_suite_url'],'buildId':build['build_id']}
     directory=root/'build/browserstack'; directory.mkdir(parents=True,exist_ok=True)
     (directory/'submission.json').write_text(json.dumps(evidence,indent=2)+'\n',encoding='utf8')

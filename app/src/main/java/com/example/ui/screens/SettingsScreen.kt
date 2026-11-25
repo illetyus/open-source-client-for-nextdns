@@ -143,8 +143,10 @@ fun SettingsScreen(
 
   val activeProfile by viewModel.activeProfile.collectAsStateWithLifecycle()
   val configSettings by viewModel.configSettings.collectAsStateWithLifecycle()
+  val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle()
 
-  var showDeleteProfileDialog by remember { mutableStateOf(false) }
+  var showDeleteProfileDialog by remember(activeProfile?.id, isGuestMode) { mutableStateOf(false) }
+  var profileNameDraft by remember(activeProfile?.id, isGuestMode) { mutableStateOf<String?>(null) }
   val profileName = activeProfile?.name ?: AppStrings.get(R.string.ui_0a4d547a3f)
   LazyColumn(
     modifier = modifier
@@ -163,6 +165,17 @@ fun SettingsScreen(
 
     item {
       ApiConnectionSettingsSection(viewModel)
+    }
+
+    if (!isGuestMode && activeProfile != null) {
+      item {
+        OutlinedButton(
+          onClick = { profileNameDraft = profileName },
+          modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("rename_profile")
+        ) {
+          Text(AppStrings.get(R.string.profile_rename_action))
+        }
+      }
     }
 
     item {
@@ -240,26 +253,61 @@ fun SettingsScreen(
         SettingsSectionHeading(title = AppStrings.get(R.string.settings_delete_profile))
         ProfileActionsSection(
           profileName = profileName,
-          onDeleteProfile = { showDeleteProfileDialog = true }
+          onDeleteProfile = { showDeleteProfileDialog = !isGuestMode && activeProfile != null }
         )
       }
     }
   }
 
-  if (showDeleteProfileDialog) {
+  val profileToRename = activeProfile
+  val draft = profileNameDraft
+  if (!isGuestMode && profileToRename != null && draft != null) {
+    val newName = draft.trim()
+    AlertDialog(
+      onDismissRequest = { profileNameDraft = null },
+      title = { Text(AppStrings.get(R.string.profile_rename_action)) },
+      text = {
+        OutlinedTextField(
+          value = draft,
+          onValueChange = { profileNameDraft = it },
+          label = { Text(AppStrings.get(R.string.ui_249cb2491d)) },
+          singleLine = true,
+          modifier = Modifier.fillMaxWidth().testTag("profile_name_input")
+        )
+      },
+      confirmButton = {
+        TextButton(
+          enabled = newName.isNotBlank() && newName != profileToRename.name,
+          modifier = Modifier.testTag("confirm_profile_rename"),
+          onClick = {
+            profileNameDraft = null
+            viewModel.renameProfile(profileToRename.id, newName)
+          }
+        ) { Text(AppStrings.get(R.string.profile_rename_confirm)) }
+      },
+      dismissButton = {
+        TextButton(onClick = { profileNameDraft = null }) {
+          Text(AppStrings.get(R.string.ui_7227874813))
+        }
+      }
+    )
+  }
+
+  val profileToDelete = activeProfile
+  if (showDeleteProfileDialog && !isGuestMode && profileToDelete != null) {
     AlertDialog(
       onDismissRequest = { showDeleteProfileDialog = false },
       title = { Text(AppStrings.get(R.string.ui_26c4159180)) },
       text = {
         Text(
-          AppStrings.get(R.string.delete_profile_named, profileName)
+          AppStrings.get(R.string.delete_profile_named, profileToDelete.name)
         )
       },
       confirmButton = {
         TextButton(
           onClick = {
             showDeleteProfileDialog = false
-            activeProfile?.id?.let(viewModel::deleteProfile)
+            viewModel.deleteProfile(profileToDelete.id)
           }
         ) {
           Text(AppStrings.get(R.string.ui_0ad23c38d9), color = MaterialTheme.colorScheme.error)

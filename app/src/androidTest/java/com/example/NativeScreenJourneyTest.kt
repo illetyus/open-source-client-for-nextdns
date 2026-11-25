@@ -17,7 +17,9 @@ import com.example.i18n.LocalePreferences
 import com.example.ui.screens.HomeScreen
 import com.example.ui.theme.AppTheme
 import com.example.ui.viewmodel.NavTab
+import kotlinx.coroutines.runBlocking
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import org.json.JSONObject
 import java.time.Duration
 import java.time.Instant
 import org.junit.After
@@ -143,6 +145,58 @@ class NativeScreenJourneyTest {
     rule.waitUntil(20_000) { backend.calls.any { it.path.endsWith("/analytics/status") } }
     assertTrue(backend.calls.any { it.path.endsWith("/logs") })
     assertTrue(NextDnsApp.preferences.apiKey.isBlank())
+  }
+
+  @Test fun profileRenameShowsOnlyTheNameConfirmedByNextDns() {
+    val backend = connected()
+    navigate(NavTab.SETTINGS)
+    val original = "Synthetic UI profile"
+    val updated = "Renamed fixture profile"
+
+    fun enterName(name: String) {
+      rule.onNodeWithTag("settings_scroll_list").performScrollToNode(hasTestTag("rename_profile"))
+      rule.onNodeWithTag("rename_profile").performClick()
+      rule.onNodeWithTag("profile_name_input").performTextReplacement(name)
+    }
+
+    enterName(" ")
+    rule.onNodeWithTag("confirm_profile_rename").assertIsNotEnabled()
+    rule.onNodeWithTag("profile_name_input").performTextReplacement(updated)
+    backend.confirmProfileRename = false
+    val beforeRename = backend.calls.size
+    rule.onNodeWithTag("confirm_profile_rename").performClick()
+    rule.waitUntil(20_000) {
+      rule.onAllNodesWithText(AppStrings.get(R.string.ui_e144829518)).fetchSemanticsNodes().isNotEmpty()
+    }
+    assertEquals(original, backend.repository.profiles.value.single().name)
+    assertTrue(backend.calls.drop(beforeRename).any { it.method == "GET" && it.path == "/profiles" })
+
+    backend.confirmProfileRename = true
+    enterName("  $updated  ")
+    rule.onNodeWithTag("confirm_profile_rename").performClick()
+    rule.waitUntil(20_000) { backend.repository.profiles.value.single().name == updated }
+    rule.onNodeWithText(updated).assertIsDisplayed()
+    val renames = backend.calls.filter { it.method == "PATCH" && it.path == "/profiles/aaaaaa" }
+    assertEquals(2, renames.size)
+    renames.forEach { assertEquals(updated, JSONObject(it.body).getString("name")) }
+  }
+
+  @Test fun changingProfilesDismissesThePendingDeleteConfirmation() {
+    val backend = connected()
+    backend.includeSecondProfile = true
+    assertTrue(runBlocking { backend.repository.refreshProfilesFromApi() })
+    navigate(NavTab.SETTINGS)
+    val delete = AppStrings.get(R.string.delete_profile_button, "Synthetic UI profile")
+    rule.onNodeWithTag("settings_scroll_list").performScrollToNode(hasText(delete))
+    rule.onNodeWithText(delete).performClick()
+    rule.onNodeWithText(AppStrings.get(R.string.delete_profile_named, "Synthetic UI profile")).assertIsDisplayed()
+    val confirm = rule.onNodeWithText(AppStrings.get(R.string.ui_0ad23c38d9))
+    confirm.assertIsDisplayed()
+
+    rule.runOnIdle { backend.model.switchProfile("bbbbbb") }
+    rule.waitUntil(20_000) { backend.model.activeProfile.value?.id == "bbbbbb" }
+    confirm.assertDoesNotExist()
+    assertTrue(backend.calls.none { it.method == "DELETE" })
   }
 
   @Test fun rejectedSecurityMutationKeepsConfirmedValueAndCanBeRetried() {

@@ -40,6 +40,11 @@ subprocess.run([str(args.tools/'zipalign.exe'),'-c','-P','16','4',str(apk)],chec
 manifest = subprocess.check_output([str(args.tools/'aapt2.exe'),'dump','xmltree',str(apk),'--file','AndroidManifest.xml'],text=True)
 assert 'com.aistudio.nextdns.mgrqvt' in manifest and ':usesCleartextTraffic(0x010104ec)=false' in manifest
 assert not re.search(r':debuggable\([^)]*\)=(true|0xffffffff)',manifest,re.I)
+badging = subprocess.check_output([str(args.tools/'aapt2.exe'),'dump','badging',str(apk)],text=True, encoding='utf8')
+package_match = re.search(r"^package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'", badging, re.M)
+assert package_match, 'Missing package identity or version in signed APK'
+application_id, version_code, version_name = package_match.groups()
+assert application_id == 'com.aistudio.nextdns.mgrqvt'
 with zipfile.ZipFile(apk) as z:
     assert z.read('assets/licenses/THIRD_PARTY_NOTICES.txt') == (root/'app/src/main/assets/licenses/THIRD_PARTY_NOTICES.txt').read_bytes()
     for name in z.namelist():
@@ -53,7 +58,7 @@ snyk = json.loads((args.evidence/'build/compliance/snyk-app-release.json').read_
 assert snyk['ok'] is True and snyk['dependencyCount']>20 and not snyk['vulnerabilities']
 report = {'status':'SIGNED_REVIEW_CANDIDATE','commit':evidence['commit'],
           'ciUrl':f'https://github.com/illetyus/open-source-client-for-nextdns/actions/runs/{args.run_id}',
-          'applicationId':'com.aistudio.nextdns.mgrqvt','versionName':'1.0','versionCode':1,
+          'applicationId':application_id,'versionName':version_name,'versionCode':int(version_code),
           'certificateSha256':fingerprint,'payloadIdenticalToMainCi':True,
           'packages':[{'file':x.name,'sha256':hashlib.sha256(x.read_bytes()).hexdigest(),'bytes':x.stat().st_size,'payloadSha256':digest(x)} for x in (apk,aab)],
           'runtime':runtime,'licensesBundled':True,'releaseDebuggable':False,'cleartextTraffic':False,

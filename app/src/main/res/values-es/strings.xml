@@ -691,4 +691,6 @@
     <string name="security_tunneling_endpoints_description">Bloquea servicios como ngrok y Cloudflare Tunnel, que hacen accesibles en Internet las aplicaciones locales. Los atacantes pueden usarlos para publicar páginas de phishing y ocultar su infraestructura.</string>
     <string name="security_untrusted_certificates_title">Certificados no confiables</string>
     <string name="security_untrusted_certificates_description">Bloquea dominios con certificados HTTPS identificados por NextDNS como autofirmados o emitidos por una autoridad no confiable. Esto puede interrumpir conexiones cifradas usadas por software malicioso.</string>
+    <string name="profile_rename_action">Cambiar el nombre del perfil</string>
+    <string name="profile_rename_confirm">Guardar</string>
 </resources>
