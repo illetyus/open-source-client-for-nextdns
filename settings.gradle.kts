@@ -18,6 +18,12 @@ dependencyResolutionManagement {
   repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
   repositories {
     google()
+    if (providers.environmentVariable("GITHUB_ACTIONS").orNull == "true") {
+      // Hosted runners repeatedly hit Central's download limit on this large test-only JAR.
+      maven("https://maven-central.storage-download.googleapis.com/maven2/") {
+        content { includeVersion("org.robolectric", "nativeruntime-dist-compat", "1.0.18") }
+      }
+    }
     mavenCentral()
   }
 }
