@@ -30,6 +30,18 @@ assert 'RELEASE_AUDIT_SYNTHETIC_CANARY_20261009' not in (out/'logcat.txt').read_
 unsigned = root/'app/build/outputs/apk/release/app-release-unsigned.apk'
 signed = out/'release-runtime.apk'
 assert entries(unsigned) == entries(signed), 'Runtime APK differs beyond signing records'
+beta_sha256 = (out/'beta-original-sha256.txt').read_text(encoding='utf8').strip()
+assert re.fullmatch(r'[a-f0-9]{64}', beta_sha256)
+assert (out/'beta-upgrade-install.txt').read_text(encoding='utf8').strip() == 'Success'
+for filename, method in (
+    ('beta-seed.txt', 'seedSettingsInPublishedBeta'),
+    ('beta-upgrade.txt', 'installedUpgradePreservesBetaSettings'),
+):
+    upgrade_log = (out/filename).read_text(encoding='utf8')
+    assert 'INSTRUMENTATION_STATUS: class=com.example.NativeBetaUpgradeTest' in upgrade_log
+    assert f'INSTRUMENTATION_STATUS: test={method}' in upgrade_log
+    assert 'OK (1 test)' in upgrade_log and 'INSTRUMENTATION_CODE: -1' in upgrade_log
+    assert re.findall(r'^INSTRUMENTATION_STATUS_CODE: (-?\d+)\s*$', upgrade_log, re.M) == ['1', '0']
 report = {'commit':os.environ['GITHUB_SHA'], 'tests':REQUIRED_RUNTIME_TESTS, 'failures':0, 'skipped':0,
           'nativeTestClasses':native_test_classes,
           'emulator':{'api':35,'image':'system-images;android-35;default;x86_64'},
@@ -37,6 +49,11 @@ report = {'commit':os.environ['GITHUB_SHA'], 'tests':REQUIRED_RUNTIME_TESTS, 'fa
           'runtimeApkSha256':hashlib.sha256(signed.read_bytes()).hexdigest(),
           'payloadSha256':digest(unsigned), 'payloadIdenticalExceptSignature':True,
           'canaryAbsentFromLogcat':True, 'signer':'ephemeral CI key; never a production signing approval',
+          'betaUpgrade':{
+              'fromTag':'v1.0.0-beta.1', 'publishedApkSha256':beta_sha256,
+              'signingScope':'both builds re-signed with the same disposable CI key',
+              'preserved':['language', 'theme', 'guest mode', 'stored terms acceptance'],
+          },
           'networkScope':'local TLS fixtures, trust rejection, redirect/downgrade and cleartext rejection; no real account or BrowserStack run'}
 (out/'release-runtime-evidence.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')
 print(f'PASS: {REQUIRED_RUNTIME_TESTS} executed release runtime tests; no canary in logcat; signed/unsigned payload entries identical')

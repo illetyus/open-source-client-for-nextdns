@@ -21,6 +21,17 @@ test_apk=$(find app/build/outputs/apk/androidTest/release -name '*.apk' -type f)
 test -n "$test_apk"
 "$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \
   --key-pass env:NEXTDNS_CI_AUDIT_PASSWORD --out "$out/release-runtime-test.apk" "$test_apk"
+beta="$RUNNER_TEMP/nextdns-published-beta.apk"
+curl --fail --silent --show-error --location --retry 3 --proto '=https' --proto-redir '=https' \
+  'https://github.com/illetyus/open-source-client-for-nextdns/releases/download/v1.0.0-beta.1/open-source-client-for-nextdns-v1.0.0-beta.1.apk' \
+  --output "$beta"
+printf '%s  %s\n' '40f99a17790bc2f2867794564128fedca31d40b6a413012841fb2d43252b19f8' "$beta" | sha256sum --check --status
+"$tools/apksigner" verify "$beta"
+"$tools/apksigner" sign --ks "$key" --ks-key-alias upload --ks-pass env:NEXTDNS_CI_AUDIT_PASSWORD \
+  --key-pass env:NEXTDNS_CI_AUDIT_PASSWORD --out "$out/beta-re-signed.apk" "$beta"
+PYTHONPATH=scripts python3 -c 'import sys; from package_payload import entries; assert entries(sys.argv[1]) == entries(sys.argv[2])' \
+  "$beta" "$out/beta-re-signed.apk"
+sha256sum "$beta" | cut -d ' ' -f 1 > "$out/beta-original-sha256.txt"
 unset NEXTDNS_CI_AUDIT_PASSWORD
 # Android SDK licenses are already accepted on the hosted Android build runner.
 "$sdk_manager" 'system-images;android-35;default;x86_64' 'emulator' 'platform-tools'
@@ -48,8 +59,7 @@ test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = '1'
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
-adb install -r "$out/release-runtime.apk"
-adb install -r "$out/release-runtime-test.apk"
+bash scripts/run_beta_upgrade_on_emulator.sh "$out"
 adb logcat -c
 adb shell pm revoke com.aistudio.nextdns.mgrqvt android.permission.POST_NOTIFICATIONS
 timeout 240 adb shell am instrument -w -r -e class \
