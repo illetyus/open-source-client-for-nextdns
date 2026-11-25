@@ -1,96 +1,113 @@
-# Open Source Client for NextDNS (development repository)
+<p align="center">
+  <img src="docs/assets/readme/hero.svg" width="100%" alt="Open Source Client for NextDNS — independent unofficial open-source Android client" />
+</p>
 
-An **independent, unofficial** native Android client for managing a user's own
-NextDNS account through the [documented NextDNS API](https://nextdns.github.io/api/).
+<h1 align="center">Open Source Client for NextDNS</h1>
 
-> **Development status:** The application is not ready for public Google Play
-> release. The name is **Open Source Client for NextDNS**. Five-language UI,
-> original network-node artwork and draft store/legal documents are prepared;
-> final signed-package and real-device release evidence remains open. This repository
-> is not affiliated with or endorsed by NextDNS.
+<p align="center">
+  An independent, unofficial open-source Android client for managing a NextDNS account through the public NextDNS API.
+</p>
 
-## Features in development
+<p align="center">
+  <a href="https://github.com/illetyus/open-source-client-for-nextdns/actions/workflows/ci.yml"><img alt="Android CI" src="https://github.com/illetyus/open-source-client-for-nextdns/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/illetyus/open-source-client-for-nextdns/actions/workflows/security.yml"><img alt="Repository security" src="https://github.com/illetyus/open-source-client-for-nextdns/actions/workflows/security.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/License-Apache--2.0-blue.svg"></a>
+  <img alt="Android 7.0+" src="https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white">
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white">
+</p>
+
+> [!IMPORTANT]
+> This project is **not affiliated with, sponsored by, endorsed by, or officially supported by NextDNS**. NextDNS, its service, API, name, and trademarks belong to their respective rights holders.
+
+## What it does
+
+Open Source Client for NextDNS is an Android account-management client. It connects directly from the device to the NextDNS API using credentials supplied by the user; the project does not operate a separate backend that receives users' API keys or DNS histories.
 
 - Manage NextDNS profiles and configuration.
-- Review security, privacy and parental-control settings.
-- Manage allowlists and denylists.
-- View DNS logs and analytics made available by a user's NextDNS account.
-- Opt-in, privacy-conscious notifications.
-- Adaptive Android user interface built with Kotlin and Jetpack Compose.
+- Review security, privacy, and parental-control settings.
+- Maintain allowlists and denylists.
+- Inspect DNS logs and analytics exposed by the account API.
+- Run connection diagnostics and open Android Private DNS settings when needed.
+- Use opt-in notifications with account-bound local state.
+- Export supported data through Android's document interfaces.
+- Use the interface in English, Turkish, German, French, or Spanish.
+- Run on Android 7.0 (API 24) and later.
 
-The project is an **account-management client**, not a replacement DNS resolver,
-VPN service, or NextDNS subscription. The user supplies the NextDNS API key needed for a permitted account connection
-and must comply with NextDNS's service terms and applicable law. This app does not
-add a separate requirement that the connected account be owned by the device user.
-Service availability and supported API operations depend on NextDNS.
+This application is **not** a DNS resolver, VPN, subscription service, or replacement for the NextDNS infrastructure.
 
+## Interface verification
 
-## Independent service responsibilities
+The CI pipeline records Roborazzi screenshots for branding, localization, and large-text layouts. Those screenshots are retained as test evidence in the `ui-branding-screenshots` workflow artifact instead of being hand-edited marketing mockups.
 
-NextDNS independently operates its DNS service, remote infrastructure, accounts,
-subscriptions, API and server-side data handling. This client does not control
-those services and is not sponsored, endorsed or officially supported by NextDNS.
-Client code, on-device processing and API requests are analysed separately from
-NextDNS-operated services under applicable law. The draft does not add an SLA,
-support, indemnity or service-continuity undertaking, or claim blanket immunity.
+## Release status
 
-Our [independent-client and Google Play disclosure plan](docs/INDEPENDENT_CLIENT_AND_GOOGLE_PLAY_DISCLOSURE_PLAN.md)
-tracks required product wording, privacy declarations, Google/API integrations,
-Play review access, and checks that must pass before publication.
+The Android feature set for the first `1.0` line is complete. GitHub release automation distinguishes between release candidates and stable releases:
 
-## Privacy architecture
+- `vX.Y.Z-rc.N` tags create **pre-releases** after the draft-safe release checks pass.
+- `vX.Y.Z` tags create **stable releases only if the final legal/publication gates pass**.
+- Signed APK and AAB files are produced only when the release signing secrets are configured.
+- CI-generated unsigned release artifacts are review evidence and must not be redistributed as production builds.
 
-The intended network design is **Android device ↔ NextDNS API** using the
-account owner's API key. The project does not operate a separate backend for
-collecting users' DNS histories or API keys. Its Android Keystore encryption,
-permissions, backup exclusions, and network behavior are subject to final
-release validation; do not infer a guarantee from the architectural intent.
+No stable GitHub release has been published yet. See [Releasing](docs/RELEASING.md) for the exact process.
 
-Do not put real API keys or personal DNS query logs in public issues, builds,
-CI logs, screenshots, or sample data.
+## Security and privacy model
+
+- API credentials are protected with Android Keystore-backed local encryption.
+- Android backup/transfer handling, release manifest properties, runtime networking, logs, and package contents are checked by release-oriented tests and scripts.
+- The app communicates with NextDNS-operated services directly; server-side processing remains governed by NextDNS.
+- Real API keys, profile identifiers, and DNS query logs must never be posted in issues, screenshots, test fixtures, or CI output.
+
+For the implementation threat model and reporting process, see [Security](SECURITY.md) and [Security Threat Model](docs/SECURITY_THREAT_MODEL.md).
+
+## Build from source
+
+### Requirements
+
+- JDK 17
+- Android SDK matching the project's `compileSdk`
+- Git
+
+```bash
+git clone https://github.com/illetyus/open-source-client-for-nextdns.git
+cd open-source-client-for-nextdns
+chmod +x gradlew
+./gradlew :app:assembleDebug --no-daemon
+```
+
+Run the main local verification set with:
+
+```bash
+./gradlew :app:lintDebug :app:testDebugUnitTest --no-daemon
+python3 scripts/verify_localization.py
+python3 scripts/verify_api_capability_matrix.py
+python3 scripts/verify_legal_assets.py
+```
+
+The CI pipeline performs additional dependency, package, screenshot, runtime-security, and release-evidence checks. Release signing is documented separately in [docs/RELEASING.md](docs/RELEASING.md).
+
+## Project structure
+
+| Path | Purpose |
+| --- | --- |
+| `app/` | Android application, tests, resources, and bundled notices |
+| `macrobenchmark/` | Performance and macrobenchmark harness |
+| `scripts/` | Release, compliance, test-evidence, and verification tooling |
+| `fastlane/metadata/android/` | Draft Google Play metadata for five locales |
+| `docs/` | Architecture, release evidence, legal drafts, provenance, and project records |
+| `.github/workflows/` | CI, security, and release automation |
+
+Start with the [documentation index](docs/README.md) if you need deeper project records.
+
+## Contributing
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes. Security-sensitive reports must follow [SECURITY.md](SECURITY.md) instead of being filed publicly.
+
+## Release integrity
+
+Release builds are designed to be reproducible from a tagged source state with explicit signing inputs, SHA-256 checksums, and GitHub artifact attestations. The release workflow pins third-party actions to commit SHAs and grants the workflow token only the permissions required for publishing and attestations.
 
 ## License
 
-The project's **original code and project-authored documentation** are licensed
-under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for copyright
-and third-party trademark information.
+Original project code and project-authored documentation are licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) and [source/license provenance](docs/SOURCE_AND_LICENSE_PROVENANCE.md) for third-party notices and attribution boundaries.
 
-Third-party dependencies keep their own license terms. The
-[source and dependency license inventory](docs/SOURCE_AND_LICENSE_PROVENANCE.md)
-records the pending final runtime artifact/license verification.
-
-The name, brand, logos, service, API and intellectual property of NextDNS are
-not licensed to this project by the Apache-2.0 license. The project-authored
-network-node artwork and its provenance are recorded in
-[the asset review](docs/BRAND_ASSET_PROVENANCE.md). Final launcher/store presentation
-remains part of the release review.
-
-## Release process
-
-1. Phase 8: legal, privacy, provenance and third-party license review.
-2. Phase 9: naming, five-language UI, original icon and verified offline legal
-   drafts are followed by release dependency/package evidence and final review.
-3. **Mandatory BrowserStack real-device tests** before Google Play public
-   release; see [the release gate](docs/PHASE9_BROWSERSTACK_RELEASE_GATE.md).
-4. Google Play internal/closed testing and prelaunch evidence followed by a release decision.
-5. Phase 10: API compatibility, dependency and release maintenance after publication.
-
-The [master phase record](docs/PROJECT_PHASE_STATUS.md) preserves the scope of
-Phases 2–10; the [literature review](docs/legal/LITERATURE_REVIEW_TR_EU_2026-10-09_DRAFT.md)
-and legal texts remain **DRAFT**. Naming completion does not complete Phase 9.
-
-The project is under active development. Do not consider a draft PR or a
-successful unit-test run a public release approval.
-
-The [10 October review](docs/CODE_QUALITY_REVIEW_TR_2026-10-10.md) identified
-10 conditional defects (3 P1, 7 P2). The [fix report](docs/CODE_QUALITY_FIXES_TR_2026-10-10.md)
-records corrections and 37 required regressions within 104 passing JVM tests.
-The [defect ledger](docs/HATA_DEFTERI_TR.md) marks them as code/JVM verified
-and awaiting device acceptance. BrowserStack, legal and publication gates remain open.
-
-## Source and feedback
-
-Repository: https://github.com/illetyus/open-source-client-for-nextdns
-
-Security, policy and API issues should be reported without disclosing live
-API credentials, profile identifiers, or DNS logs.
+The Apache-2.0 license does not grant rights to the NextDNS name, service, API, logos, or other third-party intellectual property.

@@ -1,0 +1,27 @@
+name: Feature request
+description: Propose a focused improvement to the Android client
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem or workflow limitation should be addressed?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the desired behavior without assuming a specific implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: NextDNS API dependency
+      description: If relevant, identify the documented or observed API capability this depends on.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
