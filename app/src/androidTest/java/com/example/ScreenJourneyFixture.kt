@@ -35,6 +35,8 @@ internal class ScreenJourneyFixture(context: Context) : AutoCloseable {
   val calls = CopyOnWriteArrayList<Call>()
   @Volatile var rejectSecurityMutation = false
   @Volatile var googleSafeBrowsing = true
+  @Volatile private var profileName = "Synthetic UI profile"
+  @Volatile var confirmProfileRename = true
   private val deny = linkedSetOf("blocked.fixture.example")
   private val allow = linkedSetOf("allowed.fixture.example")
   private val server = MockWebServer()
@@ -95,7 +97,16 @@ internal class ScreenJourneyFixture(context: Context) : AutoCloseable {
   private fun respond(request: RecordedRequest, body: String): MockResponse {
     val url = request.requestUrl!!
     val path = url.encodedPath
-    if (path == "/profiles") return json("""{"data":[{"id":"aaaaaa","name":"Synthetic UI profile","fingerprint":"fp0123456789abcdef"}]}""")
+    fun profile() = JSONObject().put("id", "aaaaaa").put("name", profileName)
+      .put("fingerprint", "fp0123456789abcdef")
+    if (path == "/profiles") return json(JSONObject().put("data", JSONArray(listOf(profile()))).toString())
+    if (path == "/profiles/aaaaaa") {
+      if (request.method == "PATCH") {
+        if (confirmProfileRename) profileName = JSONObject(body).getString("name")
+        return MockResponse().setResponseCode(204)
+      }
+      return json(JSONObject().put("data", profile()).toString())
+    }
     if (path == "/profiles/aaaaaa/security") {
       if (request.method == "PATCH") {
         if (rejectSecurityMutation) return json("""{"errors":[{"code":"invalid","detail":"Synthetic mutation rejected"}]}""", 503)
@@ -155,7 +166,6 @@ internal class ScreenJourneyFixture(context: Context) : AutoCloseable {
       "/profiles/aaaaaa/privacy/blocklists", "/profiles/aaaaaa/privacy/natives",
       "/privacy/blocklists", "/privacy/natives", "/parentalControl/services",
       "/parentalControl/categories", "/security/tlds" -> json("""{"data":[]}""")
-      "/profiles/aaaaaa" -> json("""{"data":{"id":"aaaaaa","name":"Synthetic UI profile"}}""")
       else -> json("""{"errors":[{"code":"not_found","detail":"Unimplemented synthetic route"}]}""", 404)
     }
   }

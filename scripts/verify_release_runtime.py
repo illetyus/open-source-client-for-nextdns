@@ -15,6 +15,7 @@ native_test_classes = [
     'com.example.NativeLegalViewportTest',
     'com.example.NativeLoginNavigationTest',
     'com.example.NativeNotificationRuntimeAuditTest',
+    'com.example.NativeScreenJourneyTest',
     'com.example.ReleaseSecurityRuntimeTest',
     'com.example.WorldMapStrictModeTest',
 ]

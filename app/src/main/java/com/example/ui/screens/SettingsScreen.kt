@@ -143,8 +143,10 @@ fun SettingsScreen(
 
   val activeProfile by viewModel.activeProfile.collectAsStateWithLifecycle()
   val configSettings by viewModel.configSettings.collectAsStateWithLifecycle()
+  val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle()
 
   var showDeleteProfileDialog by remember { mutableStateOf(false) }
+  var profileNameDraft by remember(activeProfile?.id, isGuestMode) { mutableStateOf<String?>(null) }
   val profileName = activeProfile?.name ?: AppStrings.get(R.string.ui_0a4d547a3f)
   LazyColumn(
     modifier = modifier
@@ -163,6 +165,18 @@ fun SettingsScreen(
 
     item {
       ApiConnectionSettingsSection(viewModel)
+    }
+
+    if (!isGuestMode && activeProfile != null) {
+      item {
+        NextDnsCard(title = AppStrings.get(R.string.ui_249cb2491d)) {
+          NextDnsButton(
+            text = AppStrings.get(R.string.profile_rename_action),
+            onClick = { profileNameDraft = profileName },
+            modifier = Modifier.testTag("rename_profile")
+          )
+        }
+      }
     }
 
     item {
@@ -244,6 +258,40 @@ fun SettingsScreen(
         )
       }
     }
+  }
+
+  val profileToRename = activeProfile
+  val draft = profileNameDraft
+  if (!isGuestMode && profileToRename != null && draft != null) {
+    val newName = draft.trim()
+    AlertDialog(
+      onDismissRequest = { profileNameDraft = null },
+      title = { Text(AppStrings.get(R.string.profile_rename_action)) },
+      text = {
+        OutlinedTextField(
+          value = draft,
+          onValueChange = { profileNameDraft = it },
+          label = { Text(AppStrings.get(R.string.ui_249cb2491d)) },
+          singleLine = true,
+          modifier = Modifier.fillMaxWidth().testTag("profile_name_input")
+        )
+      },
+      confirmButton = {
+        TextButton(
+          enabled = newName.isNotBlank() && newName != profileToRename.name,
+          modifier = Modifier.testTag("confirm_profile_rename"),
+          onClick = {
+            profileNameDraft = null
+            viewModel.renameProfile(profileToRename.id, newName)
+          }
+        ) { Text(AppStrings.get(R.string.profile_rename_confirm)) }
+      },
+      dismissButton = {
+        TextButton(onClick = { profileNameDraft = null }) {
+          Text(AppStrings.get(R.string.ui_7227874813))
+        }
+      }
+    )
   }
 
   if (showDeleteProfileDialog) {

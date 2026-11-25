@@ -691,4 +691,6 @@
     <string name="security_tunneling_endpoints_description">ngrok ve Cloudflare Tunnel gibi yerel servisleri internete açan hizmetleri engeller. Saldırganlar bu tüneller üzerinden kimlik avı sayfaları yayımlayabilir ve gerçek altyapılarını gizleyebilir.</string>
     <string name="security_untrusted_certificates_title">Güvenilmeyen Sertifikalar</string>
     <string name="security_untrusted_certificates_description">NextDNS’in kendi kendine imzalanmış veya güvenilmeyen bir kurumca verilmiş olarak belirlediği HTTPS sertifikalarını sunan alan adlarını engeller. Bu, zararlı yazılımların şifreli bağlantılarını kesmeye yardımcı olabilir.</string>
+    <string name="profile_rename_action">Profil adını değiştir</string>
+    <string name="profile_rename_confirm">Kaydet</string>
 </resources>
