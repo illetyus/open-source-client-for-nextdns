@@ -67,7 +67,7 @@ Gerçek cihaz modeli ve Android sürümü **test anındaki BrowserStack katalogu
 
 ## 5. Gerçek cihaz otomasyonu ve güvenlik
 
-- `androidTest` altında yeniden kullanılabilir en az **login, permission, mutation, navigation** Espresso senaryoları gerekli. Mevcut `app/src/androidTest/.../ExampleInstrumentedTest.kt` tek başına bu gereksinimi karşılamaz.
+- `androidTest` altında yeniden kullanılabilir en az **hesap bağlama, izinler, ayar değişikliği ve ekranlar arası gezinme** Espresso senaryoları gerekli. Bu akışlar için [giriş ve gezinme](../app/src/androidTest/java/com/example/NativeLoginNavigationTest.kt), [bildirim izni](../app/src/androidTest/java/com/example/NativeNotificationPermissionTest.kt) ve [ekran akışları](../app/src/androidTest/java/com/example/NativeScreenJourneyTest.kt) testlerine bakın.
 - CI/artifact pipeline debug APK + test APK üretmeli; BrowserStack test raporları, ekran görüntüleri, crash/ANR/loglar, SHA ve cihaz kimlikleri ilişkilendirilmeli.
 - API anahtarı ve DNS sorgu domainleri test raporlarında redakte edilmeli.
 - Gerçek satın alma veya reklam içermeyen ilk sürümde Billing/ads testi **uygulanmaz**; sonradan açılırsa yeni kapsama eklenir.
