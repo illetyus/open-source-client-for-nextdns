@@ -69,6 +69,7 @@ Gerçek cihaz modeli ve Android sürümü **test anındaki BrowserStack katalogu
 
 - `androidTest` altında yeniden kullanılabilir en az **hesap bağlama, izinler, ayar değişikliği ve ekranlar arası gezinme** Espresso senaryoları gerekli. Bu akışlar için [giriş ve gezinme](../app/src/androidTest/java/com/example/NativeLoginNavigationTest.kt), [bildirim izni](../app/src/androidTest/java/com/example/NativeNotificationPermissionTest.kt) ve [ekran akışları](../app/src/androidTest/java/com/example/NativeScreenJourneyTest.kt) testlerine bakın.
 - CI/artifact pipeline debug APK + test APK üretmeli; BrowserStack test raporları, ekran görüntüleri, crash/ANR/loglar, SHA ve cihaz kimlikleri ilişkilendirilmeli.
+- [BrowserStack çalıştırıcısı](../scripts/run_browserstack_espresso.py) gerçek cihazda çalışabilen test sınıflarını seçer. Bildirim testi Android’in izin penceresinde hem ret hem onay yolunu izler. İzni ADB ile önceden ayarlayan testler ve yalnızca release paketinde geçerli güvenlik testleri [CI emülatör denetiminde](../scripts/run_release_runtime_audit.sh) çalışır.
 - API anahtarı ve DNS sorgu domainleri test raporlarında redakte edilmeli.
 - Gerçek satın alma veya reklam içermeyen ilk sürümde Billing/ads testi **uygulanmaz**; sonradan açılırsa yeni kapsama eklenir.
 
