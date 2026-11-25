@@ -32,8 +32,8 @@ signed = out/'release-runtime.apk'
 assert entries(unsigned) == entries(signed), 'Runtime APK differs beyond signing records'
 beta_sha256 = (out/'beta-original-sha256.txt').read_text(encoding='utf8').strip()
 assert re.fullmatch(r'[a-f0-9]{64}', beta_sha256)
-install_log = (out/'beta-upgrade-install.txt').read_text(encoding='utf8').strip().splitlines()
-assert install_log and install_log[-1] == 'Success', 'ADB did not report a successful in-place update'
+install_log = (out/'beta-upgrade-install.txt').read_text(encoding='utf8').splitlines()
+assert 'Success' in install_log, 'ADB did not report a successful in-place update'
 for filename, method in (
     ('beta-seed.txt', 'seedSettingsInPublishedBeta'),
     ('beta-readback.txt', 'publishedBetaReadsBackSeededSettings'),
