@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelStore
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -237,6 +238,30 @@ class NativeScreenJourneyTest {
     assertTrue(deleteIndex > createIndex)
     assertTrue(backend.calls.drop(deleteIndex + 1).any { it.method == "GET" && it.path == "/profiles" })
     assertFalse(backend.calls.any { it.method == "DELETE" && it.path == "/profiles/aaaaaa" })
+  }
+
+  @Test fun foregroundReadsChangesMadeOutsideTheAppWithoutSendingWrites() {
+    val backend = connected()
+    navigate(NavTab.SECURITY)
+    val route = "/profiles/aaaaaa/security"
+    rule.waitUntil(20_000) { backend.calls.any { it.method == "GET" && it.path == route } }
+    val list = rule.onNodeWithTag("security_settings_list")
+    list.performScrollToNode(hasTestTag("security_google_safe_browsing"))
+    val toggle = rule.onNode(isToggleable() and hasAnyAncestor(hasTestTag("security_google_safe_browsing")))
+    toggle.assertIsOn()
+
+    checkNotNull(scenario).moveToState(Lifecycle.State.STARTED)
+    val resumeRequestsStart = backend.calls.size
+    backend.googleSafeBrowsing = false
+    assertTrue(backend.repository.securitySettings.value.googleSafeBrowsing)
+
+    checkNotNull(scenario).moveToState(Lifecycle.State.RESUMED)
+    rule.waitUntil(20_000) { !backend.repository.securitySettings.value.googleSafeBrowsing }
+    list.performScrollToNode(hasTestTag("security_google_safe_browsing"))
+    toggle.assertIsOff()
+    val resumeRequests = backend.calls.drop(resumeRequestsStart)
+    assertTrue(resumeRequests.any { it.method == "GET" && it.path == route })
+    assertTrue(resumeRequests.all { it.method == "GET" })
   }
 
   @Test fun rejectedSecurityMutationKeepsConfirmedValueAndCanBeRetried() {
