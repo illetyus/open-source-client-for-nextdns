@@ -91,6 +91,10 @@ android {
 tasks.withType<Test>().configureEach {
   // Use the same Maven Central endpoint as Gradle for Robolectric's runtime SDKs.
   systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
+  providers.environmentVariable("ROBOLECTRIC_SDK_DIR").orNull?.let { sdkDirectory ->
+    systemProperty("robolectric.offline", "true")
+    systemProperty("robolectric.dependency.dir", sdkDirectory)
+  }
   extensions.configure<org.gradle.testing.jacoco.plugins.JacocoTaskExtension> {
     // Robolectric loads Android application classes without a source location.
     isIncludeNoLocationClasses = true
