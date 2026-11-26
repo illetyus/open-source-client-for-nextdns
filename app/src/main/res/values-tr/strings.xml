@@ -693,4 +693,5 @@
     <string name="security_untrusted_certificates_description">NextDNS’in kendi kendine imzalanmış veya güvenilmeyen bir kurumca verilmiş olarak belirlediği HTTPS sertifikalarını sunan alan adlarını engeller. Bu, zararlı yazılımların şifreli bağlantılarını kesmeye yardımcı olabilir.</string>
     <string name="profile_rename_action">Profil adını değiştir</string>
     <string name="profile_rename_confirm">Kaydet</string>
+    <string name="logs_live_stream_connecting">Canlı akış: bağlanıyor</string>
 </resources>

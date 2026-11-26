@@ -117,6 +117,7 @@ class NextDnsViewModel(
   val configSettings = repository.configSettings
   val testResult = repository.testResult
   val isLiveStreaming = repository.isLiveStreaming
+  val isLiveStreamConnected = repository.isLiveStreamConnected
   val isSyncing = repository.isSyncing
   val sectionSyncStates = repository.sectionSyncStates
   private val _fullSyncStatus = MutableStateFlow<FullSyncStatus?>(null)

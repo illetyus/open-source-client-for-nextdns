@@ -17,6 +17,7 @@ import com.example.data.security.ApiKeyProtector
 import com.example.i18n.AppStrings
 import com.example.ui.viewmodel.NextDnsViewModel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -879,6 +880,37 @@ data: {"domain":"outside.example","timestamp":"2026-10-20T00:00:00Z","status":"d
     await(released)
     assertTrue(activeCall.get().isCanceled())
     assertFalse(repository.isLiveStreaming.value)
+  }
+
+  @Test fun liveLogConnectionReflectsTheServerResponseRatherThanTheRequestedToggle() = runBlocking {
+    val attempts = java.util.concurrent.atomic.AtomicInteger()
+    val client = OkHttpClient.Builder()
+      .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().url(server.url("/stream")).build()) }
+      .build()
+    repository = NextDnsRepository(preferences, apiService = api, diagnosticService = testApi,
+      diagnosticProbe = { null }, streamClient = client, backgroundWorkEnabled = false)
+    response = { request ->
+      if (request.requestUrl!!.encodedPath != "/stream") {
+        json("""{"data":[],"meta":{"stream":{"id":"fixture-stream"}}}""")
+      } else if (attempts.incrementAndGet() == 1) {
+        MockResponse().setResponseCode(503)
+      } else {
+        MockResponse().setHeader("Content-Type", "text/event-stream")
+          .setBody(": ready\n\n").setBodyDelay(3, TimeUnit.SECONDS)
+      }
+    }
+    repository.startLogsStream()
+    try {
+      withTimeout(8_000) { while (attempts.get() == 0) delay(10) }
+      assertTrue(repository.isLiveStreaming.value)
+      assertFalse(repository.isLiveStreamConnected.value)
+      withTimeout(8_000) { repository.isLiveStreamConnected.first { it } }
+      withTimeout(8_000) { repository.isLiveStreamConnected.first { !it } }
+      assertTrue("A closed transport remains eligible for reconnect", repository.isLiveStreaming.value)
+    } finally {
+      repository.stopLogsStream()
+    }
+    assertFalse(repository.isLiveStreamConnected.value)
   }
 
   @Test fun liveLogStreamRetainsOnlyTheMostRecentThousandEntries() = runBlocking {

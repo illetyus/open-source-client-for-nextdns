@@ -694,5 +694,6 @@
     <string name="security_untrusted_certificates_description">Block domains serving HTTPS certificates that NextDNS identifies as self-signed or issued by an untrusted authority. This can help disrupt the encrypted connections used by malware.</string>
     <string name="profile_rename_action">Rename profile</string>
     <string name="profile_rename_confirm">Save</string>
+    <string name="logs_live_stream_connecting">Live stream: connecting</string>
 </resources>
 <!-- Locale-only presentation; API privacy fields remain unchanged. -->

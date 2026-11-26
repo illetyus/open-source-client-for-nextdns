@@ -177,6 +177,7 @@ class UiAuditTest : AuditFixture() {
           onToggleDeviceMenu = {},
           onSelectDevice = { selected = it },
           isLiveStreaming = false,
+          isLiveStreamConnected = false,
           onToggleLiveStream = {},
           showLiveStreamInfo = false,
           onToggleLiveStreamInfo = {},
@@ -187,6 +188,32 @@ class UiAuditTest : AuditFixture() {
 
     rule.onNodeWithTag("logs_device_option_device-a").performClick()
     rule.runOnIdle { org.junit.Assert.assertEquals("device-a", selected) }
+  }
+
+  @Test fun liveLogHeaderDistinguishesConnectingFromLive() {
+    english()
+    val connected = mutableStateOf(false)
+    rule.setContent {
+      AppTheme {
+        LogsHeaderControls(
+          selectedDeviceFilter = null,
+          detectedDevices = emptyList(),
+          showDeviceMenu = false,
+          onToggleDeviceMenu = {},
+          onSelectDevice = {},
+          isLiveStreaming = true,
+          isLiveStreamConnected = connected.value,
+          onToggleLiveStream = {},
+          showLiveStreamInfo = false,
+          onToggleLiveStreamInfo = {},
+          onRefreshLogs = {}
+        )
+      }
+    }
+    rule.onNodeWithText("Live stream: connecting").assertIsDisplayed()
+    rule.onNodeWithText("Live stream: on").assertDoesNotExist()
+    rule.runOnIdle { connected.value = true }
+    rule.onNodeWithText("Live stream: on").assertIsDisplayed()
   }
 
   @Test fun logHistoryControlsSelectDateRangeAndSortOrder() {
