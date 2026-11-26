@@ -21,8 +21,11 @@ import com.example.ui.viewmodel.NavTab
 import kotlinx.coroutines.runBlocking
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.json.JSONObject
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.WeekFields
+import java.util.Locale
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -241,6 +244,8 @@ class NativeScreenJourneyTest {
   }
 
   @Test fun manuallyDisabledLogStreamStaysOffAcrossTabsAndActivityResume() {
+    // Keep the calendar API used by Material 3 in the instrumented APK's desugared library.
+    assertEquals(DayOfWeek.SUNDAY, WeekFields.of(Locale.US).firstDayOfWeek)
     val backend = connected()
     navigate(NavTab.LOGS)
     rule.waitUntil(20_000) { backend.repository.isLiveStreaming.value }
