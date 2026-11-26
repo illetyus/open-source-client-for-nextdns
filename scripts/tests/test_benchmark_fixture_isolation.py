@@ -40,7 +40,7 @@ class BenchmarkFixtureIsolationTest(unittest.TestCase):
         self.assertTrue(fixture_source.is_file())
         self.assertTrue(api_fixture_source.is_file())
         self.assertIn('android.permission.INTERNET', macrobenchmark_manifest.read_text(encoding='utf8'))
-        self.assertIn('implementation("com.squareup.okhttp3:mockwebserver:4.10.0")', macrobenchmark_gradle)
+        self.assertIn('implementation("com.squareup.okhttp3:mockwebserver:4.12.0")', macrobenchmark_gradle)
 
         macrobenchmark = (ROOT / 'macrobenchmark/src/main/java/com/example/macrobenchmark/AuthenticatedClientBenchmark.kt').read_text(encoding='utf8')
         api_fixture = api_fixture_source.read_text(encoding='utf8')
@@ -82,7 +82,7 @@ class BenchmarkFixtureIsolationTest(unittest.TestCase):
         api_fixture = (ROOT / 'macrobenchmark/src/main/java/com/example/macrobenchmark/SyntheticNextDnsApi.kt').read_text(encoding='utf8')
         self.assertIn('benchmarkImplementation", "com.squareup.okhttp3:okhttp-tls', app_gradle)
         self.assertNotIn('benchmarkImplementation", "com.squareup.okhttp3:mockwebserver', app_gradle)
-        self.assertIn('implementation("com.squareup.okhttp3:okhttp-tls:4.10.0")', (ROOT / 'macrobenchmark/build.gradle.kts').read_text(encoding='utf8'))
+        self.assertIn('implementation("com.squareup.okhttp3:okhttp-tls:4.12.0")', (ROOT / 'macrobenchmark/build.gradle.kts').read_text(encoding='utf8'))
         self.assertNotIn('privateKeyPkcs8Pem', api_fixture)
         self.assertNotIn('AIza', fixture_source + api_fixture)
         self.assertNotIn('KEYSTORE_PATH', fixture_source + api_fixture)

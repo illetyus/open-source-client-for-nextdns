@@ -185,10 +185,14 @@ dependencies {
   androidTestImplementation(libs.androidx.runner)
   androidTestImplementation(libs.androidx.test.uiautomator)
   androidTestImplementation(libs.mockwebserver)
-  androidTestImplementation("com.squareup.okhttp3:okhttp-tls:4.10.0")
+  androidTestImplementation("com.squareup.okhttp3:okhttp-tls:4.12.0")
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
   add("benchmarkImplementation", libs.androidx.compose.runtime.tracing)
-  add("benchmarkImplementation", "com.squareup.okhttp3:okhttp-tls:4.10.0")
+  add("benchmarkImplementation", "com.squareup.okhttp3:okhttp-tls:4.12.0")
   "ksp"(libs.moshi.kotlin.codegen)
+}
+
+configurations.matching { it.name == "releaseRuntimeClasspath" }.configureEach {
+  resolutionStrategy.activateDependencyLocking()
 }
