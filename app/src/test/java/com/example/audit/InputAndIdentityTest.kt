@@ -51,4 +51,13 @@ class InputAndIdentityTest {
     assertEquals(DiagnosticConnectionState.NO_SELECTED_PROFILE, diagnosticConnectionState(null, result))
     assertEquals(DiagnosticConnectionState.TESTING, diagnosticConnectionState(profile, result, running = true))
   }
+
+  @Test fun apiPathSegmentValidatorRejectsDotSegmentsAndSeparators() {
+    listOf("aaaaaa", "example.com", "*.example.com", "oisd_big", "youtube-1").forEach { valid ->
+      assertEquals(valid, valid, validateApiPathSegment(valid))
+    }
+    listOf("", " ", ".", "..", " .. ", "a/b", "a\\b", "foo?bar=1", "foo#frag", "bad\nid", "bad\u007Fid").forEach { invalid ->
+      assertNull(invalid, validateApiPathSegment(invalid))
+    }
+  }
 }

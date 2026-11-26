@@ -119,6 +119,36 @@ class NextDnsPreferencesSecurityTest {
     assertTrue(preferences.apiKey.isEmpty())
   }
 
+  @Test
+  fun concurrentApiKeyReadsAndWritesRemainConsistent() {
+    val preferences = NextDnsPreferences(
+      context = context,
+      apiKeyProtector = FakeProtector()
+    )
+    preferences.apiKey = "secret-initial"
+    val errors = java.util.Collections.synchronizedList(mutableListOf<Throwable>())
+    val threads = (0 until 6).map { worker ->
+      Thread {
+        try {
+          repeat(25) { i ->
+            when ((worker + i) % 3) {
+              0 -> preferences.apiKey = "secret-$worker-$i"
+              1 -> {
+                val read = preferences.apiKey
+                assertTrue(read.isEmpty() || read.startsWith("secret-"))
+              }
+              else -> preferences.apiKey = ""
+            }
+          }
+        } catch (t: Throwable) {
+          errors += t
+        }
+      }.apply { start() }
+    }
+    threads.forEach { it.join() }
+    assertTrue(errors.isEmpty())
+  }
+
   private fun rawPrefs() =
     context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
