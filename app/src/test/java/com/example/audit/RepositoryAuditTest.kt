@@ -209,17 +209,20 @@ class RepositoryAuditTest : AuditFixture() {
       LogsHistoryFilter(sort = LogsSort.OLDEST_FIRST)
     ))
 
-    repository.setLiveStreaming(true)
-    delay(100)
-
-    assertFalse(repository.isLiveStreaming.value)
-    assertFalse("Ascending history cannot open a live SSE stream", streamRequests.any { it.endsWith("/logs/stream") })
+    repository.startLogsStream()
+    try {
+      delay(100)
+      assertFalse(repository.isLiveStreaming.value)
+      assertFalse("Ascending history cannot open a live SSE stream", streamRequests.any { it.endsWith("/logs/stream") })
+    } finally {
+      repository.stopLogsStream()
+    }
   }
 
   @Test fun previouslyActiveLiveStreamResumesWhenReturningToNewestAvailableHistory() = runBlocking {
     response = { json("""{"data":[]}""") }
     try {
-      repository.setLiveStreaming(true)
+      repository.startLogsStream()
       withTimeout(2_000) {
         while (streamRequests.none { it.endsWith("/logs/stream") }) delay(10)
       }
@@ -243,6 +246,50 @@ class RepositoryAuditTest : AuditFixture() {
       assertTrue(streamRequests.count { it.endsWith("/logs/stream") } > streamsAfterFilter)
     } finally {
       repository.stopLogsStream()
+    }
+  }
+
+  @Test fun reopeningLogsKeepsTheUsersLiveStreamChoice() = runBlocking {
+    response = { json("""{"data":[]}""") }
+    val model = NextDnsViewModel(repository)
+    model.startLogsStream()
+    try {
+      assertTrue(repository.isLiveStreaming.value)
+      repository.setLiveStreaming(false)
+      model.stopLogsStream()
+      model.startLogsStream()
+      assertFalse("The user's Off selection survives leaving Logs", repository.isLiveStreaming.value)
+      repository.setLiveStreaming(true)
+      assertTrue(repository.isLiveStreaming.value)
+    } finally {
+      model.stopLogsStream()
+    }
+  }
+
+  @Test fun filterRefreshDoesNotReopenTheStreamAfterLeavingLogs() = runBlocking {
+    val fetching = CountDownLatch(1)
+    val finish = CountDownLatch(1)
+    response = { request ->
+      if (request.requestUrl?.queryParameter("search") == "fixture.example") {
+        fetching.countDown()
+        check(finish.await(5, TimeUnit.SECONDS))
+      }
+      json("""{"data":[]}""")
+    }
+    val model = NextDnsViewModel(repository)
+    model.startLogsStream()
+    try {
+      val refresh = async(Dispatchers.IO) { repository.setLogsSearchFilter("fixture.example") }
+      try {
+        assertTrue(fetching.await(5, TimeUnit.SECONDS))
+        model.stopLogsStream()
+      } finally {
+        finish.countDown()
+      }
+      assertTrue(refresh.await())
+      assertFalse("Late filter refresh must not reopen a paused stream", repository.isLiveStreaming.value)
+    } finally {
+      model.stopLogsStream()
     }
   }
 

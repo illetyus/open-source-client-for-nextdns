@@ -81,7 +81,8 @@ class NextDnsRepository(
   private var streamJob: Job? = null
   private var analyticsPollingJob: Job? = null
   private val mutationCoordinator = SectionMutationCoordinator()
-  private var resumeLogsStreamingAfterHistoryFilter = false
+  private var logsScreenVisible = false
+  private var liveLogsRequested = true
   @Volatile private var logsStreamSeedId: String? = null
   @Volatile private var nextLogsCursor: String? = null
 
@@ -219,7 +220,7 @@ class NextDnsRepository(
     _logsStatusFilter.value = null
     _logsSearchFilter.value = null
     _logsHistoryFilter.value = LogsHistoryFilter()
-    resumeLogsStreamingAfterHistoryFilter = false
+    liveLogsRequested = true
     _logsPaginationState.value = LogsPaginationState()
     _securityOptions.value = SecurityOptions()
     analyticsRequest = null
@@ -2091,13 +2092,11 @@ class NextDnsRepository(
       commitCurrentSession { _logsPaginationState.value = LogsPaginationState() }
       return@withSessionContext false
     }
-    val wasStreaming = _isLiveStreaming.value
-    val shouldResumeStreaming = wasStreaming || resumeLogsStreamingAfterHistoryFilter
-    val changed = commitCurrentSession {
-      if (!updateFilter()) return@commitCurrentSession false
+    val generation = commitCurrentSession {
+      if (!updateFilter()) return@commitCurrentSession null
       // Stop the stream using the previous query before awaiting the new REST snapshot.
       // Generation checks below also reject any event already queued by that stream.
-      if (wasStreaming) stopLogsStream()
+      stopLogsTransport()
       logsFilterGeneration++
       logsRefreshRequest = requestSequence.incrementAndGet()
       logsSnapshotGeneration++
@@ -2105,16 +2104,11 @@ class NextDnsRepository(
       _logs.value = emptyList()
       nextLogsCursor = null
       _logsPaginationState.value = LogsPaginationState(isLoading = true)
-      true
-    }
-    if (!changed) return@withSessionContext true
+      logsFilterGeneration
+    } ?: return@withSessionContext true
     val refreshed = refreshLogsFromApi()
-    if (_logsHistoryFilter.value.supportsLiveStreaming && shouldResumeStreaming) {
-      resumeLogsStreamingAfterHistoryFilter = false
-      startLogsStream()
-    } else if (!_logsHistoryFilter.value.supportsLiveStreaming) {
-      resumeLogsStreamingAfterHistoryFilter = shouldResumeStreaming
-      _isLiveStreaming.value = false
+    commitCurrentSession {
+      if (logsFilterGeneration == generation) startRequestedLogsStream()
     }
     refreshed
   }
@@ -2281,18 +2275,9 @@ class NextDnsRepository(
   }
 
   fun setLiveStreaming(enabled: Boolean) {
-    if (enabled && !_logsHistoryFilter.value.supportsLiveStreaming) {
-      resumeLogsStreamingAfterHistoryFilter = true
-      stopLogsStream()
-      _isLiveStreaming.value = false
-      return
-    }
-    resumeLogsStreamingAfterHistoryFilter = enabled
-    _isLiveStreaming.value = enabled
-    if (enabled) {
-      startLogsStream()
-    } else {
-      stopLogsStream()
+    synchronized(sessionLock) {
+      liveLogsRequested = enabled
+      if (enabled) startRequestedLogsStream() else stopLogsTransport()
     }
   }
 
@@ -2322,31 +2307,27 @@ class NextDnsRepository(
   }
 
   fun startLogsStream() {
-    if (!_logsHistoryFilter.value.supportsLiveStreaming) {
-      stopLogsStream()
-      _isLiveStreaming.value = false
-      return
+    synchronized(sessionLock) {
+      logsScreenVisible = true
+      startRequestedLogsStream()
     }
-    resumeLogsStreamingAfterHistoryFilter = true
+  }
+
+  // Called with sessionLock held so a delayed refresh cannot restart a paused stream.
+  private fun startRequestedLogsStream() {
+    if (!logsScreenVisible || !liveLogsRequested ||
+      !_logsHistoryFilter.value.supportsLiveStreaming || streamJob != null) return
     val snapshot = captureSession()
     val key = snapshot.apiKey
     val pid = snapshot.profileId
-    if (key.isBlank() || pid.isBlank()) {
-      stopLogsStream()
-      return
-    }
+    if (key.isBlank() || pid.isBlank()) return
     val seedDeviceFilter = _logsDeviceFilter.value
     val seedStatusFilter = _logsStatusFilter.value
     val seedSearchFilter = _logsSearchFilter.value
-    val seedGeneration = synchronized(sessionLock) { logsSnapshotGeneration }
-    val streamFilterGeneration = synchronized(sessionLock) { logsFilterGeneration }
-
-    val connectionGeneration = synchronized(sessionLock) {
-      if (!isCurrentSession(snapshot)) return
-      stopLogsStream()
-      _isLiveStreaming.value = true
-      streamConnectionGeneration
-    }
+    val seedGeneration = logsSnapshotGeneration
+    val streamFilterGeneration = logsFilterGeneration
+    val connectionGeneration = streamConnectionGeneration
+    _isLiveStreaming.value = true
 
     val newStreamJob = repoScope.launch(Dispatchers.IO, start = CoroutineStart.LAZY) {
       withSessionContext(snapshot = snapshot) {
@@ -2420,14 +2401,8 @@ class NextDnsRepository(
         }
       }
     }
-    synchronized(sessionLock) {
-      if (streamConnectionGeneration == connectionGeneration) {
-        streamJob = newStreamJob
-        newStreamJob.start()
-      } else {
-        newStreamJob.cancel()
-      }
-    }
+    streamJob = newStreamJob
+    newStreamJob.start()
   }
 
   private fun buildLogsStreamRequest(
@@ -2578,12 +2553,17 @@ class NextDnsRepository(
 
   fun stopLogsStream() {
     synchronized(sessionLock) {
-      streamConnectionGeneration++
-      streamJob?.cancel()
-      streamJob = null
-      _isLiveStreamConnected.value = false
-      _isLiveStreaming.value = false
+      logsScreenVisible = false
+      stopLogsTransport()
     }
+  }
+
+  private fun stopLogsTransport() {
+    streamConnectionGeneration++
+    streamJob?.cancel()
+    streamJob = null
+    _isLiveStreamConnected.value = false
+    _isLiveStreaming.value = false
   }
 
   // =========================================================================

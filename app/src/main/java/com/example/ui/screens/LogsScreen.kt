@@ -395,6 +395,7 @@ internal fun LogsHeaderControls(
           RoundedCornerShape(10.dp)
         )
         .heightIn(min = 48.dp)
+        .testTag("logs_live_stream_button")
         .bounceClick(scaleDown = 0.98f, onClick = onToggleLiveStream),
       color = if (isLiveStreamConnected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
       shape = RoundedCornerShape(10.dp)
