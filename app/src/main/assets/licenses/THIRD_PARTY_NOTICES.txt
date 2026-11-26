@@ -4223,15 +4223,15 @@ com.squareup.moshi:moshi:1.15.2
   The Apache Software License, Version 2.0
   https://www.apache.org/licenses/LICENSE-2.0.txt
 
-com.squareup.okhttp3:logging-interceptor:4.10.0
+com.squareup.okhttp3:logging-interceptor:4.12.0
   The Apache Software License, Version 2.0
   http://www.apache.org/licenses/LICENSE-2.0.txt
 
-com.squareup.okhttp3:okhttp:4.10.0
+com.squareup.okhttp3:okhttp:4.12.0
   The Apache Software License, Version 2.0
   http://www.apache.org/licenses/LICENSE-2.0.txt
 
-=== com.squareup.okhttp3:okhttp:4.10.0 / okhttp-4.10.0.jar / okhttp3/internal/publicsuffix/NOTICE ===
+=== com.squareup.okhttp3:okhttp:4.12.0 / okhttp-4.12.0.jar / okhttp3/internal/publicsuffix/NOTICE ===
 Note that publicsuffixes.gz is compiled from The Public Suffix List:
 https://publicsuffix.org/list/public_suffix_list.dat
 
