@@ -1,54 +1,42 @@
-<p align="center">
-  <img src="docs/brand/store-icon-512.png" width="80" height="80" alt="">
-</p>
-
 # Open Source Client for NextDNS
 
-NextDNS profillerini yönetmek için bağımsız bir Android uygulaması. Filtreleme kurallarınızı değiştirebilir, bir alan adının neden engellendiğini inceleyebilir ve telefonunuzun NextDNS bağlantısını denetleyebilirsiniz.
+NextDNS profillerini Android’de yönetmek için bağımsız, açık kaynaklı bir uygulama. Filtreleme kurallarınızı düzenleyebilir, bir sitenin neden engellendiğini inceleyebilir ve telefonunuzun NextDNS kullanıp kullanmadığını denetleyebilirsiniz.
 
-[**Beta APK’sını indir**][apk] · [Sürüm notları ve doğrulama dosyaları][release] · [English](README.md)
+[**Android beta sürümünü indir**][apk] · [Sürüm notları ve doğrulama dosyaları][release] · [English](README.md)
 
-Android 7.0 veya üzeri gerekir. Kendi profillerinizi bağlamak için bir NextDNS hesabı kullanın.
+Android 7.0 veya üzeri gerekir. Kendi profillerinizi yönetmek için bir NextDNS hesabı gerekir.
+
+## Uygulamaya bir bakış
+
+<p>
+  <a href="docs/assets/readme/setup.png"><img src="docs/assets/readme/setup.png" width="30%" alt="Bağlantı durumunu ve ağ tanısı seçeneğini gösteren Kurulum ekranı"></a>
+  <a href="docs/assets/readme/logs.png"><img src="docs/assets/readme/logs.png" width="30%" alt="tracker.example alan adının bir engelleme listesi nedeniyle engellendiğini gösteren Günlükler ekranı"></a>
+  <a href="docs/assets/readme/analytics.png"><img src="docs/assets/readme/analytics.png" width="30%" alt="Toplam ve engellenen sorgu sayılarını ve en sık sorgulanan alan adlarını gösteren Analizler ekranı"></a>
+</p>
+
+Görüntülerde İngilizce arayüz ve örnek veriler kullanılmıştır. Tam boyutta açmak için bir görsel seçin.
+
+- **Kurulum.** Cihazınızın NextDNS kullanıp kullanmadığını ağ tanısıyla denetleyin. Tanı verileri mevcutsa bağlantı protokolünü ve gecikme süresini de görebilirsiniz.
+- **Günlükler.** Bir alan adını arayarak NextDNS’in sorguyu engelleyip engellemediğini ve varsa engelleme nedenini görün. Sonuçları cihaza veya zaman aralığına göre süzebilir ve CSV dosyası olarak dışa aktarabilirsiniz.
+- **Analizler.** NextDNS’in kaç sorguyu yanıtladığını, bunların ne kadarını engellediğini ve en sık hangi alan adlarının sorgulandığını inceleyin.
+
+Seçili profilin filtreleme kurallarını **Güvenlik**, **Gizlilik** ve **Ebeveyn Kontrolü** ekranlarından düzenleyebilirsiniz. Belirli alan adlarına izin vermek veya bunları engellemek için **Beyaz Liste** ve **Kara Liste** ekranlarını kullanın.
 
 ## İlk kurulum
 
-1. Android cihazınızda [beta APK dosyasını][apk] indirip açın. Android, tarayıcınızın veya dosya yöneticinizin uygulama yüklemesine izin vermenizi isterse kurulum için izin verin.
-2. Hesap bağlamadan arayüzü incelemek için **Demo / Misafir Modu ile Keşfet** seçeneğini kullanın.
-3. Kendi profillerinizi yönetmek için [NextDNS hesap sayfanızın](https://my.nextdns.io/account) altındaki API anahtarını kopyalayın, uygulamaya girin ve bir profil seçin. Bu anahtar uygulamaya NextDNS hesabınıza erişim sağlar.
+1. Android cihazınıza [beta APK dosyasını][apk] indirip açın. Android, tarayıcınızın veya dosya yöneticinizin uygulama yüklemesine izin vermenizi isterse kurulum için izin verin.
+2. Hesap bağlamadan arayüzü incelemek için **Demo / Misafir Modu ile Keşfet** seçeneğini kullanın. Arayüz Türkçe, İngilizce, Almanca, Fransızca ve İspanyolca kullanılabilir.
+3. Kendi profillerinizi yönetmek için [NextDNS hesap sayfanızın][account] altındaki API anahtarını kopyalayın, uygulamaya girin ve bir profil seçin. Bu anahtar uygulamaya NextDNS hesabınıza erişim sağlar.
 
-Hesabınızı bağladığınızda profillerinizi yönetebilirsiniz. Telefonunuzun DNS sorgularını da NextDNS üzerinden göndermek için **Kurulum** ekranındaki adımları izleyin. Android 9 ve üzeri sürümlerde **Android Özel DNS Ayarlarını Aç** düğmesi, profil adresini gireceğiniz sistem ayarını açar.
+Telefonunuzun DNS sorgularını NextDNS üzerinden göndermek için ayrıca **Kurulum** ekranındaki adımları izleyin. Android 9 ve üzeri sürümlerde **Android Özel DNS Ayarlarını Aç** düğmesi, profil adresini gireceğiniz sistem ayarını açar.
 
-## Uygulamayı keşfedin
-
-Ekran görüntülerinde örnek veriler kullanılmıştır. Bir görsele tıklayarak tam boyutlu hâlini açabilirsiniz.
-
-### Bir alan adının neden engellendiğini bulun
-
-<a href="docs/assets/readme/logs.png"><img src="docs/assets/readme/logs.png" width="320" alt="Zaman ve durum filtreleri ile tracker.example alan adının engellendiğini gösteren Günlükler ekranı"></a>
-
-Bir site veya uygulama bağlantı kuramadığında **Günlükler** ekranında ilgili alan adını arayın. Sorgunun sonucunu ve varsa engelleme nedenini inceleyin. Aramanızı cihaz veya zaman aralığına göre daraltabilir, günlükleri CSV dosyası olarak dışa aktarabilirsiniz.
-
-### NextDNS bağlantısını denetleyin
-
-<a href="docs/assets/readme/setup.png"><img src="docs/assets/readme/setup.png" width="320" alt="Etkin NextDNS bağlantısını ve ağ tanısı düğmesini gösteren Kurulum ekranı"></a>
-
-**Kurulum** ekranından ağ tanısını çalıştırın. Sonuç, cihazın NextDNS kullanıp kullanmadığını gösterir. Tanı verileri mevcutsa bağlantı protokolü ve gecikme süresi de görüntülenir.
-
-### Sorgu sayılarını inceleyin
-
-<a href="docs/assets/readme/analytics.png"><img src="docs/assets/readme/analytics.png" width="320" alt="Toplam ve engellenen sorgu sayılarını, en sık sorgulanan alan adlarıyla birlikte gösteren Analizler ekranı"></a>
-
-**Analizler** ekranında en sık sorgulanan alan adlarını ve NextDNS’in kaç sorguyu engellediğini görebilirsiniz. Özeti cihaz ve zaman aralığına göre inceleyebilirsiniz.
-
-## Profil ayarları ve veriler
-
-Seçili profilin filtreleme kurallarını **Güvenlik**, **Gizlilik** ve **Ebeveyn Kontrolü** ekranlarından düzenleyin. Belirli alan adlarına izin vermek veya bunları engellemek için **Beyaz Liste** ve **Kara Liste** ekranlarını kullanın. Arayüz Türkçe, İngilizce, Almanca, Fransızca ve İspanyolca kullanılabilir.
+## Uygulama NextDNS’e nasıl bağlanır?
 
 DNS hizmetini ve hesapları NextDNS sağlar. Uygulama NextDNS’e doğrudan bağlanır ve API anahtarını cihazda şifreli olarak saklar. Site simgesi yüklenirken ilgili alan adı NextDNS’in simge hizmetine gönderilebilir.
 
-## Destek ve geliştirme
+## Destek ve kaynak kod
 
-- [Hata bildirin](https://github.com/illetyus/open-source-client-for-nextdns/issues). Uygulama ve Android sürümünü, ayrıca hataya yol açan adımları yazın. Herkese açık bildirimlerde API anahtarı, profil kimliği ve DNS günlüğü paylaşmayın.
+- [Hata bildirin][issues]. Uygulama ve Android sürümünü, ayrıca hatayı yeniden görmek için izlenecek adımları yazın. Herkese açık bildirimlerde API anahtarı, profil kimliği veya DNS günlüğü paylaşmayın.
 - [Güvenlik açığı bildirin](SECURITY.md).
 - [Uygulamayı kaynak koddan derleyin ve test edin](docs/README.md#build-and-verify) veya [katkı kılavuzunu](CONTRIBUTING.md) okuyun.
 
@@ -56,3 +44,5 @@ Kaynak kod [Apache License, Version 2.0](LICENSE) ile sunulur. Üçüncü taraf 
 
 [apk]: https://github.com/illetyus/open-source-client-for-nextdns/releases/download/v1.0.0-beta.1/open-source-client-for-nextdns-v1.0.0-beta.1.apk
 [release]: https://github.com/illetyus/open-source-client-for-nextdns/releases/tag/v1.0.0-beta.1
+[account]: https://my.nextdns.io/account
+[issues]: https://github.com/illetyus/open-source-client-for-nextdns/issues
