@@ -88,6 +88,16 @@ android {
   }
 }
 
+// AGP 9.1 packages a reduced j$.time in the release test APK. Android loads
+// that copy before the app's, so keep the calendar API only in the test APK.
+if (providers.gradleProperty("releaseRuntimeAudit").orNull == "true") {
+  afterEvaluate {
+    tasks.named<com.android.build.gradle.internal.tasks.L8DexDesugarLibTask>("l8DexDesugarLibReleaseAndroidTest") {
+      keepRulesConfigurations.add("-keep class j\$.time.** { *; }")
+    }
+  }
+}
+
 tasks.withType<Test>().configureEach {
   // Use the same Maven Central endpoint as Gradle for Robolectric's runtime SDKs.
   systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
