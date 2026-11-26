@@ -118,6 +118,28 @@ class NativeScreenJourneyTest {
     assertTrue(NextDnsApp.preferences.apiKey.isBlank())
   }
 
+  @Test fun guestLogControlsKeepTheirSelectionsAcrossTabs() {
+    enterGuest()
+    navigate(NavTab.LOGS)
+    val range = rule.onNodeWithTag("logs_history_range_button")
+    val sort = rule.onNodeWithTag("logs_history_sort_toggle")
+    val blocked = rule.onNodeWithTag("logs_status_blocked")
+
+    range.performClick()
+    rule.onNodeWithTag("logs_history_option_7d").performClick()
+    val lastWeek = AppStrings.get(R.string.logs_history_last_7_days)
+    rule.waitUntil(5_000) { rule.onAllNodesWithText(lastWeek).fetchSemanticsNodes().isNotEmpty() }
+    sort.performClick()
+    blocked.performClick()
+
+    navigate(NavTab.SETUP)
+    navigate(NavTab.LOGS)
+    range.assertTextContains(lastWeek)
+    sort.assertTextContains(AppStrings.get(R.string.logs_sort_oldest))
+    blocked.assertIsSelected()
+    assertTrue(NextDnsApp.preferences.apiKey.isBlank())
+  }
+
   @Test fun guestNavigationSurvivesRecreationAndLandscape() {
     enterGuest()
     navigate(NavTab.SETTINGS)

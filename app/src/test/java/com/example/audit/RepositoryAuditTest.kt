@@ -156,6 +156,29 @@ class RepositoryAuditTest : AuditFixture() {
     assertTrue("An invalid range must not issue a request", requests.isEmpty())
   }
 
+  @Test fun guestLogControlsRetainSelectionsWithoutNetworkRequests() = runBlocking {
+    repository.suspendForGuest()
+    val history = LogsHistoryFilter(
+      window = LogsTimeWindow(
+        fromInclusive = Instant.parse("2026-01-01T00:00:00Z"),
+        toExclusive = Instant.parse("2026-01-02T00:00:00Z")
+      ),
+      sort = LogsSort.OLDEST_FIRST
+    )
+
+    assertTrue(repository.setLogsHistoryFilter(history))
+    assertTrue(repository.setLogsDeviceFilter("guest-device"))
+    assertTrue(repository.setLogsStatusFilter("blocked"))
+    assertTrue(repository.setLogsSearchFilter("example"))
+    assertEquals(history, repository.logsHistoryFilter.value)
+    assertEquals("guest-device", repository.logsDeviceFilter.value)
+    assertEquals("blocked", repository.logsStatusFilter.value)
+    assertEquals("example", repository.logsSearchFilter.value)
+    assertTrue(repository.logs.value.isEmpty())
+    assertFalse(repository.logsPaginationState.value.isLoading)
+    assertTrue("Guest log controls must stay local", requests.isEmpty() && streamRequests.isEmpty())
+  }
+
   @Test fun historyFilterResetsCursorAndRejectsLatePage() = runBlocking {
     val pageStarted = CountDownLatch(1)
     val releasePage = CountDownLatch(1).also { gates += it }

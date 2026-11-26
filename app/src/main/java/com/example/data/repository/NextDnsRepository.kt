@@ -2089,8 +2089,12 @@ class NextDnsRepository(
 
   private suspend fun refreshAfterLogFilterChange(updateFilter: () -> Boolean): Boolean = withSessionContext {
     if (_apiKey.value.isBlank() || _activeProfileId.value.isBlank()) {
-      commitCurrentSession { _logsPaginationState.value = LogsPaginationState() }
-      return@withSessionContext false
+      return@withSessionContext commitCurrentSession {
+        _logsPaginationState.value = LogsPaginationState()
+        if (!wasGuestModeSelected()) return@commitCurrentSession false
+        updateFilter()
+        true
+      }
     }
     val generation = commitCurrentSession {
       if (!updateFilter()) return@commitCurrentSession null
