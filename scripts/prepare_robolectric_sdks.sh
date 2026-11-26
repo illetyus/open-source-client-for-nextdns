@@ -24,8 +24,10 @@ while read -r checksum jar; do
   temporary="$(mktemp -- "$sdk_dir/.download-XXXXXXXX")"
   trap 'rm -f -- "$temporary"' EXIT
   for repository in "${repositories[@]}"; do
-    if curl --fail --silent --show-error --location --proto '=https' --retry 2 \
-        --retry-delay 2 --connect-timeout 12 --max-time 120 --output "$temporary" "$repository/$coordinate" &&
+    # Retry-After can delay curl's automatic retry beyond the whole CI job.
+    # Give each repository one bounded attempt before trying the next.
+    if curl --fail --silent --show-error --location --proto '=https' \
+        --connect-timeout 12 --max-time 120 --output "$temporary" "$repository/$coordinate" &&
         matches_sha256 "$checksum" "$temporary"; then
       mv -f -- "$temporary" "$destination"
       break
