@@ -75,6 +75,7 @@ release_cases=(
   com.example.NativeScreenJourneyTest#changingProfilesDismissesThePendingDeleteConfirmation
   com.example.NativeScreenJourneyTest#createSelectAndDeleteProfileUsesConfirmedServerState
   com.example.NativeScreenJourneyTest#foregroundReadsChangesMadeOutsideTheAppWithoutSendingWrites
+  com.example.NativeScreenJourneyTest#manuallyDisabledLogStreamStaysOffAcrossTabsAndActivityResume
   com.example.ReleaseSecurityRuntimeTest
   com.example.WorldMapStrictModeTest
 )

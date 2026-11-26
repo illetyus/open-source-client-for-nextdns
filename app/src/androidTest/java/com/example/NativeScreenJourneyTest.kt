@@ -240,6 +240,31 @@ class NativeScreenJourneyTest {
     assertFalse(backend.calls.any { it.method == "DELETE" && it.path == "/profiles/aaaaaa" })
   }
 
+  @Test fun manuallyDisabledLogStreamStaysOffAcrossTabsAndActivityResume() {
+    val backend = connected()
+    navigate(NavTab.LOGS)
+    rule.waitUntil(20_000) { backend.repository.isLiveStreaming.value }
+    val liveButton = rule.onNodeWithTag("logs_live_stream_button")
+    liveButton.performClick()
+    liveButton.assertTextContains(AppStrings.get(R.string.ui_db747e4342))
+
+    rule.onNodeWithTag("logs_history_range_button").performClick()
+    rule.onNodeWithTag("logs_history_option_custom").performClick()
+    rule.onNodeWithText(AppStrings.get(R.string.logs_history_choose_range)).assertIsDisplayed()
+    rule.onNodeWithText(AppStrings.get(R.string.logs_history_cancel)).performClick()
+
+    navigate(NavTab.SETUP)
+    navigate(NavTab.LOGS)
+    liveButton.assertTextContains(AppStrings.get(R.string.ui_db747e4342))
+    checkNotNull(scenario).moveToState(Lifecycle.State.STARTED)
+    checkNotNull(scenario).moveToState(Lifecycle.State.RESUMED)
+    liveButton.assertTextContains(AppStrings.get(R.string.ui_db747e4342))
+    assertFalse(backend.repository.isLiveStreaming.value)
+
+    liveButton.performClick()
+    rule.waitUntil(20_000) { backend.repository.isLiveStreaming.value }
+  }
+
   @Test fun foregroundReadsChangesMadeOutsideTheAppWithoutSendingWrites() {
     val backend = connected()
     navigate(NavTab.SECURITY)
