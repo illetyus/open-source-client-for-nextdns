@@ -92,4 +92,6 @@ main application does not use a JavaScript-enabled WebView.
 - Never persist DNS query history unless a future feature explicitly requires it and receives
   a separate privacy/security review.
 - Server mutations are successful only after NextDNS accepts them and authoritative state can
-  be re-read.
+  be re-read. Exception: `clearLogs()` clears local log state immediately upon NextDNS HTTP
+  acceptance and increments `logsSnapshotGeneration` to discard in-flight snapshots, without
+  performing an empty-list re-read because live DNS traffic can append new queries right after deletion.
