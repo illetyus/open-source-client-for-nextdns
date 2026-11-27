@@ -6,6 +6,22 @@ The project follows [Semantic Versioning](https://semver.org/) for GitHub releas
 
 ## [Unreleased]
 
+## [1.0.0-beta.2] - 2026-11-27
+
+### Security
+
+- Validate Retrofit `@Path` segments (`profileId`, `domain`, `tld`, and catalog/rule IDs) against empty values, dot-segments, and separator characters before network requests.
+- Recover cleanly from invalidated or corrupted Android Keystore entries in `AndroidKeystoreApiKeyProtector` and synchronize `NextDnsPreferences.apiKey` reads, writes, and clears.
+- Upgrade OkHttp (`okhttp`, `logging-interceptor`, `mockwebserver`, `okhttp-tls`) to `4.12.0` (Okio `3.7.0`, addressing CVE-2023-3635).
+- Add a 10-second auto-hide timer for revealed API keys on `LoginScreen` to match `ApiConnectionSettingsSection` and `docs/SECURITY_THREAT_MODEL.md`.
+- Clear `NotificationPreferences` account state when switching to a different API key via `loginWithApiKey` without a prior explicit logout.
+- Document the `clearLogs()` snapshot-generation exception in `docs/SECURITY_THREAT_MODEL.md`.
+
+### Build & Dependencies
+
+- Enable Gradle dependency locking for `releaseRuntimeClasspath` (`app/gradle.lockfile`) so CI `osv-scanner` scans resolved dependencies.
+- Add `gradle` ecosystem monitoring to `.github/dependabot.yml`.
+
 ### Added
 
 - Release-grade repository presentation with product-focused README content and CI-generated interface screenshots.

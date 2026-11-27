@@ -215,6 +215,32 @@ class NotificationAccountBoundaryTest {
     assertTrue(manager.activeNotifications.isEmpty())
   }
 
+  @Test fun replacingAccountClearsStoredNotificationPreferences() = runBlocking {
+    val notificationPrefs = NotificationPreferences(context)
+    notificationPrefs.setConfigChangeAlertsEnabled(true)
+    notificationPrefs.setDailySummaryEnabled(true)
+    notificationPrefs.markSummaryDay("2026-11-26")
+
+    assertTrue(repository.loginWithApiKey("replacement-account").isSuccess)
+
+    val after = notificationPrefs.currentSettings()
+    assertFalse(after.configChangeAlertsEnabled)
+    assertFalse(after.dailySummaryEnabled)
+    assertNull(notificationPrefs.lastSummaryDay())
+  }
+
+  @Test fun revalidatingSameAccountPreservesStoredNotificationPreferences() = runBlocking {
+    val notificationPrefs = NotificationPreferences(context)
+    notificationPrefs.setConfigChangeAlertsEnabled(true)
+    notificationPrefs.markSummaryDay("2026-11-26")
+
+    assertTrue(repository.loginWithApiKey("fixture-account").isSuccess)
+
+    val after = notificationPrefs.currentSettings()
+    assertTrue(after.configChangeAlertsEnabled)
+    assertEquals("2026-11-26", notificationPrefs.lastSummaryDay())
+  }
+
   @Test fun newlyCreatedProfileReplacesTheNotificationOwner() = runBlocking {
     val old = requireNotNull(NotificationCenter.captureAccountGeneration())
     assertTrue(NotificationCenter.postConfigChanged(context))

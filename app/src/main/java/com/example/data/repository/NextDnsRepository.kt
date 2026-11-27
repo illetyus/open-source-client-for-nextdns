@@ -392,8 +392,8 @@ class NextDnsRepository(
   ): Result<Unit> = withSessionContext {
     val snapshot = checkNotNull(currentCoroutineContext()[SessionContext]).snapshot
     val key = snapshot.apiKey
-    val profileId = snapshot.profileId
-    if (key.isBlank() || profileId.isBlank()) {
+    val profileId = validateApiPathSegment(snapshot.profileId)
+    if (key.isBlank() || profileId == null) {
       return@withSessionContext Result.failure(IllegalStateException(AppStrings.get(R.string.ui_75ad86c6ba)))
     }
     if (!mutationCoordinator.tryEnter(section)) {
@@ -762,14 +762,18 @@ class NextDnsRepository(
       }
       val target = restoreProfileId?.takeIf { restored -> mapped.any { it.id == restored } } ?: mapped.first().id
       val owner = currentCoroutineContext()[SessionContext]?.owner
+      var accountChanged = false
+      var committedGeneration = -1L
       val storage = commitCurrentSession {
         runCatching {
-          if (_apiKey.value != key || _activeProfileId.value != target) {
+          accountChanged = _apiKey.value != key
+          if (accountChanged || _activeProfileId.value != target) {
             NotificationCenter.invalidateAccountNotifications(NextDnsApp.instance)
           }
-          if (_apiKey.value != key) check(preferences.clear()) { "Account cache could not be cleared" }
+          if (accountChanged) check(preferences.clear()) { "Account cache could not be cleared" }
           preferences.apiKey = key
           advanceSession(owner)
+          committedGeneration = sessionGeneration
           resetProfileScopedRuntimeState()
           _apiKey.value = key
           _profiles.value = mapped
@@ -777,9 +781,19 @@ class NextDnsRepository(
           _activeProfileId.value = target
           preferences.activeProfileId = target
           if (wasGuestModeSelected()) preferences.isGuestMode = false
-          activateAccountNotificationsForCurrentSelection()
+          if (!accountChanged) activateAccountNotificationsForCurrentSelection()
           loadLocalProfileData(target)
           _apiStatus.value = ApiConnectionStatus.Connected(mapped.size)
+        }
+      }
+      if (storage.isSuccess && accountChanged) {
+        runCatching {
+          NotificationPreferences(NextDnsApp.instance).clearAccountState()
+        }
+        synchronized(sessionLock) {
+          if (sessionGeneration == committedGeneration && _apiKey.value == key && _activeProfileId.value == target) {
+            activateAccountNotificationsForCurrentSelection()
+          }
         }
       }
       if (storage.isFailure) {
@@ -1502,9 +1516,13 @@ class NextDnsRepository(
         IllegalStateException(AppStrings.get(R.string.ui_4028f03245))
       )
     }
+    val validProfileId = validateApiPathSegment(profileId)
+      ?: return@withSessionContext Result.failure(
+        IllegalArgumentException(AppStrings.get(R.string.ui_856fbe8f71))
+      )
 
     val response = safeApiCall("deleteProfile") {
-      apiService.deleteProfile(key, profileId)
+      apiService.deleteProfile(key, validProfileId)
     } ?: return@withSessionContext Result.failure(
       IllegalStateException(AppStrings.get(R.string.ui_407ddb5dd2))
     )
@@ -1516,7 +1534,7 @@ class NextDnsRepository(
       )
     }
 
-    val verified = refreshProfilesForSession { remote -> remote.none { it.id == profileId } }
+    val verified = refreshProfilesForSession { remote -> remote.none { it.id == validProfileId } }
     if (!verified) {
       return@withSessionContext Result.failure(
         IllegalStateException(AppStrings.get(R.string.ui_9cac51a42b))
@@ -1533,10 +1551,14 @@ class NextDnsRepository(
         IllegalStateException(AppStrings.get(R.string.ui_de223d8e2f))
       )
     }
+    val validProfileId = validateApiPathSegment(profileId)
+      ?: return@withSessionContext Result.failure(
+        IllegalArgumentException(AppStrings.get(R.string.ui_d01c651ccf))
+      )
 
     val response = safeApiCall("renameProfile") {
       apiService.renameProfile(
-        key, profileId, NameRequest(name = newName)
+        key, validProfileId, NameRequest(name = newName)
       )
     } ?: return@withSessionContext Result.failure(
       IllegalStateException(AppStrings.get(R.string.ui_7ae7fc7964))
@@ -1549,7 +1571,7 @@ class NextDnsRepository(
       )
     }
 
-    val verified = refreshProfilesForSession { remote -> remote.any { it.id == profileId && it.name == newName } }
+    val verified = refreshProfilesForSession { remote -> remote.any { it.id == validProfileId && it.name == newName } }
     if (!verified) {
       return@withSessionContext Result.failure(
         IllegalStateException(AppStrings.get(R.string.ui_e144829518))
@@ -1633,14 +1655,17 @@ class NextDnsRepository(
       apiService.addSecurityTld(key, pid, IdRequest(id = tld))
     }
 
-  suspend fun removeBlockedTld(tld: String): Result<Unit> =
-    mutateSection(
+  suspend fun removeBlockedTld(tld: String): Result<Unit> {
+    val validTld = validateApiPathSegment(tld)
+      ?: return Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_585a0d389f)))
+    return mutateSection(
       section = SyncSection.SECURITY,
       operationName = "removeBlockedTld",
-      verify = { _securitySettings.value.blockedTlds.none { it.equals(tld, true) } }
+      verify = { _securitySettings.value.blockedTlds.none { it.equals(validTld, true) } }
     ) { key, pid ->
-      apiService.removeSecurityTld(key, pid, tld)
+      apiService.removeSecurityTld(key, pid, validTld)
     }
+  }
 
   // =========================================================================
   // Privacy Updates
@@ -1786,14 +1811,17 @@ class NextDnsRepository(
     }
   }
 
-  suspend fun removeFromDenylist(domain: String): Result<Unit> =
-    mutateSection(
+  suspend fun removeFromDenylist(domain: String): Result<Unit> {
+    val validDomain = validateApiPathSegment(domain)
+      ?: return Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_585a0d389f)))
+    return mutateSection(
       section = SyncSection.DENYLIST,
       operationName = "removeFromDenylist",
-      verify = { _denylist.value.none { it.domain == domain } }
+      verify = { _denylist.value.none { it.domain == validDomain } }
     ) { key, pid ->
-      apiService.removeDenylist(key, pid, domain)
+      apiService.removeDenylist(key, pid, validDomain)
     }
+  }
 
   suspend fun toggleDenylistItem(domain: String): Result<Unit> = withSessionContext {
     val target = _denylist.value.firstOrNull { it.id == domain || it.domain == domain }
@@ -1825,14 +1853,17 @@ class NextDnsRepository(
     }
   }
 
-  suspend fun removeFromAllowlist(domain: String): Result<Unit> =
-    mutateSection(
+  suspend fun removeFromAllowlist(domain: String): Result<Unit> {
+    val validDomain = validateApiPathSegment(domain)
+      ?: return Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_585a0d389f)))
+    return mutateSection(
       section = SyncSection.ALLOWLIST,
       operationName = "removeFromAllowlist",
-      verify = { _allowlist.value.none { it.domain == domain } }
+      verify = { _allowlist.value.none { it.domain == validDomain } }
     ) { key, pid ->
-      apiService.removeAllowlist(key, pid, domain)
+      apiService.removeAllowlist(key, pid, validDomain)
     }
+  }
 
   suspend fun toggleAllowlistItem(domain: String): Result<Unit> = withSessionContext {
     val target = _allowlist.value.firstOrNull { it.id == domain || it.domain == domain }
@@ -2009,8 +2040,8 @@ class NextDnsRepository(
   suspend fun exportLogs(outputStream: OutputStream): Result<Unit> = withSessionContext {
     val snapshot = checkNotNull(currentCoroutineContext()[SessionContext]).snapshot
     val key = snapshot.apiKey
-    val pid = snapshot.profileId
-    if (key.isBlank() || pid.isBlank()) {
+    val pid = validateApiPathSegment(snapshot.profileId)
+    if (key.isBlank() || pid == null) {
       return@withSessionContext Result.failure(IllegalStateException(AppStrings.get(R.string.ui_75ad86c6ba)))
     }
     try {
@@ -2056,8 +2087,8 @@ class NextDnsRepository(
 
   suspend fun clearLogs(): Result<Unit> = withSessionContext {
     val key = _apiKey.value
-    val pid = _activeProfileId.value
-    if (key.isBlank() || pid.isBlank()) {
+    val pid = validateApiPathSegment(_activeProfileId.value)
+    if (key.isBlank() || pid == null) {
       return@withSessionContext Result.failure(
         IllegalStateException(AppStrings.get(R.string.ui_75ad86c6ba))
       )

@@ -21,3 +21,12 @@ fun normalizeDomainRule(input: String): String? {
   }) return null
   return canonical
 }
+
+/** Validates a single Retrofit @Path segment against empty, dot-segment, and separator injection. */
+fun validateApiPathSegment(input: String): String? {
+  if (input.isEmpty() || input != input.trim() || input == "." || input == "..") return null
+  if (input.any { it == '/' || it == '\\' || it == '?' || it == '#' || it.code < 0x20 || it.code == 0x7F }) {
+    return null
+  }
+  return input
+}

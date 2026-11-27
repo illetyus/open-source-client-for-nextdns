@@ -44,6 +44,7 @@ import com.example.data.repository.ApiConnectionStatus
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.NextDnsViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
@@ -64,6 +65,13 @@ fun LoginScreen(
   LaunchedEffect(apiStatus) {
     if (apiStatus is ApiConnectionStatus.Connected) {
       apiKeyInput = ""
+      isPasswordVisible = false
+    }
+  }
+
+  LaunchedEffect(isPasswordVisible) {
+    if (isPasswordVisible) {
+      delay(10_000L)
       isPasswordVisible = false
     }
   }
@@ -172,7 +180,10 @@ fun LoginScreen(
             }),
             trailingIcon = {
               Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }, modifier = Modifier.size(24.dp)) {
+                IconButton(
+                  onClick = { isPasswordVisible = !isPasswordVisible },
+                  modifier = Modifier.size(24.dp).testTag("login_api_key_visibility_toggle")
+                ) {
                   Icon(
                     imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                     contentDescription = null,
@@ -200,7 +211,7 @@ fun LoginScreen(
               focusedTextColor = MaterialTheme.colorScheme.onSurface,
               unfocusedTextColor = MaterialTheme.colorScheme.onSurface
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("login_api_key_input"),
             shape = RoundedCornerShape(12.dp)
           )
 

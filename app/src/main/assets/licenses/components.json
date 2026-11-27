@@ -1651,7 +1651,7 @@
     ]
   },
   {
-    "coordinate": "com.squareup.okhttp3:logging-interceptor:4.10.0",
+    "coordinate": "com.squareup.okhttp3:logging-interceptor:4.12.0",
     "licenses": [
       {
         "name": "The Apache Software License, Version 2.0",
@@ -1661,13 +1661,13 @@
     "artifacts": [
       {
         "configuration": "releaseRuntimeClasspath",
-        "file": "logging-interceptor-4.10.0.jar",
-        "sha256": "273ba218636c34f7a091c059d159600543e03ea8beef2c5fc56525b47396160e"
+        "file": "logging-interceptor-4.12.0.jar",
+        "sha256": "f3e8d5f0903c250c2b55d2f47fcfe008e80634385da8385161c7a63aaed0c74c"
       }
     ]
   },
   {
-    "coordinate": "com.squareup.okhttp3:okhttp:4.10.0",
+    "coordinate": "com.squareup.okhttp3:okhttp:4.12.0",
     "licenses": [
       {
         "name": "The Apache Software License, Version 2.0",
@@ -1677,8 +1677,8 @@
     "artifacts": [
       {
         "configuration": "releaseRuntimeClasspath",
-        "file": "okhttp-4.10.0.jar",
-        "sha256": "7580f14fa1691206e37081ad3f92063b1603b328da0bb316f2fef02e0562e7ec"
+        "file": "okhttp-4.12.0.jar",
+        "sha256": "b1050081b14bb7a3a7e55a4d3ef01b5dcfabc453b4573a4fc019767191d5f4e0"
       }
     ]
   },

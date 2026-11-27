@@ -652,5 +652,15 @@ class RepositoryAuditTest : AuditFixture() {
     assertFalse(model.isAnalyticsLoading.value)
   }
 
+  @Test fun dotSegmentPathArgumentsAreRejectedBeforeNetworkCalls() = runBlocking {
+    val before = requests.size
+    assertTrue(repository.deleteProfileRemote("..").isFailure)
+    assertTrue(repository.renameProfile(".", "New").isFailure)
+    assertTrue(repository.removeBlockedTld("..").isFailure)
+    assertTrue(repository.removeFromDenylist("..").isFailure)
+    assertTrue(repository.removeFromAllowlist("a/b").isFailure)
+    assertEquals(before, requests.size)
+  }
+
 }
 

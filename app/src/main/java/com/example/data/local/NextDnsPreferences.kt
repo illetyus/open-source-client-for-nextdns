@@ -61,8 +61,10 @@ class NextDnsPreferences(
     }
   }
 
+  private val apiKeyLock = Any()
+
   var apiKey: String
-    get() {
+    get() = synchronized(apiKeyLock) {
       val encrypted = prefs.getString(KEY_API_KEY_ENCRYPTED, null)
       if (!encrypted.isNullOrBlank()) {
         val decrypted = runCatching {
@@ -70,7 +72,7 @@ class NextDnsPreferences(
         }.getOrNull()
 
         if (!decrypted.isNullOrBlank()) {
-          return decrypted
+          return@synchronized decrypted
         }
 
         // Corrupt or non-decryptable ciphertext must never fall back to being
@@ -80,7 +82,7 @@ class NextDnsPreferences(
       }
 
       val legacyPlaintext = prefs.getString(KEY_API_KEY, null).orEmpty()
-      if (legacyPlaintext.isBlank()) return ""
+      if (legacyPlaintext.isBlank()) return@synchronized ""
 
       val migrated = runCatching {
         apiKeyProtector.encrypt(legacyPlaintext)
@@ -91,7 +93,7 @@ class NextDnsPreferences(
           .remove(KEY_API_KEY)
           .remove(KEY_API_KEY_ENCRYPTED)
           .commit()
-        return ""
+        return@synchronized ""
       }
 
       val committed = prefs.edit()
@@ -104,18 +106,18 @@ class NextDnsPreferences(
           .remove(KEY_API_KEY)
           .remove(KEY_API_KEY_ENCRYPTED)
           .commit()
-        return ""
+        return@synchronized ""
       }
 
-      return legacyPlaintext
+      legacyPlaintext
     }
-    set(value) {
+    set(value) = synchronized(apiKeyLock) {
       if (value.isBlank()) {
         prefs.edit()
           .remove(KEY_API_KEY_ENCRYPTED)
           .remove(KEY_API_KEY)
           .commit()
-        return
+        return@synchronized
       }
 
       val encrypted = runCatching {
@@ -272,6 +274,8 @@ class NextDnsPreferences(
   }
 
   /** Synchronous deletion result is required before reporting a successful sign-out. */
-  fun clear(): Boolean = prefs.edit().clear().commit()
+  fun clear(): Boolean = synchronized(apiKeyLock) {
+    prefs.edit().clear().commit()
+  }
 }
 

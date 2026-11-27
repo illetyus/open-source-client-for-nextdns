@@ -130,6 +130,22 @@ class AccountSettingsFlowTest : AuditFixture() {
     rule.onNodeWithTag("legal_privacy_link").assertDoesNotExist()
   }
 
+  @Test fun loginApiKeyAutoHidesAfterTenSeconds() {
+    english()
+    val model = NextDnsViewModel(repository)
+    rule.setContent { AppTheme { LoginScreen(model) } }
+
+    rule.onNodeWithTag("login_api_key_input").performTextInput("secret-login-key")
+    rule.onNodeWithText("secret-login-key").assertDoesNotExist()
+
+    rule.onNodeWithTag("login_api_key_visibility_toggle").performClick()
+    rule.onNodeWithText("secret-login-key").assertIsDisplayed()
+
+    rule.mainClock.advanceTimeBy(10_000L)
+    rule.waitForIdle()
+    rule.onNodeWithText("secret-login-key").assertDoesNotExist()
+  }
+
   @Test fun setupDiagnosticButtonRunsANewDiagnosticRequest() {
     english()
     response = { request ->
