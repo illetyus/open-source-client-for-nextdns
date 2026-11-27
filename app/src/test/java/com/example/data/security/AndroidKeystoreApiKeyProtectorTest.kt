@@ -98,4 +98,26 @@ class AndroidKeystoreApiKeyProtectorTest {
     }
     assertEquals(0, backend.deleteCalls)
   }
+
+  @Test
+  fun concurrentEncryptAndDecryptOnSharedProtectorAreThreadSafe() {
+    val backend = InMemoryBackend()
+    val protector = AndroidKeystoreApiKeyProtector("test_alias", backend)
+    val errors = java.util.Collections.synchronizedList(mutableListOf<Throwable>())
+    val threads = (0 until 6).map { worker ->
+      Thread {
+        try {
+          repeat(20) { i ->
+            val plain = "key-$worker-$i"
+            val enc = protector.encrypt(plain)
+            assertEquals(plain, protector.decrypt(enc))
+          }
+        } catch (t: Throwable) {
+          errors += t
+        }
+      }.apply { start() }
+    }
+    threads.forEach { it.join() }
+    assertEquals(emptyList<Throwable>(), errors)
+  }
 }

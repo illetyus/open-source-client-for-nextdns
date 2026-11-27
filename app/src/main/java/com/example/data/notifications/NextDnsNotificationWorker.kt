@@ -9,6 +9,7 @@ import com.example.data.api.NextDnsNetworkClient
 import com.example.data.api.hasApiErrors
 import com.example.data.local.NextDnsPreferences
 import com.example.data.legal.LegalAcceptanceStore
+import com.example.data.model.validateApiPathSegment
 import retrofit2.Response
 
 class NextDnsNotificationWorker(
@@ -206,24 +207,25 @@ class NextDnsNotificationWorker(
     apiKey: String,
     profileId: String
   ): NotificationConfigSnapshot? = runCatching {
+    val validProfileId = validateApiPathSegment(profileId) ?: return null
     val api = NextDnsNetworkClient.api
 
-    val security = api.getSecurity(apiKey, profileId)
+    val security = api.getSecurity(apiKey, validProfileId)
       .requireDataOrNull() ?: return null
 
-    val privacy = api.getPrivacy(apiKey, profileId)
+    val privacy = api.getPrivacy(apiKey, validProfileId)
       .requireDataOrNull() ?: return null
 
-    val parental = api.getParentalControl(apiKey, profileId)
+    val parental = api.getParentalControl(apiKey, validProfileId)
       .requireDataOrNull() ?: return null
 
-    val settings = api.getSettings(apiKey, profileId)
+    val settings = api.getSettings(apiKey, validProfileId)
       .requireDataOrNull() ?: return null
 
     val denylist = fetchAllRules { cursor ->
       api.getDenylist(
         apiKey = apiKey,
-        profileId = profileId,
+        profileId = validProfileId,
         limit = 100,
         cursor = cursor
       )
@@ -232,7 +234,7 @@ class NextDnsNotificationWorker(
     val allowlist = fetchAllRules { cursor ->
       api.getAllowlist(
         apiKey = apiKey,
-        profileId = profileId,
+        profileId = validProfileId,
         limit = 100,
         cursor = cursor
       )
@@ -249,13 +251,17 @@ class NextDnsNotificationWorker(
   }.getOrNull()
 
   private suspend fun fetchAllRules(
+    maxPages: Int = 20,
     request: suspend (cursor: String?) -> Response<NextDnsApiResponse<List<AllowDenyRuleDto>>>
   ): List<AllowDenyRuleDto>? {
     val items = mutableListOf<AllowDenyRuleDto>()
     val seenCursors = mutableSetOf<String>()
     var cursor: String? = null
+    var page = 0
 
     do {
+      if (page >= maxPages) return null
+      page++
       val response = runCatching {
         request(cursor)
       }.getOrNull() ?: return null
@@ -280,9 +286,10 @@ class NextDnsNotificationWorker(
     apiKey: String,
     profileId: String
   ): DailySummary? = runCatching {
+    val validProfileId = validateApiPathSegment(profileId) ?: return null
     val response = NextDnsNetworkClient.api.getAnalyticsStatus(
       apiKey = apiKey,
-      profileId = profileId,
+      profileId = validProfileId,
       from = "-1d",
       to = "now"
     )
