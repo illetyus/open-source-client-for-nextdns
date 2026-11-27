@@ -6,6 +6,15 @@ The project follows [Semantic Versioning](https://semver.org/) for GitHub releas
 
 ## [Unreleased]
 
+## [1.0.0-beta.3] - 2026-11-27
+
+### Security
+
+- Enforce `validateApiPathSegment()` uniformly across remaining `toggle*`, `createProfileRemote`, read, and `NextDnsNotificationWorker` `@Path` call sites.
+- Fail closed in `loginWithApiKey()` when `NotificationPreferences.clearAccountState()` fails during an account switch instead of activating notifications.
+- Synchronize `AndroidKeystoreApiKeyProtector` key load, generation, and deletion operations under an internal `keyLock`.
+- Enforce a 128 KiB per-event cap in `consumeSseStream` and a 20-page bound in `NextDnsNotificationWorker.fetchAllRules`.
+
 ## [1.0.0-beta.2] - 2026-11-27
 
 ### Security

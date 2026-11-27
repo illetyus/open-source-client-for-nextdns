@@ -659,7 +659,60 @@ class RepositoryAuditTest : AuditFixture() {
     assertTrue(repository.removeBlockedTld("..").isFailure)
     assertTrue(repository.removeFromDenylist("..").isFailure)
     assertTrue(repository.removeFromAllowlist("a/b").isFailure)
+    assertTrue(repository.toggleBlocklist("..").isFailure)
+    assertTrue(repository.toggleNativeTracking("..").isFailure)
+    assertTrue(repository.toggleParentalService("..").isFailure)
+    assertTrue(repository.toggleParentalCategory("..").isFailure)
     assertEquals(before, requests.size)
+
+    response = { json("""{"data":{"id":".."}}""") }
+    assertTrue(repository.createProfileRemote("BadProfile").isFailure)
+    assertEquals("createProfileRemote must reject dot-segment IDs before getProfile", before + 1, requests.size)
+  }
+
+  @Test fun oversizedSseEventIsDroppedWithoutBreakingSubsequentEvents() = runBlocking {
+    val streamBodyEnded = java.util.concurrent.CountDownLatch(1)
+    val client = okhttp3.OkHttpClient.Builder()
+      .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().url(server.url("/stream")).build()) }
+      .eventListener(object : okhttp3.EventListener() {
+        override fun responseBodyEnd(call: okhttp3.Call, byteCount: Long) {
+          if (call.request().header("Accept") == "text/event-stream") streamBodyEnded.countDown()
+        }
+      }).build()
+    val sseRetrofit = Retrofit.Builder().baseUrl(server.url("/"))
+      .addConverterFactory(MoshiConverterFactory.create(NextDnsNetworkClient.moshi)).build()
+    val sseRepo = NextDnsRepository(
+      preferences = preferences,
+      apiService = sseRetrofit.create(NextDnsApiService::class.java),
+      diagnosticService = sseRetrofit.create(NextDnsTestService::class.java),
+      diagnosticProbe = { null },
+      streamClient = client,
+      backgroundWorkEnabled = false
+    )
+    val hugePayload = "x".repeat(140 * 1024)
+    val streamBody = buildString {
+      append("id: oversized-1\n")
+      append("data: {\"timestamp\":\"2026-10-20T00:00:01Z\",\"domain\":\"$hugePayload\",\"status\":\"default\"}\n\n")
+      append("id: valid-2\n")
+      append("data: {\"timestamp\":\"2026-10-20T00:00:02Z\",\"domain\":\"valid-after-huge.example\",\"status\":\"default\"}\n\n")
+    }
+    response = { req ->
+      if (req.requestUrl?.encodedPath == "/stream") okhttp3.mockwebserver.MockResponse().setBody(streamBody)
+      else json("""{"data":[],"meta":{"stream":{"id":"fixture-stream"}}}""")
+    }
+    sseRepo.startLogsStream()
+    try {
+      val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10)
+      while ((streamBodyEnded.count > 0 || sseRepo.logs.value.none { it.domain == "valid-after-huge.example" }) &&
+        System.nanoTime() < deadline) {
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+        Thread.sleep(5)
+      }
+      assertEquals(1, sseRepo.logs.value.size)
+      assertEquals("valid-after-huge.example", sseRepo.logs.value.single().domain)
+    } finally {
+      sseRepo.stopLogsStream()
+    }
   }
 
 }

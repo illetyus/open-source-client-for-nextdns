@@ -65,17 +65,21 @@ class AndroidKeystoreApiKeyProtector internal constructor(
   private val backend: KeystoreKeyStoreBackend
 ) : ApiKeyProtector {
 
+  private val keyLock = Any()
+
   constructor(keyAlias: String = KEY_ALIAS) : this(keyAlias, AndroidKeystoreBackend())
 
   override fun encrypt(plainText: String): String {
     require(plainText.isNotEmpty()) { "API key cannot be empty." }
 
-    return try {
-      encryptWithKey(plainText, getOrCreateKey())
-    } catch (error: Exception) {
-      if (!isRecoverableKeystoreError(error)) throw error
-      runCatching { backend.deleteKey(keyAlias) }
-      encryptWithKey(plainText, getOrCreateKey())
+    return synchronized(keyLock) {
+      try {
+        encryptWithKey(plainText, getOrCreateKey())
+      } catch (error: Exception) {
+        if (!isRecoverableKeystoreError(error)) throw error
+        deleteKeyLocked()
+        encryptWithKey(plainText, getOrCreateKey())
+      }
     }
   }
 
@@ -88,22 +92,24 @@ class AndroidKeystoreApiKeyProtector internal constructor(
     val iv = Base64.decode(parts[1], Base64.NO_WRAP)
     val cipherText = Base64.decode(parts[2], Base64.NO_WRAP)
 
-    val cipher = Cipher.getInstance(TRANSFORMATION)
-    try {
-      cipher.init(
-        Cipher.DECRYPT_MODE,
-        getOrCreateKey(),
-        GCMParameterSpec(GCM_TAG_BITS, iv)
-      )
-    } catch (error: Exception) {
-      if (isBrokenKeyEntryError(error)) {
-        runCatching { backend.deleteKey(keyAlias) }
+    return synchronized(keyLock) {
+      val cipher = Cipher.getInstance(TRANSFORMATION)
+      try {
+        cipher.init(
+          Cipher.DECRYPT_MODE,
+          getOrCreateKey(),
+          GCMParameterSpec(GCM_TAG_BITS, iv)
+        )
+      } catch (error: Exception) {
+        if (isBrokenKeyEntryError(error)) {
+          deleteKeyLocked()
+        }
+        throw error
       }
-      throw error
-    }
-    cipher.updateAAD(AAD)
+      cipher.updateAAD(AAD)
 
-    return cipher.doFinal(cipherText).toString(Charsets.UTF_8)
+      cipher.doFinal(cipherText).toString(Charsets.UTF_8)
+    }
   }
 
   private fun encryptWithKey(plainText: String, key: SecretKey): String {
@@ -118,10 +124,15 @@ class AndroidKeystoreApiKeyProtector internal constructor(
     return "$VERSION:$iv:$payload"
   }
 
-  @Synchronized
-  private fun getOrCreateKey(): SecretKey {
-    backend.loadKey(keyAlias)?.let { return it }
-    return backend.generateKey(keyAlias)
+  private fun deleteKeyLocked() {
+    synchronized(keyLock) {
+      runCatching { backend.deleteKey(keyAlias) }
+    }
+  }
+
+  private fun getOrCreateKey(): SecretKey = synchronized(keyLock) {
+    backend.loadKey(keyAlias)?.let { return@synchronized it }
+    backend.generateKey(keyAlias)
   }
 
   private fun isBrokenKeyEntryError(error: Throwable): Boolean =

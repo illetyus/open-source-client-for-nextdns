@@ -30,6 +30,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import retrofit2.Response
 
 private const val MAX_RETAINED_LOG_ENTRIES = 1_000
+private const val MAX_SSE_EVENT_BYTES = 128 * 1024
 
 sealed interface ApiConnectionStatus {
   object Disconnected : ApiConnectionStatus
@@ -336,8 +337,8 @@ class NextDnsRepository(
   ): Boolean {
     val snapshot = checkNotNull(currentCoroutineContext()[SessionContext]).snapshot
     val key = snapshot.apiKey
-    val profileId = snapshot.profileId
-    if (key.isBlank() || profileId.isBlank()) return false
+    val profileId = validateApiPathSegment(snapshot.profileId)
+    if (key.isBlank() || profileId == null) return false
     val token = requestSequence.incrementAndGet()
     commitCurrentSession {
       refreshRequests[section] = token
@@ -787,12 +788,14 @@ class NextDnsRepository(
         }
       }
       if (storage.isSuccess && accountChanged) {
-        runCatching {
+        val cleared = runCatching {
           NotificationPreferences(NextDnsApp.instance).clearAccountState()
-        }
-        synchronized(sessionLock) {
-          if (sessionGeneration == committedGeneration && _apiKey.value == key && _activeProfileId.value == target) {
-            activateAccountNotificationsForCurrentSelection()
+        }.isSuccess
+        if (cleared) {
+          synchronized(sessionLock) {
+            if (sessionGeneration == committedGeneration && _apiKey.value == key && _activeProfileId.value == target) {
+              activateAccountNotificationsForCurrentSelection()
+            }
           }
         }
       }
@@ -1468,7 +1471,7 @@ class NextDnsRepository(
       return@withSessionContext Result.failure(IllegalStateException(detail))
     }
 
-    val newId = body?.data?.id?.takeIf { it.isNotBlank() }
+    val newId = body?.data?.id?.let(::validateApiPathSegment)
       ?: return@withSessionContext Result.failure(IllegalStateException(AppStrings.get(R.string.ui_51e119f7b9)))
 
     val verified = safeApiCall("getCreatedProfile") {
@@ -1692,37 +1695,41 @@ class NextDnsRepository(
   }
 
   suspend fun toggleBlocklist(blocklistId: String): Result<Unit> = withSessionContext {
-    val target = _privacySettings.value.blocklists.firstOrNull { it.id == blocklistId }
+    val validId = validateApiPathSegment(blocklistId)
+      ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_0e194a1fda)))
+    val target = _privacySettings.value.blocklists.firstOrNull { it.id == validId }
       ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_0e194a1fda)))
 
     val activate = !target.active
     return@withSessionContext mutateSection(
       section = SyncSection.PRIVACY,
       operationName = "toggleBlocklist",
-      verify = { (_privacySettings.value.blocklists.firstOrNull { it.id == blocklistId }?.active == true) == activate }
+      verify = { (_privacySettings.value.blocklists.firstOrNull { it.id == validId }?.active == true) == activate }
     ) { key, pid ->
       if (activate) {
-        apiService.addBlocklist(key, pid, IdRequest(id = blocklistId))
+        apiService.addBlocklist(key, pid, IdRequest(id = validId))
       } else {
-        apiService.removeBlocklist(key, pid, blocklistId)
+        apiService.removeBlocklist(key, pid, validId)
       }
     }
   }
 
   suspend fun toggleNativeTracking(nativeId: String): Result<Unit> = withSessionContext {
-    val target = _privacySettings.value.nativeTracking.firstOrNull { it.id == nativeId }
+    val validId = validateApiPathSegment(nativeId)
+      ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_bdcf657cbe)))
+    val target = _privacySettings.value.nativeTracking.firstOrNull { it.id == validId }
       ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_bdcf657cbe)))
 
     val activate = !target.active
     return@withSessionContext mutateSection(
       section = SyncSection.PRIVACY,
       operationName = "toggleNativeTracking",
-      verify = { (_privacySettings.value.nativeTracking.firstOrNull { it.id == nativeId }?.active == true) == activate }
+      verify = { (_privacySettings.value.nativeTracking.firstOrNull { it.id == validId }?.active == true) == activate }
     ) { key, pid ->
       if (activate) {
-        apiService.addNativeTracking(key, pid, IdRequest(id = nativeId))
+        apiService.addNativeTracking(key, pid, IdRequest(id = validId))
       } else {
-        apiService.removeNativeTracking(key, pid, nativeId)
+        apiService.removeNativeTracking(key, pid, validId)
       }
     }
   }
@@ -1754,41 +1761,45 @@ class NextDnsRepository(
   }
 
   suspend fun toggleParentalService(serviceId: String): Result<Unit> = withSessionContext {
-    val target = _parentalControlSettings.value.services.firstOrNull { it.id == serviceId }
+    val validId = validateApiPathSegment(serviceId)
+      ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_1705477f10)))
+    val target = _parentalControlSettings.value.services.firstOrNull { it.id == validId }
       ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_1705477f10)))
 
     val activate = !target.active
     return@withSessionContext mutateSection(
       section = SyncSection.PARENTAL,
       operationName = "toggleParentalService",
-      verify = { (_parentalControlSettings.value.services.firstOrNull { it.id == serviceId }?.active == true) == activate }
+      verify = { (_parentalControlSettings.value.services.firstOrNull { it.id == validId }?.active == true) == activate }
     ) { key, pid ->
       if (activate) {
         apiService.addParentalService(
-          key, pid, ParentalItemRequest(id = serviceId, active = true)
+          key, pid, ParentalItemRequest(id = validId, active = true)
         )
       } else {
-        apiService.removeParentalService(key, pid, serviceId)
+        apiService.removeParentalService(key, pid, validId)
       }
     }
   }
 
   suspend fun toggleParentalCategory(categoryId: String): Result<Unit> = withSessionContext {
-    val target = _parentalControlSettings.value.categories.firstOrNull { it.id == categoryId }
+    val validId = validateApiPathSegment(categoryId)
+      ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_b9861c3200)))
+    val target = _parentalControlSettings.value.categories.firstOrNull { it.id == validId }
       ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_b9861c3200)))
 
     val activate = !target.active
     return@withSessionContext mutateSection(
       section = SyncSection.PARENTAL,
       operationName = "toggleParentalCategory",
-      verify = { (_parentalControlSettings.value.categories.firstOrNull { it.id == categoryId }?.active == true) == activate }
+      verify = { (_parentalControlSettings.value.categories.firstOrNull { it.id == validId }?.active == true) == activate }
     ) { key, pid ->
       if (activate) {
         apiService.addParentalCategory(
-          key, pid, ParentalItemRequest(id = categoryId, active = true)
+          key, pid, ParentalItemRequest(id = validId, active = true)
         )
       } else {
-        apiService.removeParentalCategory(key, pid, categoryId)
+        apiService.removeParentalCategory(key, pid, validId)
       }
     }
   }
@@ -1826,15 +1837,17 @@ class NextDnsRepository(
   suspend fun toggleDenylistItem(domain: String): Result<Unit> = withSessionContext {
     val target = _denylist.value.firstOrNull { it.id == domain || it.domain == domain }
       ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_75e8c7e60b)))
+    val validDomain = validateApiPathSegment(target.domain)
+      ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_585a0d389f)))
 
     val activate = !target.active
     return@withSessionContext mutateSection(
       section = SyncSection.DENYLIST,
       operationName = "toggleDenylistItem",
-      verify = { (_denylist.value.firstOrNull { it.domain == target.domain }?.active == true) == activate }
+      verify = { (_denylist.value.firstOrNull { it.domain == validDomain }?.active == true) == activate }
     ) { key, pid ->
       apiService.toggleDenylist(
-        key, pid, target.domain, AllowDenyActiveRequest(active = activate)
+        key, pid, validDomain, AllowDenyActiveRequest(active = activate)
       )
     }
   }
@@ -1868,15 +1881,17 @@ class NextDnsRepository(
   suspend fun toggleAllowlistItem(domain: String): Result<Unit> = withSessionContext {
     val target = _allowlist.value.firstOrNull { it.id == domain || it.domain == domain }
       ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_e09828adaa)))
+    val validDomain = validateApiPathSegment(target.domain)
+      ?: return@withSessionContext Result.failure(IllegalArgumentException(AppStrings.get(R.string.ui_585a0d389f)))
 
     val activate = !target.active
     return@withSessionContext mutateSection(
       section = SyncSection.ALLOWLIST,
       operationName = "toggleAllowlistItem",
-      verify = { (_allowlist.value.firstOrNull { it.domain == target.domain }?.active == true) == activate }
+      verify = { (_allowlist.value.firstOrNull { it.domain == validDomain }?.active == true) == activate }
     ) { key, pid ->
       apiService.toggleAllowlist(
-        key, pid, target.domain, AllowDenyActiveRequest(active = activate)
+        key, pid, validDomain, AllowDenyActiveRequest(active = activate)
       )
     }
   }
@@ -2187,8 +2202,8 @@ class NextDnsRepository(
 
   suspend fun refreshLogsFromApi(limit: Int = 100): Boolean = withSessionContext {
     val key = _apiKey.value
-    val pid = _activeProfileId.value
-    if (key.isBlank() || pid.isBlank()) return@withSessionContext false
+    val pid = validateApiPathSegment(_activeProfileId.value)
+    if (key.isBlank() || pid == null) return@withSessionContext false
 
     val deviceFilter = _logsDeviceFilter.value
     val statusFilter = _logsStatusFilter.value
@@ -2245,8 +2260,8 @@ class NextDnsRepository(
 
   suspend fun loadMoreLogsFromApi(limit: Int = 100): Boolean = withSessionContext {
     val key = _apiKey.value
-    val pid = _activeProfileId.value
-    if (key.isBlank() || pid.isBlank()) return@withSessionContext false
+    val pid = validateApiPathSegment(_activeProfileId.value)
+    if (key.isBlank() || pid == null) return@withSessionContext false
 
     val cursor = nextLogsCursor ?: return@withSessionContext false
     val deviceFilter = _logsDeviceFilter.value
@@ -2354,8 +2369,8 @@ class NextDnsRepository(
       !_logsHistoryFilter.value.supportsLiveStreaming || streamJob != null) return
     val snapshot = captureSession()
     val key = snapshot.apiKey
-    val pid = snapshot.profileId
-    if (key.isBlank() || pid.isBlank()) return
+    val pid = validateApiPathSegment(snapshot.profileId)
+    if (key.isBlank() || pid == null) return
     val seedDeviceFilter = _logsDeviceFilter.value
     val seedStatusFilter = _logsStatusFilter.value
     val seedSearchFilter = _logsSearchFilter.value
@@ -2476,9 +2491,11 @@ class NextDnsRepository(
     val source = responseBody.source()
     var eventId: String? = null
     val dataLines = mutableListOf<String>()
+    var eventBytes = 0
+    var eventOversized = false
 
     suspend fun dispatchEvent() {
-      if (dataLines.isNotEmpty()) {
+      if (!eventOversized && dataLines.isNotEmpty()) {
         val entry = parseSseLogEntry(dataLines.joinToString("\n"), eventId, streamFilterGeneration)
         if (entry != null) {
           emitLogEntry(entry, streamFilterGeneration)
@@ -2487,13 +2504,26 @@ class NextDnsRepository(
       }
       eventId = null
       dataLines.clear()
+      eventBytes = 0
+      eventOversized = false
     }
 
     while (currentCoroutineContext().isActive && !source.exhausted()) {
       val line = source.readUtf8Line() ?: break
       when {
         line.startsWith("id:") -> eventId = line.substringAfter(':').trimStart().takeIf { it.isNotEmpty() }
-        line.startsWith("data:") -> dataLines += line.substringAfter(':').trimStart()
+        line.startsWith("data:") -> {
+          if (!eventOversized) {
+            val payload = line.substringAfter(':').trimStart()
+            eventBytes += payload.toByteArray(Charsets.UTF_8).size + 1
+            if (eventBytes > MAX_SSE_EVENT_BYTES) {
+              eventOversized = true
+              dataLines.clear()
+            } else {
+              dataLines += payload
+            }
+          }
+        }
         line.isEmpty() -> dispatchEvent()
       }
     }
@@ -2783,7 +2813,8 @@ class NextDnsRepository(
       return false
     }
     val snapshot = captureSession()
-    if (snapshot.apiKey.isBlank() || snapshot.profileId != query.profileId) return false
+    val validProfileId = validateApiPathSegment(query.profileId) ?: return false
+    if (snapshot.apiKey.isBlank() || snapshot.profileId != validProfileId) return false
     return withSessionContext(snapshot = snapshot) {
       val generation = commitCurrentSession {
         analyticsSeriesGeneration++
@@ -2857,10 +2888,10 @@ class NextDnsRepository(
 
   private suspend fun fetchAnalyticsOutcome(request: AnalyticsRequest): SyncAreaOutcome = withSessionContext(snapshot = request.session) {
     val key = request.session.apiKey
-    val profileId = request.session.profileId
+    val profileId = validateApiPathSegment(request.session.profileId)
     val device = request.device
     val from = request.from
-    if (key.isBlank() || profileId.isBlank()) return@withSessionContext SyncAreaOutcome.FAILED
+    if (key.isBlank() || profileId == null) return@withSessionContext SyncAreaOutcome.FAILED
 
     val devParam = if (device == "Tüm cihazlar" || device.isNullOrBlank()) {
       null
